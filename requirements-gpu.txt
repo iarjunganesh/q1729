@@ -1,0 +1,5 @@
+# CUDA-Q stack — Linux/WSL2 only, no Windows wheels (docs/adr/002-wsl2-runtime.md).
+# GPU targets (nvidia/tensornet) additionally need a CUDA driver visible in WSL2;
+# without one, cudaq still works on the qpp-cpu target.
+cudaq>=0.15
+cupy-cuda13x

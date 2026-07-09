@@ -1,0 +1,35 @@
+[project]
+name = "q1729"
+version = "0.2.0"
+description = "Ramanujan's mathematics meets GPU quantum simulation — CUDA-Q, cuQuantum, and error correction on consumer hardware"
+# Floor is the WSL2/CI interpreter (CUDA-Q side); the Windows host venv runs 3.14
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "Arjun Ganesh", email = "iarjunganesh@gmail.com" }]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["analysis", "classical", "quantum", "tests"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["."]
+
+[tool.coverage.run]
+source = ["classical", "quantum", "analysis"]
+
+[tool.coverage.report]
+show_missing = true
+# exclude_lines replaces the defaults, so the pragma regex must be restated
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]

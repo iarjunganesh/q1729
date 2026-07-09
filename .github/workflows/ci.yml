@@ -1,0 +1,47 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # 3.12 = the CUDA-Q (WSL2/CI) interpreter; the Windows dev host runs 3.14
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (Ruff)
+        run: ruff check .
+
+      # cudaq runs the qpp-cpu target on GitHub runners (no GPU), which is what
+      # lets tests/integration exercise a real simulator instead of only mocks.
+      # cupy (requirements-gpu.txt) is skipped — it needs a CUDA driver.
+      - name: Install CUDA-Q (CPU target)
+        run: pip install "cudaq>=0.15"
+
+      - name: Tests + coverage
+        run: |
+          pytest tests \
+            --cov \
+            --cov-report=xml \
+            --cov-fail-under=95
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
