@@ -13,6 +13,11 @@ import importlib.util
 #: Stage-1 benchmark targets, in preference order. qpp-cpu is the CI/CPU fallback.
 PREFERRED_TARGETS = ("nvidia", "tensornet", "qpp-cpu")
 
+#: Targets that require a CUDA device. On a driverless machine these do NOT
+#: raise — cudaq.set_target hard-aborts the whole process (seen in CI), so
+#: they must be skipped up front, never attempted-and-caught.
+GPU_TARGETS = frozenset({"nvidia", "tensornet", "nvidia-mgpu"})
+
 
 def cudaq_available() -> bool:
     """True when the cudaq package is importable (Linux/WSL2 only)."""
@@ -22,13 +27,17 @@ def cudaq_available() -> bool:
 def select_target(preferred: tuple[str, ...] = PREFERRED_TARGETS) -> str:
     """Set and return the first CUDA-Q target that initializes.
 
-    GPU targets raise at set-time on machines without a CUDA device, so this
-    walks the preference order rather than trusting target availability.
+    GPU targets are only attempted when a CUDA device is visible
+    (``cudaq.num_available_gpus()``); see GPU_TARGETS for why.
     """
     import cudaq
 
+    gpu_count = cudaq.num_available_gpus()
     errors: dict[str, str] = {}
     for name in preferred:
+        if name in GPU_TARGETS and gpu_count == 0:
+            errors[name] = "no CUDA GPU visible"
+            continue
         try:
             cudaq.set_target(name)
             return name

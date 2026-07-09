@@ -13,6 +13,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **10 narrator unit tests** (httpx mocked at the module boundary: prompt assembly carries numbers verbatim, env overrides, missing-key and HTTP-error paths) + **1 live NIM integration test** (skips without a key) — coverage stays at 100% measured
 - `main.py` status check now also reports NIM narrator availability
 
+### Fixed
+
+- **GPU-less hosts crashed instead of falling back.** On a machine with no CUDA driver (e.g. the CI runner), `cudaq.set_target("nvidia")` does not raise a catchable error — it hard-aborts the entire Python process. `select_target` now checks `cudaq.num_available_gpus()` and skips GPU targets up front (`GPU_TARGETS`), which is what lets the integration suite run on `qpp-cpu` in CI. Caught by CI's first run; invisible locally because WSL2 sees the RTX 5070
+- NIM default model updated to `nvidia/nemotron-3-super-120b-a12b` — the previous default (`llama-3.1-nemotron-70b-instruct`) is listed by `/v1/models` but 404s on invoke (retired for this account); `.env.example` now warns that catalog listing ≠ invocability
+- `python -m analysis.narrator` no longer crashes on Windows consoles (cp1252) when the model's output contains non-Latin-1 typography — stdout is reconfigured to UTF-8
+
 ### Changed
 
 - `httpx` added to core requirements (CPU-safe everywhere); `Makefile` gains `narrate` and fixes `gpu-check` to the new `python -m quantum.backend` diagnostic

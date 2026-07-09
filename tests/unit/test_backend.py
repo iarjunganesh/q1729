@@ -37,8 +37,16 @@ def test_report_with_cudaq_surfaces_error(monkeypatch):
     assert info["target_error"] == "no target"
 
 
+def _fake_cudaq(monkeypatch, gpus, set_target):
+    fake = types.ModuleType("cudaq")
+    fake.num_available_gpus = lambda: gpus
+    fake.set_target = set_target
+    monkeypatch.setitem(sys.modules, "cudaq", fake)
+    return fake
+
+
 def test_select_target_walks_preference_order(monkeypatch):
-    """GPU targets fail on this host; select_target must fall through, not raise."""
+    """With a GPU visible but GPU targets failing, fall through — don't raise."""
     calls = []
 
     def fake_set_target(name):
@@ -46,22 +54,31 @@ def test_select_target_walks_preference_order(monkeypatch):
         if name != "qpp-cpu":
             raise RuntimeError(f"{name} unavailable")
 
-    fake_cudaq = types.ModuleType("cudaq")
-    fake_cudaq.set_target = fake_set_target
-    monkeypatch.setitem(sys.modules, "cudaq", fake_cudaq)
+    _fake_cudaq(monkeypatch, gpus=1, set_target=fake_set_target)
 
     assert backend.select_target() == "qpp-cpu"
     assert calls == ["nvidia", "tensornet", "qpp-cpu"]
 
 
-def test_select_target_raises_when_nothing_initializes(monkeypatch):
-    fake_cudaq = types.ModuleType("cudaq")
+def test_select_target_never_attempts_gpu_targets_without_gpu(monkeypatch):
+    """On driverless hosts set_target(GPU) hard-aborts the process (seen in CI),
+    so GPU targets must be skipped before the call, not attempted-and-caught."""
+    calls = []
 
+    def fake_set_target(name):
+        calls.append(name)
+
+    _fake_cudaq(monkeypatch, gpus=0, set_target=fake_set_target)
+
+    assert backend.select_target() == "qpp-cpu"
+    assert calls == ["qpp-cpu"]
+
+
+def test_select_target_raises_when_nothing_initializes(monkeypatch):
     def always_fail(name):
         raise RuntimeError("nope")
 
-    fake_cudaq.set_target = always_fail
-    monkeypatch.setitem(sys.modules, "cudaq", fake_cudaq)
+    _fake_cudaq(monkeypatch, gpus=1, set_target=always_fail)
 
     with pytest.raises(RuntimeError, match="no CUDA-Q target"):
         backend.select_target()
