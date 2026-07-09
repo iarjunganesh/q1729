@@ -1,0 +1,14 @@
+{
+  "note": "SYNTHETIC demonstration data for the narrator (ADR 003) — not measured results. Real run files are produced by the stage-1 benchmark harness.",
+  "series": "ramanujan-1914",
+  "hardware": [
+    {"id": "rtx-5070-8gb", "kind": "consumer", "gpu": "NVIDIA RTX 5070 8GB", "cuda": "13.x"},
+    {"id": "h100-80gb", "kind": "datacenter", "gpu": "NVIDIA H100 80GB", "cuda": "13.x"}
+  ],
+  "runs": [
+    {"hardware": "rtx-5070-8gb", "method": "classical-cuda", "digits": 1000, "time_s": 0.004},
+    {"hardware": "rtx-5070-8gb", "method": "qae-nvidia", "qubits": 20, "digits": 6, "time_s": 2.9, "vram_gb": 1.2},
+    {"hardware": "rtx-5070-8gb", "method": "qae-nvidia", "qubits": 28, "digits": 8, "time_s": 41.0, "vram_gb": 6.8},
+    {"hardware": "h100-80gb", "method": "qae-nvidia", "qubits": 32, "digits": 10, "time_s": 38.5, "vram_gb": 68.0}
+  ]
+}

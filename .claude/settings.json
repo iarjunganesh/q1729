@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make:*)",
+      "Bash(pytest*)",
+      "Bash(python -m pytest*)",
+      "Bash(python -m ruff*)",
+      "Bash(ruff*)",
+      "Bash(python main.py)",
+      "Bash(python -m quantum.backend)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(gh run *)",
+      "Bash(gh release list*)",
+      "Bash(gh repo view*)",
+      "Bash(gh pr view*)"
+    ]
+  }
+}
