@@ -57,6 +57,17 @@ def test_build_prompt_carries_numbers_verbatim(run_file):
     prompt = narrator.build_prompt(narrator.load_run(run_file))
     assert '"digits": 1000' in prompt
     assert '"time_s": 0.004' in prompt
+    assert "Research question" not in prompt
+
+
+def test_build_prompt_with_question_still_carries_numbers_verbatim(run_file):
+    prompt = narrator.build_prompt(narrator.load_run(run_file), question="Why so fast?")
+    assert "Research question: Why so fast?" in prompt
+    assert '"digits": 1000' in prompt
+    assert '"time_s": 0.004' in prompt
+    assert "### Observation" in prompt
+    assert "### Interpretation" in prompt
+    assert "### Suggested next experiment" in prompt
 
 
 def test_narrate_requires_key(monkeypatch, run_file):
@@ -85,6 +96,22 @@ def test_narrate_happy_path(monkeypatch, run_file):
     assert captured["json"]["model"] == narrator.DEFAULT_MODEL
     # the run numbers travel in the user message, verbatim
     assert '"digits": 1000' in captured["json"]["messages"][1]["content"]
+
+
+def test_narrate_passes_question_through(monkeypatch, run_file):
+    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-test")
+    captured = {}
+
+    def fake_post(url, **kwargs):
+        captured["json"] = kwargs["json"]
+        return FakeResponse()
+
+    monkeypatch.setattr(narrator.httpx, "post", fake_post)
+    narrator.narrate(run_file, question="Why so fast?")
+
+    user_message = captured["json"]["messages"][1]["content"]
+    assert "Research question: Why so fast?" in user_message
+    assert '"digits": 1000' in user_message
 
 
 def test_narrate_honors_env_overrides(monkeypatch, run_file):

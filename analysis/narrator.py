@@ -44,17 +44,32 @@ def load_run(path: str | Path) -> dict:
     return data
 
 
-def build_prompt(run: dict) -> str:
-    """Deterministic user prompt — the run data verbatim, plus the ask."""
-    return (
-        "Benchmark run data (JSON):\n\n"
-        f"{json.dumps(run, indent=2)}\n\n"
-        "Draft the findings section for these results."
-    )
+def build_prompt(run: dict, question: str | None = None) -> str:
+    """Deterministic user prompt — the run data verbatim, plus the ask.
+
+    ``question`` (issue #5, tier 1) asks the model a specific research
+    question about the same run data instead of drafting general findings —
+    the run data still travels verbatim either way.
+    """
+    prompt = f"Benchmark run data (JSON):\n\n{json.dumps(run, indent=2)}\n\n"
+    if question:
+        prompt += (
+            f"Research question: {question}\n\n"
+            "Answer using ONLY the numbers above — never invent measurements. "
+            "Structure your answer as:\n"
+            "### Observation\n### Interpretation\n### Suggested next experiment"
+        )
+    else:
+        prompt += "Draft the findings section for these results."
+    return prompt
 
 
-def narrate(path: str | Path, timeout: float = 60.0) -> str:
-    """Return a markdown findings draft for the run file at ``path``."""
+def narrate(path: str | Path, timeout: float = 60.0, question: str | None = None) -> str:
+    """Return a markdown findings draft for the run file at ``path``.
+
+    Pass ``question`` to instead answer a specific research question about
+    the same data (issue #5, tier 1).
+    """
     if not nim_configured():
         raise RuntimeError("NVIDIA_API_KEY is not set — see .env.example (ADR 003)")
 
@@ -66,7 +81,7 @@ def narrate(path: str | Path, timeout: float = 60.0) -> str:
             "model": os.getenv("NIM_MODEL", DEFAULT_MODEL),
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": build_prompt(run)},
+                {"role": "user", "content": build_prompt(run, question)},
             ],
             "temperature": 0.2,
             "max_tokens": 1024,
@@ -88,9 +103,15 @@ def report() -> dict[str, object]:
 
 
 if __name__ == "__main__":
+    import argparse
     import sys
+
+    parser = argparse.ArgumentParser(description="NIM/Nemotron findings narrator (ADR 003)")
+    parser.add_argument("path", nargs="?", default="data/sample_run.json")
+    parser.add_argument("--question", default=None, help="Ask a specific research question instead of general findings")
+    args = parser.parse_args()
 
     # Windows consoles default to cp1252, which can't print the model's
     # typography (e.g. narrow no-break spaces)
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    print(narrate(sys.argv[1] if len(sys.argv) > 1 else "data/sample_run.json"))
+    print(narrate(args.path, question=args.question))

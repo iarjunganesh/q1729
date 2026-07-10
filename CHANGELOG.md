@@ -3,6 +3,21 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] — 2026-07-10 — nvidia-mgpu target support, narrator research questions, docs audit
+
+### Added
+
+- **Multi-GPU CUDA-Q target selection** — `quantum/backend.py`'s `select_target()` now tries `nvidia-mgpu` before falling back to `nvidia`, gated on 2+ visible GPUs (`MULTI_GPU_TARGETS`). Verified against the installed cudaq 0.15.0: the bare `nvidia-mgpu` target name is deprecated in favor of `cudaq.set_target("nvidia", option="mgpu,fp32")`; both forms raise a normal, catchable `RuntimeError` (missing MPI plugin) on single-GPU hardware rather than the process hard-abort `GPU_TARGETS` already guards against — the fallback path is tested, the multi-GPU success path is not (no such hardware available), tracked in #6
+- **`analysis/narrator.py` accepts a research question** (`--question` flag or `narrate(path, question=...)`) — answers a specific question about run data (structured Observation/Interpretation/Suggested next experiment) instead of only drafting general findings; the run-file numbers still travel verbatim either way (ADR 003 guardrail, explicitly tested). Closes #5 (tier 1)
+- **`.github/ISSUE_TEMPLATE/benchmark_submission.yml`** — structured community benchmark submissions (GPU/VRAM, driver/CUDA version, CUDA-Q backend, environment, qubit ceiling, run file, notes). Closes #2
+- **`docs/nvidia-access.md`, `docs/onboarding.md`, `docs/setup.md`, `docs/adr/README.md`**, and a Test Coverage section in `CONTRIBUTING.md` — all built from commands actually run on this machine, not assumed behavior
+
+### Fixed
+
+- **Wrong VRAM-ceiling math throughout the docs.** The `nvidia` target's actual default precision is fp32 (`cusvsim_fp32`, confirmed via `cudaq.get_target()`), not fp64/complex128 as previously assumed — corrected the qubit-ceiling figures in README, CLAUDE.md, and `docs/nvidia-access.md` (single H100 ≈ 33 qubits at default precision, not 34; 34 needs a second GPU)
+- Broken ADR link (`docs/adr/README.md` pointed at a nonexistent `001-cuda-q-over-pennylane-qiskit.md`; corrected to the real filename)
+- WSL2 never receives the Windows-side `NVIDIA_API_KEY` env var by default — documented the `WSLENV` fix in `docs/nvidia-access.md`
+
 ## [0.2.0] — 2026-07-10 — Hybrid cloud: NIM/Nemotron narrator + datacenter benchmark axis
 
 ### Added

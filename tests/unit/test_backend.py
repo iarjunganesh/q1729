@@ -82,3 +82,50 @@ def test_select_target_raises_when_nothing_initializes(monkeypatch):
 
     with pytest.raises(RuntimeError, match="no CUDA-Q target"):
         backend.select_target()
+
+
+def test_select_target_skips_mgpu_with_only_one_gpu(monkeypatch):
+    """nvidia-mgpu needs 2+ GPUs — a single GPU goes straight to plain nvidia."""
+    calls = []
+
+    def fake_set_target(name, **kwargs):
+        calls.append((name, kwargs))
+
+    _fake_cudaq(monkeypatch, gpus=1, set_target=fake_set_target)
+
+    assert backend.select_target() == "nvidia"
+    assert calls == [("nvidia", {})]
+
+
+def test_select_target_prefers_nvidia_mgpu_with_multiple_gpus(monkeypatch):
+    """With 2+ GPUs, the modern option-based multi-GPU call is tried first —
+    not the deprecated bare "nvidia-mgpu" target name."""
+    calls = []
+
+    def fake_set_target(name, **kwargs):
+        calls.append((name, kwargs))
+
+    _fake_cudaq(monkeypatch, gpus=2, set_target=fake_set_target)
+
+    assert backend.select_target() == "nvidia-mgpu"
+    assert calls == [("nvidia", {"option": "mgpu,fp32"})]
+
+
+def test_select_target_falls_back_when_mgpu_unavailable(monkeypatch):
+    """Verified 2026-07-10: cudaq 0.15 raises a catchable RuntimeError (missing
+    MPI plugin) rather than hard-aborting when multi-GPU init fails — must
+    fall through to plain nvidia, not crash."""
+    calls = []
+
+    def fake_set_target(name, **kwargs):
+        calls.append((name, kwargs))
+        if kwargs.get("option") == "mgpu,fp32":
+            raise RuntimeError("Unable to create MPI plugin")
+
+    _fake_cudaq(monkeypatch, gpus=2, set_target=fake_set_target)
+
+    assert backend.select_target() == "nvidia"
+    assert calls == [
+        ("nvidia", {"option": "mgpu,fp32"}),
+        ("nvidia", {}),
+    ]
