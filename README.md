@@ -40,7 +40,7 @@ And the thread doesn't stop at π: the same territory — modular forms, Ramanuj
 
 > **At what problem size does quantum simulation stop being competitive with a hand-written CUDA kernel — on the same silicon — and does datacenter silicon move the crossover, or just postpone it?**
 
-Classical wins locally; that's not the finding. The finding is the *crossover analysis*: the measured shape of that loss on a consumer RTX 5070 (8GB, ~30-qubit ceiling) versus a cloud H100 (80GB, ~34 qubits), and what a real quantum device would need to beat either at its own game.
+Classical wins locally; that's not the finding. The finding is the *crossover analysis*: the measured shape of that loss on a consumer RTX 5070 (8GB, ~30-qubit ceiling) versus a cloud H100 (80GB, ~33 qubits on one card, ~34 needs a second GPU — see [docs/nvidia-access.md](docs/nvidia-access.md)), and what a real quantum device would need to beat either at its own game.
 
 ## Architecture — one codebase, consumer to datacenter
 
@@ -165,7 +165,7 @@ pytest tests                   # now includes the real-simulator integration tes
 | Cloud | GPU | NVIDIA H100 80GB (rented per-run for the datacenter axis) |
 | Cloud | AI | NVIDIA NIM API — Nemotron (findings narrator) |
 
-8GB VRAM caps statevector simulation at roughly 29–30 qubits; 80GB moves that to ~34. The gap between those ceilings — and what it does to the crossover — is itself one of the research questions.
+8GB VRAM caps statevector simulation at roughly 29–30 qubits at the `nvidia` target's default fp32 precision; a single 80GB H100 moves that to ~33, and reaching ~34 needs a second GPU (`nvidia-mgpu`, see [docs/nvidia-access.md](docs/nvidia-access.md)). The gap between those ceilings — and what it does to the crossover — is itself one of the research questions.
 
 ## Contributing
 

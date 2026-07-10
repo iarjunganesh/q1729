@@ -1,0 +1,81 @@
+name: Benchmark Submission
+description: Share a benchmark run from your own hardware
+title: "[benchmark] "
+labels: ["benchmark"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for running q1729 on your own hardware! The run file `hardware` field is
+        designed to be hardware-agnostic, so submissions from any GPU are useful for the
+        consumer-vs-datacenter crossover analysis (see the README roadmap).
+
+        Run file schema reference: [`data/sample_run.json`](../../data/sample_run.json)
+        (synthetic, but shows every field this form asks about).
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU model + VRAM
+      placeholder: e.g. NVIDIA RTX 4090 24GB
+    validations:
+      required: true
+
+  - type: input
+    id: driver-cuda
+    attributes:
+      label: Driver version + CUDA version
+      placeholder: e.g. driver 560.xx, CUDA 13.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend
+    attributes:
+      label: CUDA-Q backend used
+      options:
+        - nvidia
+        - nvidia-mgpu
+        - tensornet
+        - qpp-cpu
+        - other (describe in notes)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: OS / environment
+      options:
+        - WSL2
+        - native Linux
+        - cloud (rented instance)
+        - other (describe in notes)
+    validations:
+      required: true
+
+  - type: input
+    id: qubit-ceiling
+    attributes:
+      label: Qubit ceiling observed
+      description: The largest qubit count that ran successfully on this hardware
+      placeholder: e.g. 31 qubits
+    validations:
+      required: true
+
+  - type: textarea
+    id: run-file
+    attributes:
+      label: Run file (JSON)
+      description: Paste the run file contents, or drag-and-drop it as an attachment
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anomalies or notes
+      description: Anything unexpected — crashes, VRAM surprises, timing outliers, etc.
+    validations:
+      required: false
