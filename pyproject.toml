@@ -1,6 +1,6 @@
 [project]
 name = "q1729"
-version = "0.3.0"
+version = "0.1.0"
 description = "Ramanujan's mathematics meets GPU quantum simulation — CUDA-Q, cuQuantum, and error correction on consumer hardware"
 # Floor is the WSL2/CI interpreter (CUDA-Q side); the Windows host venv runs 3.14
 requires-python = ">=3.12"

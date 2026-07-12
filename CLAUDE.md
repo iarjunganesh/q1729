@@ -7,7 +7,7 @@ q1729 — Ramanujan's mathematics meets the NVIDIA stack end to end: CUDA C++, C
 
 **The README is the bible.** The roadmap there is authoritative; anything that contradicts it (especially anything PennyLane-flavored — that scaffold was cut on 2026-07-10, ADR 001) gets removed, not polished.
 
-**Current phase**: stage-1 skeleton + hybrid cloud layer in place — `classical/ramanujan_series.py` (exact SymPy ground truth), `quantum/backend.py` (CUDA-Q target selection), `analysis/narrator.py` (NIM/Nemotron findings narrator, ADR 003), tests green on both hosts. Verified 2026-07-10: cudaq 0.15 in WSL2 selects the **`nvidia`** target (RTX 5070 GPU passthrough works). Next: the hand-written CUDA kernel, the QAE circuit, the benchmark harness that emits run files (schema: `data/sample_run.json`), and the first cloud-H100 comparison run.
+**Current phase**: stage-1 skeleton + hybrid cloud layer in place — `classical/ramanujan_series.py` (exact SymPy ground truth), `quantum/backend.py` (CUDA-Q target selection), `analysis/narrator.py` (NIM/Nemotron findings narrator, ADR 003), tests green on both hosts. Verified 2026-07-10: cudaq 0.15 in WSL2 selects the **`nvidia`** target (RTX 5070 GPU passthrough works). Next — this is **Phase 1 of `docs/roadmap.md`**, the evidence-sequenced plan for all future work; keep the two in sync: the hand-written CUDA kernel, the QAE circuit, the benchmark harness that emits run files (schema: `data/sample_run.json`), and the first cloud-H100 comparison run (the optional datacenter axis of Phase 1). The README's 3-stage table stays the authoritative summary; `docs/roadmap.md` is its full expansion and must not contradict it.
 
 ## Key Commands
 ```bash
