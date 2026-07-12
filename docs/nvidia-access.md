@@ -4,6 +4,9 @@ Operational reference for what NVIDIA developer/cloud access q1729 actually has,
 how it's wired up, and where the real limits are. ADR 003 covers the design
 decision (NIM as analysis layer, cloud GPU as a second benchmark axis); this
 doc is the "how it's actually configured, and what still blocks us" reference.
+For *when* the H100 run happens relative to everything else, the
+[roadmap](roadmap.md) is the authority — this doc only covers configuration
+and blockers, not sequencing.
 
 ## NIM / Nemotron (narrator layer) — working, no blocker
 
@@ -48,8 +51,9 @@ doc is the "how it's actually configured, and what still blocks us" reference.
   working website, with a 1–4 week review — not the same tier as the
   build.nvidia.com signup already in use for NIM.
 - **Status for q1729**: no H100 run has happened yet. This — cost/access to a
-  rented H100, not code — is what's actually blocking the stage-1
-  "cloud-H100 comparison run" deliverable.
+  rented H100, not code — is what's actually blocking the "cloud-H100
+  comparison run", the optional datacenter axis of roadmap **Phase 1**
+  ([roadmap.md](roadmap.md)).
 
 ## `nvidia-mgpu` is deprecated in cudaq 0.15 (verified 2026-07-10)
 
@@ -105,8 +109,8 @@ evidence.)
 - **2-GPU node, 34 qubits**: ~$6–8/hr for a 2× H100 node (roughly linear in
   GPU count). Same time budget → **~$3–12 per session** — and only once the
   multi-GPU path above is actually confirmed working on real hardware.
-- **Practical guidance**: no benchmark harness exists yet (see CLAUDE.md
-  "Next" list) — build and debug it for free against the RTX 5070 (`nvidia`)
+- **Practical guidance**: no benchmark harness exists yet (roadmap **Phase 1**,
+  [roadmap.md](roadmap.md)) — build and debug it for free against the RTX 5070 (`nvidia`)
   or `qpp-cpu` first, and only rent the H100 for the final verified run. Both
   RunPod and Vast.ai bill per-minute, so a short, deliberate session stays in
   the few-dollar range.

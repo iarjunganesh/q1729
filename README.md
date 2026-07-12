@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/iarjunganesh/q1729/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/iarjunganesh/q1729/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/iarjunganesh/q1729/graph/badge.svg)](https://codecov.io/gh/iarjunganesh/q1729)
-[![Release](https://img.shields.io/badge/release-latest-2ea44f)](https://github.com/iarjunganesh/q1729/releases/latest)
+[![Release](https://img.shields.io/badge/release-latest-2ea44f)](https://github.com/iarjunganesh/q1729/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [![CUDA-Q](https://img.shields.io/badge/NVIDIA-CUDA--Q-76B900?logo=nvidia&logoColor=white)](https://nvidia.github.io/cuda-quantum/)
@@ -91,6 +91,8 @@ Two rules keep the hybrid honest (ADR 003):
 2. **Cloud is a second axis, not a replacement.** The same `quantum/backend.py` code selects `nvidia` on the RTX 5070 in WSL2, `qpp-cpu` in CI, and H100/multi-GPU targets on a rented cloud box — run files carry a `hardware` field so the curves land in one analysis.
 
 ## Roadmap
+
+The three stages below are the research thread. The full evidence-sequenced plan — how each stage is *earned*, phase by phase, and everything from the original Blueprint — lives in **[docs/roadmap.md](docs/roadmap.md)** (Stage 1 = Phase 1, Stage 3 = Phase 2). This table is the summary; that document is authoritative for ordering.
 
 | Stage | Focus | Deliverable |
 | --- | --- | --- |

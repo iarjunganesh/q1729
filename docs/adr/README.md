@@ -1,7 +1,9 @@
 # Architecture Decision Records
 
 This directory documents the key decisions made in q1729 and the reasoning behind them.
-Each ADR is immutable once merged — superseded decisions get a new ADR.
+Each ADR is immutable once merged — superseded decisions get a new ADR. The
+[roadmap](../roadmap.md) uses these same ADRs as its change-control mechanism:
+until Phase 6, any change to roadmap sequencing or architecture is recorded here.
 
 ---
 
@@ -29,6 +31,7 @@ Each ADR contains:
 Open a new ADR when:
 - A library or backend is added or replaced
 - A data format (run file schema) is changed in a breaking way
-- A significant architectural boundary is introduced (e.g. Stage 3 qLDPC module)
+- A significant architectural boundary is introduced (e.g. the qLDPC module — README Stage 3 / roadmap Phase 2)
+- Roadmap sequencing or architecture changes (per Roadmap Governance in [the roadmap](../roadmap.md), recorded as ADRs until Phase 6)
 
 Template: copy any existing ADR and replace the content.

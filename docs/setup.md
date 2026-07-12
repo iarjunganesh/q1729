@@ -4,7 +4,9 @@ Setup instructions across all supported environments. Everything under
 "Windows" and "WSL2" below has been run and verified on this machine
 (2026-07-10); the "Cloud H100" section is marked clearly where it's
 unverified — no H100 run has happened yet (see
-[docs/nvidia-access.md](nvidia-access.md)).
+[docs/nvidia-access.md](nvidia-access.md)). This guide documents environments
+that exist today; what is not built yet — the benchmark harness, the H100 run
+— is sequenced in the [roadmap](roadmap.md), the single authority for ordering.
 
 ---
 
@@ -87,10 +89,14 @@ See ADR-002 for architectural rationale.
 
 ## 3. Cloud H100 (datacenter axis) — unverified, not yet run
 
+In roadmap terms this is the optional datacenter axis of **Phase 1**, which
+rolls into **Phase 2** if it is time-boxed out — it never blocks the local
+RTX result ([roadmap.md](roadmap.md)).
+
 **Nothing in this section has been executed.** No benchmark harness exists
-yet (`main.py` has no CLI flags at all — the harness is still on the "next"
-list in `CLAUDE.md`), and no H100 instance has been rented for this project.
-This is what setup would look like based on the code that exists today:
+yet (`main.py` has no CLI flags at all — the harness is **roadmap Phase 1**),
+and no H100 instance has been rented for this project. This is what setup
+would look like based on the code that exists today:
 
 ```bash
 # On a rented H100 instance (Lambda, RunPod, vast.ai)
@@ -110,7 +116,7 @@ Cost estimate and the multi-GPU caveat in detail: see
 [docs/nvidia-access.md](nvidia-access.md).
 
 There is currently no way to save a benchmark run file — that requires the
-benchmark harness, which doesn't exist yet.
+benchmark harness (**roadmap Phase 1**), which doesn't exist yet.
 
 ---
 

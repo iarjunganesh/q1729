@@ -2,7 +2,10 @@
 
 Get your first successful run within 10 minutes. Every command and output
 below was actually run on 2026-07-10 (Windows `.venv`, WSL2, or both, as
-noted) — nothing here is a hypothetical example.
+noted) — nothing here is a hypothetical example. This guide documents only
+what runs **today**; anything called out below as not-yet-built is sequenced
+in the [roadmap](roadmap.md), which is the single authority for what gets
+built and in what order.
 
 ---
 
@@ -102,11 +105,12 @@ itself, not a real measurement.
 | **Cloud H100 80GB** | not yet built | `nvidia-mgpu` path exists in code but is **unverified** — no multi-GPU hardware tested it | ✅ with key | See [docs/nvidia-access.md](nvidia-access.md) for cost + the untested-path caveat |
 | **CI (no GPU)** | n/a | ✅ `qpp-cpu` (CPU sim) | ⚠️ narrator skipped, no key in CI | `.github/workflows/ci.yml` |
 
-The hand-written CUDA classical kernel and the QAE circuit are both still on
-the "next" list (see `CLAUDE.md`) — only the SymPy reference implementation
+The hand-written CUDA classical kernel and the QAE circuit are **roadmap
+Phase 1** ([roadmap.md](roadmap.md)) — only the SymPy reference implementation
 exists today, not a CUDA kernel. Community-reported hardware rows (other
-GPUs/VRAM sizes) aren't included here because none have actually been
-submitted or tested yet.
+GPUs/VRAM sizes) aren't included here because none have been submitted yet:
+soliciting them is **roadmap Phase 2**, which opens once Phase 1 produces a
+real result worth submitting against.
 
 ### Backend fallback order (verified against `quantum/backend.py`)
 
