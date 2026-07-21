@@ -1,0 +1,38 @@
+graph LR
+    classDef math fill:#B45309,stroke:#7C3D06,color:#fff
+    classDef classical fill:#76B900,stroke:#4E7A00,color:#fff
+    classDef quantum fill:#2563EB,stroke:#1D4ED8,color:#fff
+    classDef backend fill:#6933FF,stroke:#4B21C2,color:#fff
+    classDef ai fill:#0EA5E9,stroke:#0369A1,color:#fff
+    classDef result fill:#DC2626,stroke:#991B1B,color:#fff
+
+    R["📜 Ramanujan 1914<br/>1/π series, ~8 digits/term"]:::math
+    T["🧮 classical/ramanujan_series.py<br/>exact SymPy — ground truth"]:::math
+
+    subgraph silicon["one CUDA-Q codebase — quantum/backend.py picks the target"]
+        direction TB
+        subgraph local["🖥️ local: RTX 5070 8GB"]
+            K["⚡ CUDA kernel<br/>one term per thread"]:::classical
+            Q1["⚛️ QAE circuit<br/>nvidia · tensornet"]:::quantum
+        end
+        subgraph cloud["☁️ cloud: H100 80GB"]
+            Q2["⚛️ same QAE circuit<br/>nvidia · nvidia-mgpu"]:::quantum
+        end
+    end
+
+    X["📊 analysis/<br/>crossover: time, VRAM,<br/>qubits vs digits,<br/>consumer vs datacenter"]:::result
+    N["🤖 NIM · Nemotron<br/>findings narrator<br/>(numbers in, prose out)"]:::ai
+    D["📝 findings draft"]:::ai
+
+    R --> K
+    R --> Q1
+    R --> Q2
+    K --> X
+    Q1 --> X
+    Q2 --> X
+    T -.->|validates every path| X
+    X --> N --> D
+
+    style silicon fill:transparent,stroke:#76B900,stroke-width:2px,stroke-dasharray:6 3
+    style local fill:transparent,stroke:#94A3B8,stroke-width:1px
+    style cloud fill:transparent,stroke:#94A3B8,stroke-width:1px

@@ -1,4 +1,4 @@
-.PHONY: install install-gpu run gpu-check narrate test lint coverage
+.PHONY: install install-gpu run gpu-check narrate test lint typecheck coverage
 
 install:
 	pip install -r requirements.txt
@@ -22,6 +22,10 @@ test:
 
 lint:
 	ruff check .
+	ruff format --check .
+
+typecheck:
+	mypy classical quantum analysis
 
 coverage:
-	pytest tests --cov --cov-report=term-missing
+	pytest tests --cov --cov-report=term-missing --cov-fail-under=100
