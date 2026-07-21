@@ -112,6 +112,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Windows consoles default to cp1252, which can't print the model's
-    # typography (e.g. narrow no-break spaces)
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    # typography (e.g. narrow no-break spaces). typeshed types sys.stdout as
+    # the narrower TextIO protocol, which omits reconfigure() even though
+    # CPython's real stdout (TextIOWrapper) always has it.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     print(narrate(args.path, question=args.question))

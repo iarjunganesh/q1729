@@ -67,11 +67,11 @@ is ever completed.
 
 ---
 
-## Where the repo actually is (v0.1.0)
+## Where the repo actually is (v0.1.1)
 
 Honest baseline, so every phase below is measured against reality:
 
-- Excellent engineering hygiene already exists: 3 ADRs, CI, coverage gated at 95%, CONTRIBUTING, SECURITY, a working NIM narrator, backend-selection logic.
+- Excellent engineering hygiene already exists: 4 ADRs, CI, coverage gated at a literal 100% (no buffer), CONTRIBUTING, SECURITY, `AGENTS.md`, a working NIM narrator, backend-selection logic.
 - `classical/ramanujan_series.py` is exact SymPy — the **ground truth**, not the CUDA kernel.
 - **No `.cu` kernel exists yet.** The repo is 97.4% Python.
 - `data/sample_run.json` is **synthetic**. No real benchmark has been run.
@@ -327,7 +327,7 @@ notebooks/
 
 Every PR should include, where applicable:
 
-- **Tests** — new modules ship with tests that cover them fully (near-100% coverage is the standard; CI gates at 95%).
+- **Tests** — new modules ship with tests that cover them fully (100% coverage is the standard; CI gates at a literal 100%, no buffer — [ADR 004](adr/004-repo-hygiene-and-agent-sync.md)).
 - **Documentation** — intent-level docs for anything a contributor would otherwise have to reverse-engineer.
 - **ADR (or, from Phase 6, RFC) reference** if the change is architectural.
 - **Benchmark impact** if the change touches a measured path.
@@ -350,7 +350,7 @@ Every experiment must define, before it runs — this is the Phase 0 contract, e
 ## GitHub Strategy
 
 - **Project:** Roadmap (this document, tracked as issues once Phase 3's architecture defines them — per the Blueprint, issues are created only after the architecture they touch is defined).
-- **Milestones:** v0.2 → v0.3 → v0.4 → v0.5 → v1.0 (the repo is at v0.1.0 today).
+- **Milestones:** v0.2 → v0.3 → v0.4 → v0.5 → v1.0 (the repo is at v0.1.1 today).
 - **Epics:** Foundation · Experiment Engine · Plugin System · Benchmarking · AI · Visualization · Documentation · Governance — each maps onto a phase above.
 
 ## Definition of Success

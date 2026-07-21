@@ -31,8 +31,9 @@ Required for CUDA-Q quantum simulation on your local RTX.
 ### Prerequisites
 
 - Windows 11 with WSL2 enabled
-- NVIDIA driver with WSL2 GPU passthrough (verified working with driver
-  supporting CUDA 13.x on this machine)
+- NVIDIA driver with WSL2 GPU passthrough (verified 2026-07-21 via `nvidia-smi`
+  inside WSL2: driver 610.53, CUDA 13.3 — NVIDIA's r610 driver branch is the
+  floor CUDA Toolkit 13.3 itself requires)
 - CUDA-Q installed inside the WSL2 venv via `requirements-gpu.txt`
 
 ### Step-by-step
@@ -143,12 +144,14 @@ if you call it directly; `main.py`'s status check just reports
 
 ## 5. CI environment
 
-`.github/workflows/ci.yml` installs the CPU `cudaq` wheel and runs the full
-suite with `--cov-fail-under=95`. It does **not** set any target-selection
-environment variable — CI runners have no GPU, so `quantum/backend.py`'s
-existing `cudaq.num_available_gpus() == 0` guard skips every GPU target
-automatically and lands on `qpp-cpu`. There is no `CUDA_Q_TARGET` variable
-anywhere in the codebase.
+`.github/workflows/ci.yml` runs four jobs: `lint` (ruff), `typecheck` (mypy),
+`tests` (installs the CPU `cudaq` wheel and runs the full suite with a
+literal `--cov-fail-under=100`, no buffer — [ADR 004](adr/004-repo-hygiene-and-agent-sync.md)),
+and `docs` (required-file + stale-marker hygiene). The `tests` job does
+**not** set any target-selection environment variable — CI runners have no
+GPU, so `quantum/backend.py`'s existing `cudaq.num_available_gpus() == 0`
+guard skips every GPU target automatically and lands on `qpp-cpu`. There is
+no `CUDA_Q_TARGET` variable anywhere in the codebase.
 
 ```bash
 # Reproduce CI locally (only meaningful without a GPU visible)

@@ -6,26 +6,71 @@ on:
   pull_request:
     branches: [ "main" ]
 
-jobs:
-  quality:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
 
+env:
+  # 3.12 = the CUDA-Q (WSL2/CI) interpreter; the Windows dev host runs 3.14
+  PYTHON_VERSION: "3.12"
+  COVERAGE_FLOOR: "100"
+
+jobs:
+  lint:
+    name: Ruff lint + format
+    runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      # 3.12 = the CUDA-Q (WSL2/CI) interpreter; the Windows dev host runs 3.14
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Lint (Ruff)
+      - name: Ruff check
         run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+  typecheck:
+    name: Mypy type check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Mypy
+        run: mypy classical quantum analysis
+
+  tests:
+    name: Tests and coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       # cudaq runs the qpp-cpu target on GitHub runners (no GPU), which is what
       # lets tests/integration exercise a real simulator instead of only mocks.
@@ -37,11 +82,39 @@ jobs:
         run: |
           pytest tests \
             --cov \
+            --cov-report=term-missing \
             --cov-report=xml \
-            --cov-fail-under=95
+            --cov-fail-under=${{ env.COVERAGE_FLOOR }}
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        if: always()
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
           fail_ci_if_error: false
+
+  docs:
+    name: Documentation hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Require project documentation
+        run: |
+          test -f README.md
+          test -f AGENTS.md
+          test -f CLAUDE.md
+          test -f CHANGELOG.md
+          test -f docs/roadmap.md
+          test -f docs/adr/README.md
+          test -f docs/sessions.md
+
+      - name: Reject unfinished public documentation markers
+        run: |
+          if grep -RInE '\[to fill|TODO.*(README|CHANGELOG|ROADMAP)|FIXME' \
+            README.md CHANGELOG.md docs/roadmap.md docs/adr AGENTS.md CLAUDE.md; then
+            echo "Unfinished public documentation marker found."
+            exit 1
+          fi

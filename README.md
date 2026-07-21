@@ -1,28 +1,42 @@
 # q1729 — the quantum taxicab
 
 <p align="center">
-  <strong>How fast can a GPU compute π — as a classical machine, and as a quantum computer pretending to be one? From a consumer RTX to a datacenter H100 — with an AI layer that writes up what the numbers show.</strong>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/q1729-banner-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/brand/q1729-banner-light.svg">
+    <img width="900" src="assets/brand/q1729-banner-light.svg"
+         alt="q1729 — Ramanujan's mathematics meets the NVIDIA stack. How fast can a GPU compute π, classically and as a quantum computer? Consumer RTX to datacenter H100, with an AI layer that writes up what the numbers show."/>
+  </picture>
 </p>
 
 > Ramanujan's mathematics meets the NVIDIA stack, end to end: CUDA C++, CUDA-Q/cuQuantum simulation, and NIM/Nemotron analysis — local silicon to cloud.
 
+<!-- Row 1 — quality gate, release, license -->
 [![CI](https://github.com/iarjunganesh/q1729/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/iarjunganesh/q1729/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/iarjunganesh/q1729/graph/badge.svg)](https://codecov.io/gh/iarjunganesh/q1729)
-[![Release](https://img.shields.io/badge/release-latest-2ea44f)](https://github.com/iarjunganesh/q1729/releases)
+[![Release](https://img.shields.io/badge/release-latest-2ea44f?logo=github&logoColor=white)](https://github.com/iarjunganesh/q1729/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+<!-- Row 2 — the NVIDIA stack, in the order README's Stack section names it -->
 [![CUDA-Q](https://img.shields.io/badge/NVIDIA-CUDA--Q-76B900?logo=nvidia&logoColor=white)](https://nvidia.github.io/cuda-quantum/)
+[![CUDA-QX](https://img.shields.io/badge/NVIDIA-CUDA--QX-76B900?logo=nvidia&logoColor=white)](https://github.com/NVIDIA/cudaqx)
 [![cuQuantum](https://img.shields.io/badge/NVIDIA-cuQuantum-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuquantum-sdk)
 [![NIM](https://img.shields.io/badge/NVIDIA-NIM_%C2%B7_Nemotron-76B900?logo=nvidia&logoColor=white)](https://build.nvidia.com/)
-[![CUDA C++](https://img.shields.io/badge/CUDA_C%2B%2B-13.x-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
+[![CUDA C++](https://img.shields.io/badge/CUDA_C%2B%2B-13.3-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
 
-[![Local GPU](https://img.shields.io/badge/local-RTX_5070_8GB-1F2937?logo=nvidia&logoColor=76B900)](docs/adr/002-wsl2-runtime.md)
-[![Cloud GPU](https://img.shields.io/badge/cloud-H100_80GB-1F2937?logo=nvidia&logoColor=76B900)](docs/adr/003-hybrid-cloud-nim.md)
+<!-- Row 3 — the two hardware axes this project measures -->
+[![Local GPU](https://img.shields.io/badge/local-RTX_5070_8GB-1F2937?logo=nvidia&logoColor=76B900)](https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5070-family/)
+[![Cloud GPU](https://img.shields.io/badge/cloud-H100_80GB-1F2937?logo=nvidia&logoColor=76B900)](https://www.nvidia.com/en-us/data-center/h100/)
 [![WSL2](https://img.shields.io/badge/runtime-WSL2-0078D4?logo=linux&logoColor=white)](docs/adr/002-wsl2-runtime.md)
 
+<!-- Row 4 — Python + the exact-math dependency that is the project's ground truth -->
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![SymPy](https://img.shields.io/badge/SymPy-exact_math-3B5526?logo=sympy&logoColor=white)](https://www.sympy.org/)
-[![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
+[![SymPy](https://img.shields.io/badge/SymPy-latest-3B5526?logo=sympy&logoColor=white)](https://github.com/sympy/sympy/releases)
+
+<!-- Row 5 — every CI-enforced quality gate, in the order ci.yml runs them -->
+[![Ruff](https://img.shields.io/badge/Ruff-lint%20%2B%20format-D7FF64?logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
+[![mypy](https://img.shields.io/badge/mypy-2.3-2A6DB2?logo=python&logoColor=white)](https://mypy-lang.org/)
+[![pytest](https://img.shields.io/badge/pytest-9.1-0A9EDC?logo=pytest&logoColor=white)](https://docs.pytest.org/)
 
 ---
 
@@ -44,46 +58,18 @@ Classical wins locally; that's not the finding. The finding is the *crossover an
 
 ## Architecture — one codebase, consumer to datacenter
 
-```mermaid
-graph LR
-    classDef math fill:#B45309,stroke:#7C3D06,color:#fff
-    classDef classical fill:#76B900,stroke:#4E7A00,color:#fff
-    classDef quantum fill:#2563EB,stroke:#1D4ED8,color:#fff
-    classDef backend fill:#6933FF,stroke:#4B21C2,color:#fff
-    classDef ai fill:#0EA5E9,stroke:#0369A1,color:#fff
-    classDef result fill:#DC2626,stroke:#991B1B,color:#fff
+<p align="center">
+  <a href="assets/architecture/pipeline-light.svg" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/architecture/pipeline-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="assets/architecture/pipeline-light.svg">
+      <img width="960" src="assets/architecture/pipeline-light.svg"
+           alt="q1729 pipeline: Ramanujan's 1914 series feeds one CUDA-Q codebase that picks its target — a hand-written CUDA kernel and a QAE circuit locally on an RTX 5070, the same QAE circuit again on a cloud H100 — into a crossover analysis, validated throughout by the exact SymPy ground truth, then narrated by NIM/Nemotron into a findings draft."/>
+    </picture>
+  </a>
+</p>
 
-    R["📜 Ramanujan 1914<br/>1/π series, ~8 digits/term"]:::math
-    T["🧮 classical/ramanujan_series.py<br/>exact SymPy — ground truth"]:::math
-
-    subgraph silicon["one CUDA-Q codebase — quantum/backend.py picks the target"]
-        direction TB
-        subgraph local["🖥️ local: RTX 5070 8GB"]
-            K["⚡ CUDA kernel<br/>one term per thread"]:::classical
-            Q1["⚛️ QAE circuit<br/>nvidia · tensornet"]:::quantum
-        end
-        subgraph cloud["☁️ cloud: H100 80GB"]
-            Q2["⚛️ same QAE circuit<br/>nvidia · nvidia-mgpu"]:::quantum
-        end
-    end
-
-    X["📊 analysis/<br/>crossover: time, VRAM,<br/>qubits vs digits,<br/>consumer vs datacenter"]:::result
-    N["🤖 NIM · Nemotron<br/>findings narrator<br/>(numbers in, prose out)"]:::ai
-    D["📝 findings draft"]:::ai
-
-    R --> K
-    R --> Q1
-    R --> Q2
-    K --> X
-    Q1 --> X
-    Q2 --> X
-    T -.->|validates every path| X
-    X --> N --> D
-
-    style silicon fill:transparent,stroke:#76B900,stroke-width:2px,stroke-dasharray:6 3
-    style local fill:transparent,stroke:#94A3B8,stroke-width:1px
-    style cloud fill:transparent,stroke:#94A3B8,stroke-width:1px
-```
+<p align="center"><sub>Source: <a href="assets/architecture/pipeline.mmd">Mermaid</a> · renders: <a href="assets/architecture/pipeline-light.svg">light SVG</a> / <a href="assets/architecture/pipeline-dark.svg">dark SVG</a></sub></p>
 
 Two rules keep the hybrid honest (ADR 003):
 
@@ -116,18 +102,22 @@ Runtime: CUDA-Q is Linux-only — on Windows, develop inside **WSL2** or the NGC
 - **Exact ground truth** — series terms are exact SymPy rationals, not floats; every GPU path is benchmarked against mathematics, not against another approximation
 - **The AI layer can't invent results** — the narrator receives run-file numbers verbatim and only narrates; it is optional and degrades cleanly without a key (ADR 003)
 - **Real-backend integration tests** — a Bell pair is actually simulated on the selected CUDA-Q target (CI: `qpp-cpu`; WSL2: `nvidia`), and the narrator is smoke-tested against the live NIM API when a key is present; unit tests mock only at the module boundary
-- **Near-100% coverage** — measured 100%; CI gates at 95% (`.github/workflows/ci.yml`)
+- **100% coverage, no buffer** — measured 100% on WSL2/CI; CI gates at 100% with zero threshold (`.github/workflows/ci.yml`, `codecov.yml`, [ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md))
 - **Decisions are written down** — `docs/adr/`: CUDA-Q over PennyLane/Qiskit (001), WSL2 runtime (002), hybrid cloud + NIM (003)
 
 ## Project structure
 
 - `classical/ramanujan_series.py` — the 1914 series, exact SymPy (ground truth for the CUDA kernel)
-- `quantum/backend.py` — CUDA-Q target selection (`nvidia` → `tensornet` → `qpp-cpu`) + environment diagnostic
+- `quantum/backend.py` — CUDA-Q target selection (`nvidia-mgpu` → `nvidia` → `tensornet` → `qpp-cpu`) + environment diagnostic
 - `analysis/narrator.py` — NIM/Nemotron findings narrator (`make narrate`)
 - `data/sample_run.json` — synthetic sample run file demonstrating the benchmark schema
+- `benchmarks/` — real measured run files + crossover plots (roadmap Phase 1 deliverable; placeholder until then)
 - `main.py` — status check; runs on any host, with or without cudaq / a NIM key
 - `tests/` — `unit/` (any host) + `integration/` (real CUDA-Q simulation, live NIM; each skips where unavailable)
 - `docs/adr/` — architecture decision records
+- `docs/sessions.md` — dated log of what each work session changed and verified
+- `assets/architecture/`, `assets/brand/` — theme-aware diagram and banner sources (edit the `.mmd`/`.py`, never the SVG)
+- `AGENTS.md` — cross-tool discipline for keeping this README, `CLAUDE.md`, and every status-bearing doc in sync before commits and tags
 
 ## Quickstart
 
@@ -162,7 +152,7 @@ pytest tests                   # now includes the real-simulator integration tes
 
 | Axis | Component | Spec |
 | --- | --- | --- |
-| Local | GPU | NVIDIA RTX 5070 8GB (Blackwell), CUDA 13.x |
+| Local | GPU | NVIDIA RTX 5070 8GB (Blackwell), CUDA 13.3, driver 610.53 (verified 2026-07-21) |
 | Local | CPU / RAM / OS | AMD Ryzen 9, 32GB DDR5, Windows 11 + WSL2 |
 | Cloud | GPU | NVIDIA H100 80GB (rented per-run for the datacenter axis) |
 | Cloud | AI | NVIDIA NIM API — Nemotron (findings narrator) |

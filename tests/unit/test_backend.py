@@ -8,9 +8,7 @@ from quantum import backend
 
 def test_cudaq_available_matches_find_spec():
     # On the Windows dev host this is False; inside WSL2/CI with cudaq it's True.
-    assert backend.cudaq_available() == (
-        __import__("importlib.util", fromlist=["util"]).find_spec("cudaq") is not None
-    )
+    assert backend.cudaq_available() == (__import__("importlib.util", fromlist=["util"]).find_spec("cudaq") is not None)
 
 
 def test_report_without_cudaq(monkeypatch):

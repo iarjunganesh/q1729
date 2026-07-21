@@ -21,12 +21,12 @@ python -m quantum.backend         # diagnostic: which target initialized
 ## Ground rules
 
 - The README roadmap is authoritative; check `docs/adr/` before proposing a direction change — several "why not X" questions are answered there as deliberate decisions
-- Near-100% test coverage: new code ships with its tests (CI gate is 95%)
+- 100% test coverage, no buffer: new code ships with its tests (CI gate is a literal `--cov-fail-under=100`, see [ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md))
 - `requirements.txt` must stay installable on a CPU-only host
 
 ## Test coverage
 
-Measured directly with `pytest tests --cov --cov-report=term-missing` (2026-07-10):
+Measured directly with `pytest tests --cov --cov-report=term-missing` (verified 2026-07-22):
 
 | Host                        | analysis/narrator.py | classical/ramanujan_series.py | quantum/backend.py                                 | Total |
 |-----------------------------|----------------------|-------------------------------|----------------------------------------------------|-------|
@@ -37,7 +37,8 @@ The Windows shortfall is expected and documented, not a gap to fix: `bell_counts
 imports `cudaq` and runs a JIT-compiled kernel, so it can only execute where
 cudaq is actually installed. `tests/integration/test_cudaq_smoke.py` exercises
 it for real in WSL2/CI. CI (`.github/workflows/ci.yml`) installs the CPU
-`cudaq` wheel and gates on `--cov-fail-under=95`.
+`cudaq` wheel and gates on a literal `--cov-fail-under=100` — no buffer, since
+WSL2/CI measure the real 100% ([ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md)).
 
 ```bash
 # Unit tests only (any host, no GPU, no key needed)

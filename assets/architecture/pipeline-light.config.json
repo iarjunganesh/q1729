@@ -1,0 +1,16 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, Segoe UI, sans-serif",
+    "primaryTextColor": "#1e293b",
+    "primaryColor": "#ffffff",
+    "primaryBorderColor": "#cbd5e1",
+    "lineColor": "#64748b",
+    "textColor": "#1e293b",
+    "edgeLabelBackground": "#ffffff",
+    "clusterBkg": "transparent",
+    "clusterBorder": "#94a3b8",
+    "titleColor": "#1e293b"
+  }
+}

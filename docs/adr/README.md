@@ -14,6 +14,7 @@ until Phase 6, any change to roadmap sequencing or architecture is recorded here
 | [001](./001-cuda-q-over-pennylane.md) | CUDA-Q over PennyLane / Qiskit | Accepted | NVIDIA-native stack gives direct cuStateVec + cuTensorNet access without translation overhead |
 | [002](./002-wsl2-runtime.md) | WSL2 as Windows runtime | Accepted | CUDA-Q is Linux-only; WSL2 gives full GPU passthrough without dual-boot |
 | [003](./003-hybrid-cloud-nim.md) | Hybrid cloud + NIM narrator | Accepted | H100 as second hardware axis; Nemotron narrates run files, never simulates |
+| [004](./004-repo-hygiene-and-agent-sync.md) | Repo hygiene: AGENTS.md, 100% coverage floor, brand/diagram assets | Accepted | Cross-tool sync discipline, coverage gate raised to literal 100%, theme-aware SVG assets |
 
 ---
 
