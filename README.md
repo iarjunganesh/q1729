@@ -9,7 +9,7 @@
   </picture>
 </p>
 
-> Ramanujan's mathematics meets the NVIDIA stack, end to end: CUDA C++, CUDA-Q/cuQuantum simulation, and NIM/Nemotron analysis — local silicon to cloud.
+> Ramanujan's mathematics meets the NVIDIA stack: CUDA-Q/cuQuantum simulation and NIM/Nemotron analysis today, with a hand-written CUDA C++ baseline and datacenter H100 runs as the Stage 1 deliverable — local silicon to cloud.
 
 <!-- Row 1 — quality gate, release, license -->
 [![CI](https://github.com/iarjunganesh/q1729/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/iarjunganesh/q1729/actions/workflows/ci.yml)
@@ -22,11 +22,11 @@
 [![CUDA-QX](https://img.shields.io/badge/NVIDIA-CUDA--QX-76B900?logo=nvidia&logoColor=white)](https://github.com/NVIDIA/cudaqx)
 [![cuQuantum](https://img.shields.io/badge/NVIDIA-cuQuantum-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuquantum-sdk)
 [![NIM](https://img.shields.io/badge/NVIDIA-NIM_%C2%B7_Nemotron-76B900?logo=nvidia&logoColor=white)](https://build.nvidia.com/)
-[![CUDA C++](https://img.shields.io/badge/CUDA_C%2B%2B-13.3-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
+[![CUDA C++](https://img.shields.io/badge/CUDA_C%2B%2B-13.3_(planned)-6B7280?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
 
 <!-- Row 3 — the two hardware axes this project measures -->
 [![Local GPU](https://img.shields.io/badge/local-RTX_5070_8GB-1F2937?logo=nvidia&logoColor=76B900)](https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5070-family/)
-[![Cloud GPU](https://img.shields.io/badge/cloud-H100_80GB-1F2937?logo=nvidia&logoColor=76B900)](https://www.nvidia.com/en-us/data-center/h100/)
+[![Cloud GPU](https://img.shields.io/badge/cloud-H100_80GB_(planned)-6B7280?logo=nvidia&logoColor=76B900)](https://www.nvidia.com/en-us/data-center/h100/)
 [![WSL2](https://img.shields.io/badge/runtime-WSL2-0078D4?logo=linux&logoColor=white)](docs/adr/002-wsl2-runtime.md)
 
 <!-- Row 4 — Python + the exact-math dependency that is the project's ground truth -->
@@ -91,7 +91,7 @@ The three stages below are the research thread. The full evidence-sequenced plan
 - **CUDA-Q** — core quantum programming platform (kernels, sampling, observables)
 - **CUDA-QX** — extension libraries: Solvers (VQE/ADAPT) and QEC (codes + GPU decoders)
 - **cuQuantum** — cuStateVec / cuTensorNet, the simulation engines behind CUDA-Q's backends
-- **CUDA C++** — classical baseline kernels
+- **CUDA C++** — classical baseline kernels *(Stage 1 deliverable — not yet in the repo)*
 - **NIM / Nemotron** — findings narrator via the NVIDIA NIM chat-completions API (`analysis/narrator.py`)
 - **SymPy** — exact-rational reference implementation; any float drift in a GPU kernel shows up immediately
 
@@ -154,7 +154,7 @@ pytest tests                   # now includes the real-simulator integration tes
 | --- | --- | --- |
 | Local | GPU | NVIDIA RTX 5070 8GB (Blackwell), CUDA 13.3, driver 610.53 (verified 2026-07-21) |
 | Local | CPU / RAM / OS | AMD Ryzen 9, 32GB DDR5, Windows 11 + WSL2 |
-| Cloud | GPU | NVIDIA H100 80GB (rented per-run for the datacenter axis) |
+| Cloud | GPU | NVIDIA H100 80GB — planned datacenter axis (rented per-run); no H100 run has been executed yet |
 | Cloud | AI | NVIDIA NIM API — Nemotron (findings narrator) |
 
 8GB VRAM caps statevector simulation at roughly 29–30 qubits at the `nvidia` target's default fp32 precision; a single 80GB H100 moves that to ~33, and reaching ~34 needs a second GPU (`nvidia-mgpu`, see [docs/nvidia-access.md](docs/nvidia-access.md)). The gap between those ceilings — and what it does to the crossover — is itself one of the research questions.
