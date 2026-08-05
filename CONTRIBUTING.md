@@ -26,19 +26,24 @@ python -m quantum.backend         # diagnostic: which target initialized
 
 ## Test coverage
 
-Measured directly with `pytest tests --cov --cov-report=term-missing` (verified 2026-07-22):
+Measured directly with `pytest tests --cov --cov-report=term-missing` (verified 2026-08-05):
 
-| Host                        | analysis/narrator.py | classical/ramanujan_series.py | quantum/backend.py                                 | Total |
-|-----------------------------|----------------------|-------------------------------|----------------------------------------------------|-------|
-| Windows (no cudaq)          | 100%                 | 100%                          | 92% (missing 80–92: bell_counts, needs real cudaq) | 97%   |
-| WSL2 (cudaq 0.15, RTX 5070) | 100%                 | 100%                          | 100%                                               | 100%  |
+| Host | Tests | classical/ | quantum/ | analysis/ | benchmarks/ | Total |
+|---|---|---|---|---|---|---|
+| Windows 3.14 (no cudaq, no GPU) | 128 passed, 28 skipped | 100% | 92% backend, 72% qae | 100% | 100% | 96% |
+| WSL2 3.12 (cudaq 0.15.1, RTX 5070) | 156 passed | 100% | 100% | 100% | 100% | **100%** |
 
-The Windows shortfall is expected and documented, not a gap to fix: `bell_counts()`
-imports `cudaq` and runs a JIT-compiled kernel, so it can only execute where
-cudaq is actually installed. `tests/integration/test_cudaq_smoke.py` exercises
-it for real in WSL2/CI. CI (`.github/workflows/ci.yml`) installs the CPU
-`cudaq` wheel and gates on a literal `--cov-fail-under=100` — no buffer, since
-WSL2/CI measure the real 100% ([ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md)).
+The Windows shortfall is expected and documented, not a gap to fix. `quantum/`
+imports `cudaq` and runs JIT-compiled kernels, so those paths can only execute
+where cudaq is installed; `tests/integration/` exercises them for real in
+WSL2/CI. CI (`.github/workflows/ci.yml`) installs the CPU `cudaq` wheel and
+gates on a literal `--cov-fail-under=100` — no buffer, since WSL2/CI measure
+the real 100% ([ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md)).
+
+The CUDA-kernel integration tests additionally need a real GPU, so they skip on
+CI as well as on Windows; that split is [ADR 005](docs/adr/005-cuda-kernel-via-nvrtc.md).
+`classical/cuda_kernel.py` still reaches 100% on CI through its mocked unit
+tests — the integration tests prove numeric correctness, not line coverage.
 
 ```bash
 # Unit tests only (any host, no GPU, no key needed)

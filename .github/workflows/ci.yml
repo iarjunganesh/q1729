@@ -9,9 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  # 3.12 = the CUDA-Q (WSL2/CI) interpreter; the Windows dev host runs 3.14
-  PYTHON_VERSION: "3.12"
+  # Capped by cudaq's published wheels: cuda-quantum-cu13 0.15.1 ships
+  # cp311/cp312/cp313 only (verified 2026-08-05). The Windows dev host runs
+  # 3.14, the WSL2 CUDA-Q venv runs 3.12 — see AGENTS.md "Tech stack currency".
+  PYTHON_VERSION: "3.13"
   COVERAGE_FLOOR: "100"
 
 jobs:
@@ -32,10 +38,10 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Ruff check
-        run: ruff check .
+        run: ruff check --output-format=github .
 
       - name: Ruff format check
-        run: ruff format --check .
+        run: ruff format --check --diff .
 
   typecheck:
     name: Mypy type check
@@ -54,7 +60,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Mypy
-        run: mypy classical quantum analysis
+        run: mypy classical quantum analysis benchmarks
 
   tests:
     name: Tests and coverage
@@ -74,9 +80,11 @@ jobs:
 
       # cudaq runs the qpp-cpu target on GitHub runners (no GPU), which is what
       # lets tests/integration exercise a real simulator instead of only mocks.
-      # cupy (requirements-gpu.txt) is skipped — it needs a CUDA driver.
+      # cupy / nvidia-cuda-nvrtc (requirements-gpu.txt) are skipped — they need
+      # a CUDA driver, so the CUDA-kernel integration tests skip here by design
+      # (docs/adr/005-cuda-kernel-via-nvrtc.md).
       - name: Install CUDA-Q (CPU target)
-        run: pip install "cudaq>=0.15"
+        run: pip install "cudaq>=0.15.1"
 
       - name: Tests + coverage
         run: |
@@ -107,14 +115,65 @@ jobs:
           test -f AGENTS.md
           test -f CLAUDE.md
           test -f CHANGELOG.md
+          test -f CONTRIBUTING.md
+          test -f SECURITY.md
           test -f docs/roadmap.md
           test -f docs/adr/README.md
           test -f docs/sessions.md
+          test -f docs/handbook/principles.md
+          test -f docs/handbook/research-standards.md
 
       - name: Reject unfinished public documentation markers
         run: |
           if grep -RInE '\[to fill|TODO.*(README|CHANGELOG|ROADMAP)|FIXME' \
-            README.md CHANGELOG.md docs/roadmap.md docs/adr AGENTS.md CLAUDE.md; then
+            README.md CHANGELOG.md docs AGENTS.md CLAUDE.md; then
             echo "Unfinished public documentation marker found."
             exit 1
           fi
+
+      # CLAUDE.md exists only to import AGENTS.md. If project instructions
+      # start accumulating there they will silently diverge from the file
+      # every other agent reads.
+      - name: CLAUDE.md must stay a thin import of AGENTS.md
+        run: |
+          grep -q '^@AGENTS.md$' CLAUDE.md || {
+            echo "CLAUDE.md must contain a bare '@AGENTS.md' import line."
+            exit 1
+          }
+
+      # This repo is not a hackathon submission and must never grow into one.
+      - name: Reject submission/hackathon material
+        run: |
+          if [ -d submission ] || [ -d devpost ]; then
+            echo "Submission directories do not belong in this repo (see AGENTS.md)."
+            exit 1
+          fi
+
+      # Synthetic demo data must stay labeled, or it can be mistaken for a result.
+      - name: Sample run file must stay labeled synthetic
+        run: |
+          python -c "import json,sys; d=json.load(open('data/sample_run.json')); sys.exit(0 if d.get('synthetic') is True else 1)" || {
+            echo "data/sample_run.json must carry \"synthetic\": true."
+            exit 1
+          }
+
+      # Every measured run file must satisfy the research-standards contract.
+      - name: Measured run files must satisfy the research-standards contract
+        run: |
+          python - <<'PY'
+          import glob, json, sys
+          required = ["question", "hypothesis", "variables", "controls",
+                      "statistical_treatment", "limitations", "environment", "runs"]
+          failed = False
+          for path in glob.glob("benchmarks/runs/*.json"):
+              data = json.load(open(path))
+              if data.get("synthetic", True):
+                  print(f"{path}: marked synthetic but lives in benchmarks/runs/")
+                  failed = True
+                  continue
+              missing = [k for k in required if k not in data]
+              if missing:
+                  print(f"{path}: missing contract fields {missing}")
+                  failed = True
+          sys.exit(1 if failed else 0)
+          PY

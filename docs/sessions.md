@@ -26,7 +26,7 @@ against. Kept per `AGENTS.md`'s mandatory session-synchronization discipline
   `actions/checkout@v4→v7`, `actions/setup-python@v5→v7`,
   `codecov/codecov-action@v5→v7`, `softprops/action-gh-release@v2→v3`.
 - Added theme-aware, code-generated SVG assets, modeled on (not copied from)
-  a sibling hackathon repo's pattern: `assets/architecture/` (Mermaid source
+  an external reference pattern: `assets/architecture/` (Mermaid source
   + light/dark renders of the existing pipeline diagram, backgrounds matched
   to GitHub's own light/dark README canvas) and `assets/brand/` (an original
   q1729 hero banner — wordmark, the taxicab-number identity, a
@@ -40,7 +40,7 @@ against. Kept per `AGENTS.md`'s mandatory session-synchronization discipline
   CHANGELOG.md, CONTRIBUTING.md, docs/setup.md, docs/roadmap.md to say 100%.
 
 **Why:** requested explicitly, ahead of starting roadmap Phase 1 work, to
-raise the repo's engineering-hygiene bar to match sibling-repo standards
+raise the repo's engineering-hygiene bar
 before adding the CUDA kernel / QAE / real-benchmark surface area.
 
 **Verified against:** `ruff check .` clean; `mypy classical quantum
@@ -106,10 +106,10 @@ release badge has something real to show.
   NVIDIA's site and `en-us` is the real code, so both badges use `en-us`).
 - **Found and fixed a real bug**: fetched every badge's actual rendered SVG
   text (not just the HTTP status) and compared byte-for-byte against
-  `drift`'s working badges. `Ruff`, `mypy`, and `pytest` had label/message in
+  a known-good badge set. `Ruff`, `mypy`, and `pytest` had label/message in
   the wrong order — `Ruff` had been backwards (`lint | Ruff`) since before
   this session's hygiene pass even started, and the `mypy`/`pytest` badges I
-  added inherited the same inversion instead of drift's `Name-Version`
+  added inherited the same inversion instead of the `Name-Version`
   convention. All three fixed and re-verified by fetching the rendered SVG
   text again, not just trusting the URL syntax.
 - The `Ruff` badge's "lint + format" claim was false when I first wrote it —
@@ -123,7 +123,7 @@ release badge has something real to show.
   FastAPI badge or dependency added.
 
 **Why:** the owner flagged that badges looked wrong ("nonsense text") and
-asked me to check against `drift` carefully rather than re-guess.
+asked me to check against a known-good reference carefully rather than re-guess.
 
 **Verified against:** fetched and grep'd the actual `<text>` content of
 every badge SVG in the README (not just HTTP status) before and after the
@@ -137,7 +137,7 @@ mirrors what CI now runs including the new format-check step).
 **What changed:**
 
 - Release badge reverted from a live version lookup back to static
-  `release | latest` (matching sibling repo `drift`'s convention), per owner
+  `release | latest`, per owner
   request — still links to the GitHub releases page.
 - SymPy badge changed from `SymPy | exact math` to `SymPy | latest`, now
   linking to `github.com/sympy/sympy/releases` instead of sympy.org — same
@@ -158,3 +158,88 @@ ordering/grouping needed another pass, "esp on python stuff."
 content directly (`release`/`latest`, `SymPy`/`latest`); curled
 `github.com/sympy/sympy/releases` (HTTP 200). No `.py` files changed this
 round, so lint/type/test/coverage state is unchanged from the prior entry.
+
+## 2026-08-05 — Roadmap Phase 0 + Phase 1: the first real measured crossover
+
+**What changed:**
+
+- **Phase 0 (constitution)** — added `docs/handbook/principles.md` (the six
+  North Star principles, each citing the concrete place it is enforced rather
+  than restating it as an aspiration) and `docs/handbook/research-standards.md`
+  (the nine-field contract). Linked from the README and `docs/adr/README.md`.
+  The contract is enforced in code, not just documented: `benchmarks/harness.py`
+  emits all nine fields and a new CI step rejects a measured run file missing
+  any of them.
+- **Phase 1 (the first real result)** — all five non-optional deliverables:
+  1. `classical/ramanujan_kernel.cu`, a genuine hand-written CUDA C++ kernel
+     (one term per thread, shared-memory tree reduction), plus
+     `classical/cuda_kernel.py` to compile/launch/time it.
+  2. `quantum/qae.py`, canonical Quantum Amplitude Estimation running on the
+     `nvidia` cuStateVec target.
+  3. A real measured run file, `benchmarks/runs/2026-08-05-rtx5070-turbo.json`.
+  4. Theme-aware crossover plots in `benchmarks/plots/`.
+  5. A narrator-drafted writeup beside the run file.
+  The optional H100 axis was **not** done and is recorded as outstanding.
+- **Restored two broken release tags.** `v0.1.0` and `v0.1.1` pointed at
+  orphaned commits from an earlier history rewrite — the GitHub releases
+  existed but the tags were unreachable from any branch, which is why they
+  appeared missing. Re-pointed at the equivalent `main` commits after
+  confirming byte-identical trees, original annotation text and dates
+  preserved, force-pushed. Old tag objects kept locally under `refs/backup/*`.
+- **Tech stack brought to current** across both requirements files and CI,
+  every version confirmed with a real lookup rather than from memory. CI
+  Python 3.12 → 3.13 after checking cudaq's published wheel tags
+  (cp311/cp312/cp313; no 3.14 wheel exists, so the cap is real).
+- **README, AGENTS.md, CI hardened**; all sibling-repo names removed
+  repo-wide per owner instruction, with a dated addendum on ADR 004 recording
+  the redaction rather than editing the decision silently.
+
+**Three debugging findings worth recording, because each was initially
+mistaken for something else:**
+
+1. **The QAE circuit was wrong twice before it was right.** The Grover
+   operator was correct from the start (verified independently: P(good) after
+   p iterations matched sin²((2p+1)θ) exactly), which localized the fault to
+   the phase-estimation half. First fault: a bit-reversal swap layer in the
+   inverse QFT that CUDA-Q's measurement ordering already accounts for —
+   found by testing QPE against exactly-representable phases, where a correct
+   implementation must peak at probability 1.00 and mine peaked at 0.22.
+   Second fault: the decomposed Grover operator carries a global −1 that is
+   unobservable in Q itself but becomes a real relative phase once controlled,
+   biasing every estimate by exactly half the counting range. Both fixes are
+   commented at the site.
+2. **The accuracy plateau at m = 10 is real, not a bug.** Errors stopped
+   improving past 10 counting qubits in *both* fp32 and fp64, which initially
+   looked like a simulator precision limit. It is not: the eigenphase
+   0.34668271 lies within 3.0e-6 of the 10-bit dyadic 355/1024, so additional
+   counting qubits correctly return zeros. Now recorded as a declared
+   limitation with `phase_error`/`phase_resolution` on every row so a reader
+   can check it instead of trusting the prose.
+3. **The first two capture attempts recorded misleading GPU state.** The
+   environment block was collected after the sweep and reported idle clocks
+   (847 MHz) for a run that never throttled. Fixed by snapshotting before
+   timing and adding a background `LoadSampler`. That change is what surfaced
+   the most interesting result in the run: the quantum arm peaks at 12–20%
+   GPU utilization against the classical kernel's 95%, so its cost is
+   dispatch overhead rather than statevector arithmetic — which means the
+   H100 question is about qubit ceiling, not speed.
+
+**Why:** the owner asked to start Phases 0 and 1, upgrade the stack, fix badge
+grouping, harden the agent instructions, and sweep stale docs. The owner also
+flagged mid-session that the release tags appeared missing, and confirmed
+switching the laptop to Turbo before the measured run.
+
+**Power profile note:** the benchmark was captured on Armoury Crate **Turbo**,
+verified under load at 2835 MHz sustained (vs 1710 MHz on Silent) with temps
+flat at 65 °C. The profile is recorded in the run file as a declared control.
+
+**Verified against:** `ruff check .`, `ruff format --check .`, and
+`mypy classical quantum analysis benchmarks` all clean on Windows;
+**156 passed / 100.00% coverage** on WSL2 (cudaq 0.15.1, real RTX 5070 Laptop
+GPU), **128 passed / 28 skipped / 96%** on Windows as expected. Kernel output
+checked against exact SymPy partial sums to 1e-15 relative and confirmed
+bit-identical across repeats and across block sizes 32–512. All 13 README
+badge URLs fetched and their rendered SVG text inspected, not just their HTTP
+status. Both restored tags re-checked with `git merge-base --is-ancestor`
+against `main` and both GitHub releases re-read to confirm notes and dates
+survived.

@@ -67,17 +67,37 @@ is ever completed.
 
 ---
 
-## Where the repo actually is (v0.1.1)
+## Where the repo actually is (v0.2.0)
 
-Honest baseline, so every phase below is measured against reality:
+Honest baseline, so every phase below is measured against reality. Verified
+2026-08-05 on WSL2 with a real RTX 5070 Laptop GPU:
 
-- Excellent engineering hygiene already exists: 4 ADRs, CI, coverage gated at a literal 100% (no buffer), CONTRIBUTING, SECURITY, `AGENTS.md`, a working NIM narrator, backend-selection logic.
-- `classical/ramanujan_series.py` is exact SymPy — the **ground truth**, not the CUDA kernel.
-- **No `.cu` kernel exists yet.** The repo is 97.4% Python.
-- `data/sample_run.json` is **synthetic**. No real benchmark has been run.
+- **Phase 0 is complete.** `docs/handbook/principles.md` and
+  `docs/handbook/research-standards.md` exist and are linked from the README
+  and the ADR index. The nine-field contract is enforced in code —
+  `benchmarks/harness.py` emits every field, and CI rejects a measured run
+  file that omits one.
+- **Phase 1 is delivered on the consumer axis.** `classical/ramanujan_kernel.cu`
+  is a real hand-written CUDA C++ kernel (5 ADRs now; NVRTC compilation is
+  ADR 005), `quantum/qae.py` is a working canonical QAE circuit, and
+  `benchmarks/runs/2026-08-05-rtx5070-turbo.json` is a **real measured run**
+  with a narrated writeup and theme-aware crossover plots beside it.
+- `classical/ramanujan_series.py` remains exact SymPy — the **ground truth**
+  the kernel is asserted against to 1e-15 relative, not a competitor to it.
+- `data/sample_run.json` is still **synthetic** and still labeled as such. It
+  is no longer the only run file, and `benchmarks/plot.py` refuses to plot it.
+- 156 tests, 100% coverage on WSL2/CI; ruff (lint + format) and mypy are
+  separate enforced CI gates.
 
-The core result the whole project exists to produce has not been produced once.
-That single fact sets the order of everything below.
+**What has *not* been done:** the optional datacenter axis of Phase 1. No H100
+run has been executed, so nothing here establishes how the curves move on
+other silicon. The first run also produced a result worth carrying forward:
+the quantum arm never exceeded 20% GPU utilization, so the H100 question is
+about qubit ceiling rather than speed.
+
+The core result the whole project exists to produce now exists, once, on one
+machine. Reproducing it elsewhere — and then earning a second experiment — is
+what sets the order of everything below.
 
 ---
 
@@ -85,8 +105,8 @@ That single fact sets the order of everything below.
 
 | Phase | Name | Exit artifact |
 |---|---|---|
-| **0** | Constitution (lightweight) | Principles + research-standards committed |
-| **1** | The First Real Result | One measured crossover run + writeup |
+| **0** | Constitution (lightweight) | ✅ **Done** — [principles](handbook/principles.md) + [research-standards](handbook/research-standards.md) committed |
+| **1** | The First Real Result | ✅ **Done (consumer axis)** — [measured RTX 5070 crossover](../benchmarks/runs/2026-08-05-rtx5070-turbo.json) + narrated writeup; H100 axis outstanding |
 | **2** | The Second Experiment | qLDPC/graphs run reusing Phase 1 by hand |
 | **3** | Extract the Experiment Engine | Abstraction refactored *from* real code |
 | **4** | Backend Independence | 2nd backend behind the same interface |
@@ -133,10 +153,10 @@ This section serves as the project's non-goals. Anything on this list requires a
 **What becomes possible afterwards?** Every future run has a defined standard of evidence; every future design decision has principles to be evaluated against.
 
 **Do now:**
-- `docs/handbook/principles.md` — the six North Star principles above, one page.
-- `docs/handbook/research-standards.md` — the required contract every experiment must define before it runs. The canonical contract is [Research Standards](#research-standards) below: **question, hypothesis, variables, controls, hardware, software versions, statistical treatment, raw data, limitations.**
-- The **Anti-Roadmap** section above serves as the non-goals document — link it from the handbook.
-- Link the handbook from the README and from `docs/adr/README.md`.
+- ✅ `docs/handbook/principles.md` — the six North Star principles above, one page.
+- ✅ `docs/handbook/research-standards.md` — the required contract every experiment must define before it runs. The canonical contract is [Research Standards](#research-standards) below: **question, hypothesis, variables, controls, hardware, software versions, statistical treatment, raw data, limitations.**
+- ✅ The **Anti-Roadmap** section above serves as the non-goals document — linked from the handbook.
+- ✅ Linked from the README and from `docs/adr/README.md`.
 
 **Explicitly deferred to later phases:** architecture handbook, glossary, contributor expectations. They are written when there is architecture and contributors to describe — Phases 3 and 6.
 
@@ -155,12 +175,12 @@ This section serves as the project's non-goals. Anything on this list requires a
 **What becomes possible afterwards?** Publication, community benchmark submissions against real data, and — after one more experiment — honest abstraction.
 
 **Build, in order:**
-1. **The CUDA kernel.** `classical/` gets a real hand-written CUDA C++ kernel: one Ramanujan term per thread, parallel reduction to the partial sum. Validated against the existing exact SymPy ground truth so any float drift surfaces immediately.
-2. **The QAE path on real silicon.** Run the CUDA-Q Quantum Amplitude Estimation circuit on the `nvidia` (cuStateVec) backend in WSL2 on the RTX 5070 — the verified target from ADR-002.
-3. **The real run file.** Replace `data/sample_run.json` with **measured** data: timing, VRAM, qubit ceiling, digit count, and the `hardware` field. This run file must satisfy the Phase 0 research-standards contract.
-4. **One crossover plot.** Time (and VRAM) vs digit count / qubit count, classical vs quantum, on a single figure. Save under `benchmarks/`.
-5. **The narrator writes it up.** Feed the real run file to the existing NIM narrator to draft the findings, under the ADR-003 guardrail (numbers in, prose out — never invented).
-6. **The datacenter axis (optional within this phase).** Repeat the QAE path once on a rented H100 (`nvidia-mgpu`) to get the second point on the crossover curve. If time-boxed out, this rolls to the start of Phase 2 — it does not block publication of the RTX result.
+1. ✅ **The CUDA kernel.** `classical/` gets a real hand-written CUDA C++ kernel: one Ramanujan term per thread, parallel reduction to the partial sum. Validated against the existing exact SymPy ground truth so any float drift surfaces immediately.
+2. ✅ **The QAE path on real silicon.** Run the CUDA-Q Quantum Amplitude Estimation circuit on the `nvidia` (cuStateVec) backend in WSL2 on the RTX 5070 — the verified target from ADR-002.
+3. ✅ **The real run file.** Replace `data/sample_run.json` with **measured** data: timing, VRAM, qubit ceiling, digit count, and the `hardware` field. This run file must satisfy the Phase 0 research-standards contract.
+4. ✅ **One crossover plot.** Time (and VRAM) vs digit count / qubit count, classical vs quantum, on a single figure. Save under `benchmarks/`.
+5. ✅ **The narrator writes it up.** Feed the real run file to the existing NIM narrator to draft the findings, under the ADR-003 guardrail (numbers in, prose out — never invented).
+6. ⬜ **The datacenter axis (optional within this phase).** *Not done — rolls to the start of Phase 2 as this section already allowed.* Repeat the QAE path once on a rented H100 (`nvidia-mgpu`) to get the second point on the crossover curve. If time-boxed out, this rolls to the start of Phase 2 — it does not block publication of the RTX result.
 
 **Independently valuable because:** a reproducible RTX-5070 crossover analysis is a publishable, portfolio-grade result on its own — even if the platform vision never materializes.
 
@@ -350,7 +370,7 @@ Every experiment must define, before it runs — this is the Phase 0 contract, e
 ## GitHub Strategy
 
 - **Project:** Roadmap (this document, tracked as issues once Phase 3's architecture defines them — per the Blueprint, issues are created only after the architecture they touch is defined).
-- **Milestones:** v0.2 → v0.3 → v0.4 → v0.5 → v1.0 (the repo is at v0.1.1 today).
+- **Milestones:** v0.3 → v0.4 → v0.5 → v1.0 (the repo is at v0.2.0 today — v0.2 was the Phase 0 + Phase 1 release).
 - **Epics:** Foundation · Experiment Engine · Plugin System · Benchmarking · AI · Visualization · Documentation · Governance — each maps onto a phase above.
 
 ## Definition of Success

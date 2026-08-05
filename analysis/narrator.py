@@ -35,10 +35,20 @@ def nim_configured() -> bool:
     return bool(os.getenv("NVIDIA_API_KEY"))
 
 
+#: Keys every run file carries, synthetic or measured. Kept in step with the
+#: schema `benchmarks/harness.py` emits and with `data/sample_run.json`.
+REQUIRED_RUN_KEYS = ("schema", "synthetic", "hardware_id", "runs")
+
+
 def load_run(path: str | Path) -> dict:
-    """Load and minimally validate a benchmark run file."""
+    """Load and minimally validate a benchmark run file.
+
+    Validation is deliberately shallow — the narrator's contract is that it
+    passes numbers through untouched, so it has no business reshaping data it
+    does not understand. It checks only that the file is a run file at all.
+    """
     data = json.loads(Path(path).read_text(encoding="utf-8"))
-    missing = [key for key in ("hardware", "runs") if key not in data]
+    missing = [key for key in REQUIRED_RUN_KEYS if key not in data]
     if missing:
         raise ValueError(f"run file {path} is missing required keys: {missing}")
     return data
@@ -64,7 +74,7 @@ def build_prompt(run: dict, question: str | None = None) -> str:
     return prompt
 
 
-def narrate(path: str | Path, timeout: float = 60.0, question: str | None = None) -> str:
+def narrate(path: str | Path, timeout: float = 60.0, question: str | None = None, max_tokens: int = 2048) -> str:
     """Return a markdown findings draft for the run file at ``path``.
 
     Pass ``question`` to instead answer a specific research question about
@@ -84,7 +94,7 @@ def narrate(path: str | Path, timeout: float = 60.0, question: str | None = None
                 {"role": "user", "content": build_prompt(run, question)},
             ],
             "temperature": 0.2,
-            "max_tokens": 1024,
+            "max_tokens": max_tokens,
         },
         timeout=timeout,
     )

@@ -8,18 +8,17 @@ q1729 was about to start roadmap Phase 1 (the hand-written CUDA kernel, the
 real QAE run, the first measured crossover) — real, load-bearing engineering
 work that will touch every surface documented in the README, CLAUDE.md, and
 `docs/roadmap.md`. Before adding that surface area, the owner asked for the
-repo's engineering hygiene to match sibling-repo standards on several fronts
+repo's engineering hygiene raised on several fronts
 at once: theme-aware architecture diagrams and a banner, project structure,
 documentation, ADR/decision records, badges, CI gates, and coverage.
 
-A separate hackathon submission repo (`drift`) was reviewed as a pattern
-reference — its `AGENTS.md` (a mandatory version/doc-synchronization
-discipline), its `assets/brand/` and `assets/architecture/` (code-generated,
-light/dark SVGs sharing one palette), and its multi-job CI (lint / typecheck
-/ tests / docs-hygiene) were all instructive. None of its content was
-copied: `drift` is a hackathon submission with a frontend, a deployed
-service, and a `submission/` folder, none of which q1729 has or needs. Only
-the *patterns* were adapted, scoped down to q1729's actual surface area.
+Several existing patterns were reviewed as references: a mandatory
+version/documentation-synchronization discipline expressed as an `AGENTS.md`,
+code-generated light/dark SVG assets sharing one palette, and a multi-job CI
+split (lint / typecheck / tests / docs-hygiene). No content was copied — the
+references were application repos with frontends, deployed services, and
+submission material, none of which q1729 has or needs. Only the *patterns*
+were adapted, scoped down to q1729's actual surface area.
 
 ## Decision
 
@@ -52,7 +51,7 @@ the *patterns* were adapted, scoped down to q1729's actual surface area.
    diagram's exact six-role palette. Both are Python/Mermaid-CLI generated —
    no paid design tool, no external image-generation service ("at no cost").
    PNG rasterization was deliberately left out — q1729 has no video/deck
-   need today, unlike the reference repo.
+   need today, unlike the references reviewed.
 6. **`benchmarks/README.md`** is added now, ahead of any real data, because
    `docs/roadmap.md` already names `benchmarks/` as the Phase 1 exit
    artifact location — the placeholder documents intent without building
@@ -102,3 +101,17 @@ standing rule against adding an AI co-author trailer to any commit (owner
 preference, not a framework default), and `SECURITY.md` gained a section
 covering the CI permission scoping and the local-only Node/mermaid-cli
 build dependency introduced by `assets/architecture/` and `assets/brand/`.
+
+## Addendum — 2026-08-05 — pattern references de-named
+
+The Context section above originally named the specific repository whose
+`AGENTS.md`, asset generation, and multi-job CI were reviewed as pattern
+references. Those names were removed at the owner's explicit instruction:
+this repository must not reference sibling or unrelated projects anywhere in
+its files, docs, or history going forward.
+
+Nothing about the decision changed — the same patterns were adopted, for the
+same reasons, and the paragraph still records that they came from external
+references rather than being invented here. Only the proper nouns are gone.
+The standing rule now lives in `AGENTS.md` under Git History ("Never
+reference another repository by name"), so this does not recur.

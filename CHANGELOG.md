@@ -5,6 +5,48 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-05 — Phase 0 + Phase 1: the first real measured crossover
+
+The release the repo was built to produce. `0.1.x` was an honest skeleton with
+no `.cu` kernel and no measurement; `0.2.0` has both, plus the standard of
+evidence they are held to. Roadmap **Phase 0 is complete** and **Phase 1 is
+delivered on the consumer axis** (the optional H100 axis is not).
+
+### Added
+
+- **A real hand-written CUDA C++ kernel** — `classical/ramanujan_kernel.cu`: one Ramanujan series term per thread, shared-memory tree reduction, one partial sum per block. The term is built as an interleaved running product so the accumulator never leaves double's exponent range (computing `(4k)!` first overflows around k = 43). Block partials are summed on the host with `math.fsum` rather than in-kernel `atomicAdd`, so results are bit-identical across runs — a benchmark whose output moves between identical runs is not evidence.
+- **`classical/cuda_kernel.py`** — compiles, launches, and times the kernel, degrading cleanly on hosts with no GPU. Includes an NVRTC preload shim: cupy 13.x resolves `libnvrtc` by bare soname and does not look inside the wheel that ships it, so a pip-only CUDA install could not otherwise compile anything.
+- **`quantum/qae.py`** — canonical Quantum Amplitude Estimation (Brassard et al.): state preparation `A`, Grover operator `Q = A S₀ A† S_χ`, controlled powers `Q^(2^j)`, inverse QFT. Kernels are defined *inside* a function so importing the module never requires cudaq. The module states plainly what the circuit does **not** prove: recovering π from the outcome already uses π, so this measures the resource cost of estimating a known amplitude, not a computation that discovers π.
+- **`benchmarks/`** — `harness.py` (runs both arms, emits a contract-conforming run file), `environment.py` (hardware, versions, and a background GPU load sampler), `plot.py` (theme-aware crossover figures that refuse synthetic input).
+- **The first real measured run** — `benchmarks/runs/2026-08-05-rtx5070-turbo.json`, with its narrator-drafted findings and light/dark crossover plots.
+- **Roadmap Phase 0 handbook** — `docs/handbook/principles.md` (the six principles, each citing where it is actually enforced) and `docs/handbook/research-standards.md` (the nine-field contract every experiment must satisfy before it runs), linked from the README and the ADR index.
+- **[ADR 005](docs/adr/005-cuda-kernel-via-nvrtc.md)** — compile the kernel with NVRTC rather than an `nvcc` build step, so the whole GPU toolchain is `pip install` and CI needs no compiler.
+- **New CI gates** — `CLAUDE.md` must stay a bare `@AGENTS.md` import; submission/hackathon directories are rejected; `data/sample_run.json` must stay labeled synthetic; every measured run file must carry all nine research-standards fields. Plus `concurrency` cancellation and `ruff --output-format=github` annotations.
+- **`make format`, `make cuda-check`, `make benchmark`, `make plot`** targets. `make benchmark` *requires* `POWER_PROFILE` — on a laptop the vendor power mode changes every timing, so it is a declared control, not a default.
+
+### Changed
+
+- **Run-file schema is now `q1729/run-file/1`** — carries `synthetic`, `hardware_id`, and the full research-standards contract. `data/sample_run.json` was migrated to it and remains explicitly synthetic; `analysis/narrator.py` validates against the same schema, so the narrator reads exactly what the harness writes.
+- **Coverage now includes `benchmarks/`** — measured **100% across 156 tests** on WSL2/CI (was 100% across a smaller suite). Windows measures 96% with 28 integration tests skipped, as expected.
+- **CI Python moved 3.12 → 3.13**, verified against cudaq's actually-published wheels (`cuda-quantum-cu13` 0.15.1 ships cp311/cp312/cp313 — there is no 3.14 wheel). The WSL2 venv stays on 3.12 because bumping it means installing an interpreter on the owner's machine.
+- **Every dependency floor raised to the current stable release**, each verified with a real lookup: sympy 1.14, numpy 2.5, httpx 0.28, pytest 9.1, pytest-cov 7.1, ruff 0.16, mypy 2.3, cudaq 0.15.1, cupy 13.6. Added matplotlib (core, CPU-safe) and `nvidia-cuda-nvrtc` (GPU-only).
+- **README rewritten** around the measured result — regrouped badge rows with pinned versions, a findings section with the crossover figure, and a corrected hardware table (the GPU is an RTX 5070 **Laptop** GPU on driver 610.88 / CUDA 13.3, not a desktop 5070 on 610.53).
+- **`AGENTS.md` substantially hardened** — a Benchmark integrity section (never hand-edit a run file, never delete a measured run, the hypothesis is committed before the run), a tag-reachability rule, the CUDA-Q kernel-scope constraint, and standing rules that this is not a hackathon project and that no other repository is ever named here.
+- **mypy now type-checks `benchmarks/`** too. CUDA-Q's gate vocabulary is declared once under `TYPE_CHECKING` in `quantum/qae.py` instead of suppressing errors on every gate call — kernel parameter annotations are what make mypy check those bodies at all.
+
+### Fixed
+
+- **`v0.1.0` and `v0.1.1` pointed at orphaned commits** left behind by an earlier history rewrite: the GitHub releases existed but the tags were unreachable from any branch. Both were re-pointed at the equivalent `main` commits — verified byte-identical trees — with their original annotation text and dates preserved, and force-pushed. `AGENTS.md` now carries a reachability check to run before pushing any tag.
+- **The first two capture attempts recorded misleading GPU state.** The environment block was collected *after* the sweep, reporting idle clocks (847 MHz) for a run that was never throttled. Environment is now snapshotted before timing, and a background sampler records peak clocks, temperature and utilization *during* each configuration. This is what surfaced the finding that the quantum arm never exceeds 20% GPU utilization.
+
+### Notes on the result
+
+Three findings, all reproducible from the archived run file:
+
+1. **No crossover exists on this silicon** — the classical kernel reaches 16 digits in 2.6 ms; simulated QAE reaches 5.0 digits in 0.44 s.
+2. **The quantum arm is dispatch-bound, not compute-bound** (12–20% utilization vs the kernel's 95%), which reframes the datacenter axis as a question about qubit ceiling rather than speed.
+3. **QAE accuracy plateaus at m = 10 while cost keeps doubling** — the eigenphase lies within 3.0 × 10⁻⁶ of the 10-bit dyadic 355/1024, so further counting qubits correctly return zeros. Recorded as a declared limitation with `phase_error`/`phase_resolution` on every row so a reader can verify it.
+
 ## [0.1.1] — 2026-07-22 — Repo hygiene bar-raise: AGENTS.md, 100% coverage floor, theme-aware brand/diagram assets, badge fixes
 
 A housekeeping release, deliberately versioned as a patch, not a minor: no
@@ -36,7 +78,7 @@ and visual identity, done ahead of roadmap **Phase 1** (see
 - **Fixed inverted badge label/message order**: `Ruff` (was `lint | Ruff`, now `Ruff | lint + format`), `mypy` (was `type-checked | mypy`, now `mypy | 2.3`), `pytest` (was `tests | pytest`, now `pytest | 9.1`) — every badge now follows the same name-first convention, verified by fetching each badge's actual rendered SVG text, not just checking the URL responds.
 - **Local GPU / Cloud GPU badges** now link directly to the NVIDIA product pages (RTX 5070 family, H100) instead of the ADR docs.
 - **`ruff format --check .` is now a real, enforced CI step** (in the `lint` job, alongside `ruff check .`) and a `make lint` step — the Ruff badge's "+ format" claim was false until this landed; reformatted the 2 files (`assets/brand/build_banner.py`, `tests/unit/test_backend.py`) that weren't yet compliant (whitespace-only, no logic change).
-- **Release badge** reverted to static `release | latest` (matching sibling repo `drift`'s convention) instead of a live version lookup, linking to the GitHub releases page. **SymPy badge** changed from `SymPy | exact math` to `SymPy | latest`, now linking to `github.com/sympy/sympy/releases` instead of sympy.org.
+- **Release badge** reverted to static `release | latest` instead of a live version lookup, linking to the GitHub releases page. **SymPy badge** changed from `SymPy | exact math` to `SymPy | latest`, now linking to `github.com/sympy/sympy/releases` instead of sympy.org.
 - **Badge grouping split**: the former single "Python + tooling" row is now two — Python/SymPy (language + the exact-math ground truth dependency) and Ruff/mypy/pytest (the three CI-enforced quality gates) — five labeled rows total instead of four.
 
 ## [0.1.0] — 2026-07-12 — Initial release: CUDA-Q stage-1 skeleton, NIM narrator, hybrid-cloud scaffolding
@@ -55,7 +97,7 @@ run are roadmap **Phase 1** (see `docs/roadmap.md`).
 - **Community benchmark submission template** — `.github/ISSUE_TEMPLATE/benchmark_submission.yml` (GPU/VRAM, driver/CUDA version, CUDA-Q backend, environment, qubit ceiling, run file, notes).
 - **Documentation** — `docs/roadmap.md` (single vision + evidence-sequenced roadmap, absorbing the former Blueprint v1.0), `docs/nvidia-access.md`, `docs/onboarding.md`, `docs/setup.md`, `docs/adr/README.md`, and a Test Coverage section in `CONTRIBUTING.md` — all built from commands actually run on this machine, not assumed behavior. ADRs 001 (CUDA-Q over PennyLane/Qiskit), 002 (WSL2 runtime), 003 (hybrid cloud + NIM).
 - **Tests** — unit (series exact-value and convergence checks; backend fall-through against a fake `cudaq` module; narrator mocked at the httpx boundary, verifying run-file numbers travel verbatim) + integration (a real Bell-pair simulation on the selected CUDA-Q target; a live NIM smoke test) — each skips cleanly where its backend is absent. ~100% measured coverage; CI gates at 95% (the only exclusion is the JIT-compiled kernel body, exercised by an integration test).
-- **Repo hygiene to sibling-repo standard** (`continuum`, `bankers-wrapped`): `Makefile` (source of truth for commands), `pyproject.toml` (ruff / pytest / coverage config), CI quality gate (ruff + pytest on cudaq's `qpp-cpu` target + Codecov), tag-driven release workflow, `CLAUDE.md`, `LICENSE` (MIT), `CONTRIBUTING.md`, `SECURITY.md`, and secret handling (`.env` gitignored, `.env.example` documents `NVIDIA_API_KEY` / `NIM_BASE_URL` / `NIM_MODEL`).
+- **Repo hygiene bar-raise**: `Makefile` (source of truth for commands), `pyproject.toml` (ruff / pytest / coverage config), CI quality gate (ruff + pytest on cudaq's `qpp-cpu` target + Codecov), tag-driven release workflow, `CLAUDE.md`, `LICENSE` (MIT), `CONTRIBUTING.md`, `SECURITY.md`, and secret handling (`.env` gitignored, `.env.example` documents `NVIDIA_API_KEY` / `NIM_BASE_URL` / `NIM_MODEL`).
 
 ### Removed
 

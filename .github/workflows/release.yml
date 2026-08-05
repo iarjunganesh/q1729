@@ -18,12 +18,21 @@ jobs:
         id: notes
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          # Deliberately regex-free: `$0 ~ "^## \\["` is escaped differently by
+          # gawk and mawk, and getting it wrong ships a release with an empty
+          # body rather than failing loudly. substr/index behave identically
+          # everywhere.
           awk -v ver="[$VERSION]" '
-            $0 ~ "^## \\[" { if (found) exit; if (index($0, ver)) { found=1; next } }
+            substr($0, 1, 4) == "## [" { if (found) exit; if (index($0, ver)) { found=1; next } }
             found { print }
           ' CHANGELOG.md > release_notes.md
           echo "Extracted notes for $VERSION:"
           cat release_notes.md
+          # An empty body is almost always a mismatched CHANGELOG heading.
+          if [ ! -s release_notes.md ]; then
+            echo "::error::No CHANGELOG.md section found for [$VERSION] — check the heading matches the tag."
+            exit 1
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

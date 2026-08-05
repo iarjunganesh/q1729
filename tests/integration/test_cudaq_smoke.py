@@ -1,7 +1,7 @@
 """Real CUDA-Q smoke test — runs only where cudaq is installed (WSL2 / CI).
 
-Mirrors the sibling-repo pattern (continuum's live-cluster integration tests):
-unit tests mock the boundary; this file proves the real backend simulates.
+Unit tests mock at the module boundary; this file proves the real backend
+actually simulates.
 """
 
 import pytest

@@ -12,8 +12,10 @@ def run_file(tmp_path):
     path.write_text(
         json.dumps(
             {
-                "hardware": [{"id": "rtx-5070-8gb"}],
-                "runs": [{"hardware": "rtx-5070-8gb", "method": "classical-cuda", "digits": 1000, "time_s": 0.004}],
+                "schema": "q1729/run-file/1",
+                "synthetic": False,
+                "hardware_id": "rtx-5070-laptop-8gb",
+                "runs": [{"method": "classical-cuda", "n_terms": 1000, "mean_s": 0.004}],
             }
         ),
         encoding="utf-8",
@@ -49,22 +51,29 @@ def test_load_run_accepts_sample_file():
 def test_load_run_rejects_missing_keys(tmp_path):
     bad = tmp_path / "bad.json"
     bad.write_text('{"runs": []}', encoding="utf-8")
-    with pytest.raises(ValueError, match="hardware"):
+    with pytest.raises(ValueError, match="missing required keys"):
         narrator.load_run(bad)
+
+
+def test_load_run_accepts_a_measured_run_file():
+    """The narrator must read what benchmarks/harness.py actually writes."""
+    run = narrator.load_run("benchmarks/runs/2026-08-05-rtx5070-turbo.json")
+    assert run["synthetic"] is False
+    assert run["runs"]
 
 
 def test_build_prompt_carries_numbers_verbatim(run_file):
     prompt = narrator.build_prompt(narrator.load_run(run_file))
-    assert '"digits": 1000' in prompt
-    assert '"time_s": 0.004' in prompt
+    assert '"n_terms": 1000' in prompt
+    assert '"mean_s": 0.004' in prompt
     assert "Research question" not in prompt
 
 
 def test_build_prompt_with_question_still_carries_numbers_verbatim(run_file):
     prompt = narrator.build_prompt(narrator.load_run(run_file), question="Why so fast?")
     assert "Research question: Why so fast?" in prompt
-    assert '"digits": 1000' in prompt
-    assert '"time_s": 0.004' in prompt
+    assert '"n_terms": 1000' in prompt
+    assert '"mean_s": 0.004' in prompt
     assert "### Observation" in prompt
     assert "### Interpretation" in prompt
     assert "### Suggested next experiment" in prompt
@@ -95,7 +104,7 @@ def test_narrate_happy_path(monkeypatch, run_file):
     assert captured["headers"]["Authorization"] == "Bearer nvapi-test"
     assert captured["json"]["model"] == narrator.DEFAULT_MODEL
     # the run numbers travel in the user message, verbatim
-    assert '"digits": 1000' in captured["json"]["messages"][1]["content"]
+    assert '"n_terms": 1000' in captured["json"]["messages"][1]["content"]
 
 
 def test_narrate_passes_question_through(monkeypatch, run_file):
@@ -111,7 +120,7 @@ def test_narrate_passes_question_through(monkeypatch, run_file):
 
     user_message = captured["json"]["messages"][1]["content"]
     assert "Research question: Why so fast?" in user_message
-    assert '"digits": 1000' in user_message
+    assert '"n_terms": 1000' in user_message
 
 
 def test_narrate_honors_env_overrides(monkeypatch, run_file):

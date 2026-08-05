@@ -5,6 +5,12 @@ Each ADR is immutable once merged — superseded decisions get a new ADR. The
 [roadmap](../roadmap.md) uses these same ADRs as its change-control mechanism:
 until Phase 6, any change to roadmap sequencing or architecture is recorded here.
 
+ADRs record *decisions*. The standards those decisions are evaluated against —
+the six principles and the nine-field contract every experiment must satisfy —
+live in the [handbook](../handbook/principles.md):
+[Principles](../handbook/principles.md) ·
+[Research Standards](../handbook/research-standards.md).
+
 ---
 
 ## Index
@@ -15,6 +21,7 @@ until Phase 6, any change to roadmap sequencing or architecture is recorded here
 | [002](./002-wsl2-runtime.md) | WSL2 as Windows runtime | Accepted | CUDA-Q is Linux-only; WSL2 gives full GPU passthrough without dual-boot |
 | [003](./003-hybrid-cloud-nim.md) | Hybrid cloud + NIM narrator | Accepted | H100 as second hardware axis; Nemotron narrates run files, never simulates |
 | [004](./004-repo-hygiene-and-agent-sync.md) | Repo hygiene: AGENTS.md, 100% coverage floor, brand/diagram assets | Accepted | Cross-tool sync discipline, coverage gate raised to literal 100%, theme-aware SVG assets |
+| [005](./005-cuda-kernel-via-nvrtc.md) | CUDA kernel compiled via NVRTC, not nvcc | Accepted | The `.cu` file is compiled at runtime by cupy/NVRTC — whole GPU toolchain is pip-installable, no CUDA Toolkit and no build step |
 
 ---
 

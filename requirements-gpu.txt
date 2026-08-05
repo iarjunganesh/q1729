@@ -1,5 +1,14 @@
 # CUDA-Q stack — Linux/WSL2 only, no Windows wheels (docs/adr/002-wsl2-runtime.md).
 # GPU targets (nvidia/tensornet) additionally need a CUDA driver visible in WSL2;
 # without one, cudaq still works on the qpp-cpu target.
-cudaq>=0.15
-cupy-cuda13x
+#
+# cupy is what compiles classical/ramanujan_kernel.cu at runtime via NVRTC
+# (docs/adr/005-cuda-kernel-via-nvrtc.md) — it is the CUDA C++ toolchain here,
+# not an optional accelerator.
+cudaq>=0.15.1
+cupy-cuda13x>=13.6
+
+# NVRTC itself — cupy-cuda13x does not bundle it, and without it every
+# RawModule compile fails with "failed to load libnvrtc.so.13". Only the
+# driver comes from WSL2; the whole compiler toolchain is pip-installed.
+nvidia-cuda-nvrtc>=13.3
