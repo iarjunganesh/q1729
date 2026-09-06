@@ -232,3 +232,36 @@ def test_every_archived_qae_outcome_agrees_with_closed_form_theory():
 def test_the_archive_still_validates_under_the_current_reader():
     """Schema 4 must not orphan the only measured run this repo has."""
     assert run_file.load(ARCHIVE)["schema"] == run_file.LEGACY_SCHEMA
+
+
+def test_cli_skips_review_sidecars_that_share_the_json_suffix(tmp_path, capsys):
+    """CI expands benchmarks/runs/*.json, which now also matches a review record.
+
+    The sidecar has its own schema and its own validator (analysis.review), so
+    handing it to the run-file validator must skip it rather than reject it —
+    otherwise adding the first reviewed findings document breaks CI.
+    """
+    sidecar = tmp_path / "run-findings.review.json"
+    sidecar.write_text('{"schema": "q1729/findings-review/1"}', encoding="utf-8")
+
+    assert run_file.main([str(sidecar)]) == 0
+    assert "skipped" in capsys.readouterr().out
+
+
+def test_cli_still_validates_real_run_files_alongside_a_sidecar(tmp_path, capsys):
+    """Skipping the sidecar must not skip the archive it sits next to."""
+    sidecar = tmp_path / "x.review.json"
+    sidecar.write_text("{}", encoding="utf-8")
+
+    assert run_file.main([str(sidecar), str(ARCHIVE)]) == 0
+    out = capsys.readouterr().out
+    assert "skipped" in out
+    assert f"validated {ARCHIVE}" in out
+
+
+def test_cli_rejects_a_malformed_run_file(tmp_path):
+    """The skip is keyed on the sidecar suffix only, not on being unparseable."""
+    bad = tmp_path / "broken.json"
+    bad.write_text('{"schema": "q1729/run-file/4"}', encoding="utf-8")
+    with pytest.raises(ValueError):
+        run_file.main([str(bad)])

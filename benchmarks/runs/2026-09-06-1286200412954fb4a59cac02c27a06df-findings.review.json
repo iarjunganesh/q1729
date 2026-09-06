@@ -1,0 +1,100 @@
+{
+  "schema": "q1729/findings-review/1",
+  "run_file": "2026-09-06-1286200412954fb4a59cac02c27a06df.json",
+  "run_sha256": "ad990e157e27edf683540a8b6a465b49473eb6e883c226758a6d7dafe4ed517a",
+  "draft_sha256": "885bf234929865bedad04995b585ed542d67a6f55e7a8890e0084946902f74a9",
+  "reviewer": "Arjun Ganesh",
+  "status": "approved",
+  "paragraphs": [
+    {
+      "text": "# Findings \u2014 2026-09-06 RTX 5070 Laptop GPU, turbo",
+      "assessment": "Approved: section heading, carries no assertion to verify.",
+      "evidence": "Document title; identifies host, date and power profile only."
+    },
+    {
+      "text": "Prepared by an agent, not by the NIM narrator (no API key was configured for\nthis session). Every claim below is checkable against\n`2026-09-06-1286200412954fb4a59cac02c27a06df.json`, and where a comparison is\nmade, against `2026-08-05-rtx5070-turbo.json`. Nothing here cites evidence\noutside those two files. The adjacent `.review.json` is the authority on\nwhether this document has been reviewed and by whom.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "Self-describing provenance statement; the adjacent .review.json is named as the authority on review status, which is this record."
+    },
+    {
+      "text": "## What was run",
+      "assessment": "Approved: section heading, carries no assertion to verify.",
+      "evidence": "Section heading, no assertion."
+    },
+    {
+      "text": "The stage-1 crossover: a hand-written CUDA C++ kernel evaluating Ramanujan's\n1914 series against Quantum Amplitude Estimation simulated on cuStateVec, on\none RTX 5070 Laptop GPU. Schema 4, protocol digest `24d1d3af702a`, clean source\nrevision `15c0da6`, CUDA-Q target `nvidia` at fp32, driver 616.56, power profile\n`turbo`, 4000 shots, 5 timed repeats per configuration after one discarded\nwarm-up, 27 rows.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "schema; protocol.digest; provenance.revision and provenance.dirty; execution.quantum.target and .precision; environment.gpu.driver_version; controls.power_profile and .shots; len(runs)=27; runs[].repeats=5."
+    },
+    {
+      "text": "This is the first run collected under the measurement protocol committed in\n`benchmarks/protocol.py`, whose declaration and digest travel in this file's\n`protocol` block. That block records the stopping rule \u2014 the sweep and repeat\ncount are fixed in advance and not extended, truncated or re-run on the basis\nof observed values \u2014 and the exclusion rule, which is that nothing is excluded.\nA run file can show which rules were declared; it cannot by itself prove they\nwere followed. That compliance is attested by the reviewer, not by the data.",
+      "assessment": "Approved: the recorded rules are verified against the file; compliance with them is attested by me from having observed the run, as the paragraph itself states.",
+      "evidence": "protocol.declaration.stopping_rule and .exclusion_rule record the declared rules. Compliance is not derivable from the file and is attested by the reviewer."
+    },
+    {
+      "text": "## The classical arm reproduces the earlier archive",
+      "assessment": "Approved: section heading, carries no assertion to verify.",
+      "evidence": "Section heading, no assertion."
+    },
+    {
+      "text": "Across all 12 term counts the mean wall time falls within \u00b112% of the\n2026-08-05 archive, measured under the same power profile and shot count. The\nlargest configurations agree most closely: 16384 terms moved from 68.997 ms to\n67.584 ms, and 4096 terms from 13.685 ms to 13.349 ms. Best accuracy is\nunchanged at 16.00 correct digits, which is double precision's ceiling rather\nthan a property of the series.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "runs[method=classical-cuda].mean_s against 2026-08-05-rtx5070-turbo.json: max deviation 11.9% over 12 term counts; n=16384 68.997->67.584 ms; n=4096 13.685->13.349 ms; max correct_digits 16.00."
+    },
+    {
+      "text": "These timings are end-to-end and must not be read as device execution cost.\nThis file's `configuration.phase_attribution` records that the sweep measured\nend-to-end only, and `configuration.timing_boundary` records that the timed\nregion is the `partial_sum` wrapper. The wrapper encloses kernel-handle\nacquisition, device allocation, launch, the device-to-host copy and a host\nreduction, so at low term counts \u2014 where every configuration from 1 to 256\nterms sits within a narrow 2.4-3.3 ms band despite a 256-fold difference in\narithmetic \u2014 the measurement is plainly not dominated by arithmetic. This\narchive does not apportion that cost between phases; doing so requires a\nphase-attributed run, which this is not.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "configuration.phase_attribution ('End-to-end only') and configuration.timing_boundary ('partial_sum wrapper'); runs[n<=256].mean_s spans 2.440-3.273 ms across 9 configurations covering a 256-fold arithmetic range. No phase apportionment is claimed."
+    },
+    {
+      "text": "## QAE timing moved with register size, and the direction reversed",
+      "assessment": "Approved: section heading, carries no assertion to verify.",
+      "evidence": "Section heading, no assertion."
+    },
+    {
+      "text": "Relative to the earlier archive, small counting registers are faster and the\ntwo largest are slower. At m = 2 the ratio is 0.72 and it trends upward to 1.10\nat m = 15 and 1.07 at m = 16. The trend is not monotonic: five of the fourteen\nsteps move downward (at m = 5, 6, 9, 14 and 16), so the shape is a broad drift\nrather than a clean progression. Every ratio from m = 2 to m = 14 is below 1.0\nand both m = 15 and m = 16 are above it, so the crossing lies between m = 14\nand m = 15.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "runs[method=qae-cudaq].mean_s ratios against the 2026-08-05 archive: m=2 0.72, m=15 1.10, m=16 1.07; below 1.0 for m=2..14 and above for m=15..16; five downward steps of fourteen, at m=5, 6, 9, 14 and 16."
+    },
+    {
+      "text": "No explanation for this pattern is offered, because this run cannot support\none. The two archives differ in at least driver version (610.88 to 616.56) and\nin date, neither of which was varied deliberately, and the sweep ran for 2m18s,\nover which laptop thermal drift is neither controlled nor recorded per\nconfiguration. Any account of the reversal \u2014 driver, thermal, or otherwise \u2014\nrequires an experiment that varies one factor at a time. This is recorded as an\nobservation awaiting that experiment.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "environment.gpu.driver_version differs between the files (610.88 vs 616.56); no per-configuration thermal state is recorded in either. The paragraph offers no explanation and requires a one-factor experiment, so no causal claim is made."
+    },
+    {
+      "text": "## Every quantum outcome reproduced exactly",
+      "assessment": "Approved: section heading, carries no assertion to verify.",
+      "evidence": "Section heading, no assertion."
+    },
+    {
+      "text": "All 15 QAE configurations return the same pi estimate as the 2026-08-05\narchive to within 1e-12, and every one agrees with the closed-form prediction\nin `quantum/quantization.py`. Each row's sampled outcome distribution sits\nbelow its own sampling tolerance.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "runs[method=qae-cudaq].pi_estimate matches the 2026-08-05 archive to 1e-12 for all 15 rows; quantization.agrees_with_theory true for all 15; quantization.total_variation below quantization.sampling_tolerance for all 15."
+    },
+    {
+      "text": "This is the expected result rather than a surprise: the estimate is quantized\nonto a grid of 2^m reachable amplitudes, so shot noise decides only how\nreliably the correct grid point wins, not which one it is. Its value here is\nthat it makes the timing comparison meaningful \u2014 the two runs demonstrably\ncomputed the same thing, so the timing differences above are not confounded by\nthe arms having done different work.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "Method reasoning supported by quantum/quantization.py (estimate quantized onto 2^m reachable amplitudes) and by the 15/15 outcome agreement recorded in this run file."
+    },
+    {
+      "text": "Best QAE accuracy is 5.00 correct digits. That ceiling is the distance from the\ntrue phase to the 2^m grid, not a limit of the simulator or of shot count.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "max runs[method=qae-cudaq].correct_digits = 5.00; the ceiling follows from quantization.quantization_error, the distance from the true phase to the 2^m grid."
+    },
+    {
+      "text": "## Limitations",
+      "assessment": "Approved: section heading, carries no assertion to verify.",
+      "evidence": "Section heading, no assertion."
+    },
+    {
+      "text": "This measures the cost of simulating a QAE circuit on a GPU; it is not evidence\nabout quantum hardware. The circuit's target amplitude is constructed to equal\npi/4, so recovering pi from the outcome already uses pi \u2014 this is a\nresource-cost comparison, not two algorithms independently discovering pi.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "Scope limitation consistent with quantum/qae.py, whose target amplitude is built as math.pi/4; recorded in this file's limitations array."
+    },
+    {
+      "text": "Both arms ran on a single laptop GPU under one power profile; nothing here\ndescribes other silicon. The comparison against the 2026-08-05 archive holds\npower profile and shot count fixed but does not control driver version, ambient\nor die temperature, or machine state, so it is a paired observation rather than\na controlled experiment. Timings are end-to-end and are not apportioned between\nwrapper, transfer and device execution. The confidence intervals cover repeated\ntimings on this host and are a lower bound on real uncertainty, since timing\nsamples are not independent across thermal drift.",
+      "assessment": "Approved: claim verified against the two run files.",
+      "evidence": "controls.power_profile and .shots are held equal across the two files while environment.gpu.driver_version differs and no thermal state is controlled, supporting 'paired observation rather than a controlled experiment'; configuration.phase_attribution supports the un-apportioned timing statement."
+    }
+  ]
+}

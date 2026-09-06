@@ -320,12 +320,22 @@ def load(path: str | Path, *, allow_synthetic: bool = False) -> dict[str, Any]:
     return validate(json.loads(Path(path).read_text(encoding="utf-8")), allow_synthetic=allow_synthetic)
 
 
+#: Sidecars that live beside run files, share the ``.json`` suffix, and are
+#: validated by their own module. CI expands ``benchmarks/runs/*.json``, so a
+#: shell glob hands them to this validator; each schema is owned by exactly one
+#: validator, and ``analysis.review`` owns this one.
+SIDECAR_SUFFIX = ".review.json"
+
+
 def main(argv: list[str] | None = None) -> int:
     """Validate explicit archive paths in CI, failing on any invalid record."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("paths", nargs="+", type=Path)
     args = parser.parse_args(argv)
     for path in args.paths:
+        if path.name.endswith(SIDECAR_SUFFIX):
+            print(f"skipped {path} (findings review sidecar; see analysis.review)")
+            continue
         load(path)
         print(f"validated {path}")
     return 0

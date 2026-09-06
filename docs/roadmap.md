@@ -180,7 +180,7 @@ archive; the archived run under a declared profile is P1-R4.
 ### P1-R4 — Repeat and review
 
 - [x] Execute the predeclared local protocol into a new unique archive.
-- [x] Generate run-specific figures. **Findings await human review** — see below.
+- [x] Generate run-specific figures and human-reviewed findings.
 - [x] Explain disagreements with the old archive without selecting favorable runs.
 - [x] Demonstrate reproduction from documented setup and resolved dependencies.
 
@@ -215,9 +215,17 @@ is like-for-like; driver moved 610.88 to 616.56):
 No result was selected across runs; this is the first run collected under the
 protocol and it is archived whatever it showed.
 
-**Open:** the findings document and its human review record. Agents must not
-approve on a reviewer's behalf ([findings-review.md](findings-review.md)), so
-P1-R4 stays open until a human completes the sidecar. **No tag before then.**
+**Findings reviewed and approved 2026-09-06** by Arjun Ganesh, recorded in
+`benchmarks/runs/2026-09-06-1286200412954fb4a59cac02c27a06df-findings.review.json`
+over all 18 paragraphs. The draft was revised before review so that it cites
+only the two archived run files: the process paragraph now states the recorded
+stopping and exclusion rules and says plainly that a file cannot prove they were
+followed, the end-to-end caveat cites this file's own
+`configuration.phase_attribution` instead of an out-of-archive diagnostic, and
+the timing reversal offers no explanation at all. 39 machine checks over the
+draft's numeric claims pass with no mismatch.
+
+**P1-R4 is complete.** Phase 1's repair gates are closed.
 
 **Exit:** a new auditable run and reproducible analysis including limitations.
 H100 is optional: proceed only with a specific question after local profiling
@@ -348,8 +356,9 @@ Editing a checklist does not establish completion or authorize publication.
 ## Roadmap governance
 
 Material sequencing/architecture changes get an ADR. Update gates when evidence
-changes feasibility; avoid speculative dates. P1-R1, P1-R2 and P1-R3 are
-complete and verified on real hardware; the next task is **P1-R4**.
+changes feasibility; avoid speculative dates. P1-R1 through P1-R4 are complete
+and verified on real hardware; Phase 1's repair gates are closed. The next work
+is **Phase 2**, starting at P2-A.
 
 ## Anti-roadmap
 

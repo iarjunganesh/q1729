@@ -734,3 +734,85 @@ agents must not approve on a reviewer's behalf, so no tag is cut. A findings
 draft plus a pending review template is being prepared for the owner; adding a
 findings Markdown file to the archive before its review record is complete would
 fail CI by design.
+
+## 2026-09-06 — Findings revised, reviewed and approved; P1-R4 closed
+
+The owner asked me to fix the draft so that nothing in it could claim wrongly,
+including the four paragraphs I had flagged as needing his judgement. The right
+fix was to remove what the archive could not support rather than to ask him to
+adjudicate it, so the draft was rewritten before review:
+
+- The process paragraph had asserted that no configuration was re-run or
+  excluded. No file can demonstrate that. It now states the recorded stopping
+  and exclusion rules from the protocol block and says plainly that a run file
+  shows which rules were declared but cannot prove they were followed, and that
+  compliance is attested by the reviewer rather than by the data.
+- The small-n caveat had cited the P1-R3 phase profiling, which is a diagnostic
+  outside this archive. It now cites this file's own
+  `configuration.phase_attribution` and `configuration.timing_boundary`, and
+  makes the point from this run's data: the nine configurations from 1 to 256
+  terms all sit in a 2.440-3.273 ms band despite a 256-fold arithmetic range.
+  It explicitly does not apportion cost between phases, which this archive
+  cannot do.
+- The timing-reversal paragraph had offered a driver mechanism and then
+  disclaimed it. Naming a mechanism plants it, so the mechanism is gone; the
+  paragraph now opens by refusing to explain the pattern, lists driver version
+  and uncontrolled thermal state as confounds, and requires a one-factor
+  experiment.
+- Limitations now record that the comparison is a paired observation rather
+  than a controlled experiment.
+
+"(UNREVIEWED DRAFT)" was dropped from the title because it would become false
+on approval and editing it afterwards would invalidate the review hash; the
+review record is the authority on status instead.
+
+A verification script checks every numeric and self-citation claim in the draft
+against both run files: 39 checks, no mismatch. That script earned its place
+earlier in the day by catching two successive errors of mine in the same
+paragraph — first an incorrect "monotonic" claim, then a corrected list of
+downward steps that omitted m=6 because I read it off a two-decimal table. The
+check now asserts the full list of downward steps rather than a boolean.
+
+The owner then gave his verdict verbatim: "Reviewer: Arjun Ganesh. Approved -
+claims verified against the two run files; process compliance (para 4) attested
+from having observed the run." That verdict was transcribed into all 18
+paragraphs of `2026-09-06-1286200412954fb4a59cac02c27a06df-findings.review.json`
+with a specific data locator attached to each; the assessments record his
+judgement and were not originated by the agent. `analysis.review --archive`
+now passes.
+
+P1-R4 is complete and Phase 1's repair gates are closed. Version bumped to
+0.3.0 with a matching CHANGELOG heading in the same commit, per the release
+discipline; the tag follows only once this is on main and reachable.
+
+Caught before committing: adding the first `*-findings.review.json` broke the CI
+step `python -m benchmarks.run_file benchmarks/runs/*.json`, because the shell
+glob hands the sidecar to the run-file validator, which rejected it as a run
+file missing `synthetic`. Each schema is owned by exactly one validator, so the
+CLI now skips `.review.json` by suffix and `analysis.review` keeps ownership.
+Three tests cover the skip, the archive still validating beside it, and a
+malformed run file still failing. Verified by running the CI commands verbatim
+on the GPU host: 347 passed, 1 skipped, 100.00% coverage.
+
+Caught at the tag step: the extracted release notes contradicted themselves.
+The 0.3.0 CHANGELOG section had accreted through the session, so it still
+carried "It has not run on real hardware" about `time_phases` (it had, hours
+earlier) and "P1-R3's profiling and runtime boxes remain open ... no release
+tag" (both closed), alongside three intermediate "Local validation" bullets
+quoting 219, 269 and 316 passed. `scripts/release_check` passed on all of it,
+because it verifies that notes exist and are unambiguous, not that they are
+true — which is worth remembering about that gate.
+
+The local tag was deleted (never pushed, so nothing to retract) and the section
+consolidated into coherent release notes with one final verification statement:
+347 passed, 1 skipped, 100.00% on the RTX 5070 and 330 passed, 18 skipped,
+100.00% on CI's qpp-cpu. The incremental record stays here in the session log,
+which is where a running account belongs; release notes describe the release.
+
+Also answered a question about CI duration with measurement rather than
+assertion. CI's tests job takes about 14 to 16 minutes, and one call dominates
+it: `qae.estimate(13, domain_qubits=2)` costs 306 s of a 318 s six-point sweep
+on the qpp-cpu target, because cost scales as 2^(2m+3) — 8191 Grover
+applications over a 16-qubit statevector. Measured m=10 to m=13 is 58.7x
+against a predicted 64x. The remainder is CI's slower runner. This is expected
+and is the ADR 005 split working as designed, not a regression.
