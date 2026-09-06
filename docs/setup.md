@@ -17,7 +17,7 @@ pytest tests/unit
 
 Use the existing environment if already installed. `main.py` is a status check,
 not the benchmark. Optional CUDA-Q/CuPy imports must degrade gracefully.
-The audit's no-key full-suite result is 269 passed, 29 skipped, 99.68% coverage.
+The audit's no-key full-suite result is 316 passed, 29 skipped, 99.73% coverage.
 GPU/CUDA-Q runtime paths were not verified on native Windows.
 
 ## WSL2/Linux GPU workflow

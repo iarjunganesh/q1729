@@ -24,7 +24,9 @@ work, fair controls, reproducible evidence and critical review. Novelty and
 arXiv acceptance remain unverified. If the study reproduces known behavior,
 publish an honest technical report and refine the question.
 
-The next code milestone is **[P1-R3](roadmap.md#p1-r3--define-and-verify-the-measurement)**.
+The next code milestone is **[P1-R4](roadmap.md#p1-r4--repeat-and-review)**.
+P1-R3's protocol, phase timing and analytic QAE reference are implemented;
+its profiling and runtime boxes are blocked on a working GPU host.
 P1-R1 protection and P1-R2 traceability/review gates are implemented and locally tested; full
 Linux/CI verification remains pending.
 Literature review and Phase 2 protocol design can proceed alongside repairs.

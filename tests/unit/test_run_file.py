@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from analysis import narrator
-from benchmarks import archive, harness, plot, run_file
+from benchmarks import archive, harness, plot, protocol, run_file
 
 
 def test_archive_and_labeled_demo_remain_readable(measured_run):
@@ -25,7 +25,8 @@ def test_current_schema_and_single_repeat(current_run):
     measured_run["controls"]["quantum_target"] = "nvidia"
     for row in measured_run["runs"]:
         row["outcomes"] = row["outcomes"][-1:]
-        row.update(repeats=1, samples_s=[0.1], mean_s=0.1, min_s=0.1, stdev_s=0.0)
+        row.update(repeats=1, samples_s=[0.1])
+        row.update({k: v for k, v in protocol.uncertainty([0.1]).items() if k != "repeats"})
     assert run_file.validate(measured_run, allow_legacy=False) is measured_run
 
 

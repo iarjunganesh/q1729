@@ -28,8 +28,8 @@ and tests were committed in `e8b2060` beyond that release; released CI does not 
 - Phase 2 has exact modular LPS graph construction and floating-point spectral
   checks, not an exact spectral proof. No parity-check implementation, decoder,
   qLDPC experiment or second measured run exists.
-- The Windows audit recorded 269 passed, 29 skipped with the NIM key removed,
-  and 99.68% coverage. Historical WSL2 results were 186 passed / 100%; they
+- The Windows audit recorded 316 passed, 29 skipped with the NIM key removed,
+  and 99.73% coverage. Historical WSL2 results were 186 passed / 100%; they
   were not reproduced because WSL2 could not attach its virtual disk. CI CPU
   simulation and GPU integration evidence must be distinguished.
 - NIM drafts unchecked prose from JSON. Its output needs human review; raw
@@ -111,20 +111,20 @@ its disk. Do not treat local completion as release readiness.
 The 100% CI coverage gate stays unchanged. Release automation already exists;
 it now depends on preflight checks and a fresh reusable CI run for the tag.
 
-**Implementation verified on CPU, 2026-09-06:** 269 passed, 29 skipped;
+**Implementation verified on CPU, 2026-09-06:** 316 passed, 29 skipped;
 new/changed modules have 100% statement coverage. Overall Windows coverage is
-99.68% because the real CUDA-Q backend diagnostic is unavailable. No real GPU
+99.73% because the real CUDA-Q backend diagnostic is unavailable. No real GPU
 run or seeded reproduction was performed. See [ADR 009](adr/009-traceable-outcomes-and-reviewed-releases.md)
 and [findings review](findings-review.md). Runtime verification stays open.
 
 ### P1-R3 — Define and verify the measurement
 
-- [ ] Commit a bounded protocol: sweep, repeats/shots, uncertainty, exclusions
+- [x] Commit a bounded protocol: sweep, repeats/shots, uncertainty, exclusions
   and stopping rule before collecting new data.
-- [ ] Separate wrapper construction, allocation, transfer and device execution
+- [x] Separate wrapper construction, allocation, transfer and device execution
   when attributing costs. Warmup does not remove all wrapper work.
 - [ ] Profile representative cases before asserting a dispatch/arithmetic bottleneck.
-- [ ] Explain QAE quantization analytically and check sample distributions;
+- [x] Explain QAE quantization analytically and check sample distributions;
   distinguish relative/absolute error and floating-point reference limits.
 - [ ] Re-establish Linux/WSL2 runtime availability and run real-backend tests;
   report Windows, CPU simulator CI and GPU evidence separately.
@@ -132,6 +132,24 @@ and [findings review](findings-review.md). Runtime verification stays open.
 **Exit:** declared timing boundaries and uncertainty, supported causal claims or
 explicit hypotheses, and fresh relevant integration evidence. Runtime restoration
 is separate machine maintenance; it is not performed by this documentation update.
+
+**Implementation verified on CPU, 2026-09-06:** 316 passed, 29 skipped; 1130
+statements, 3 missed, 99.73%. Every module reaches 100% except the CUDA-Q
+backend diagnostic, which needs cudaq. The protocol is committed in
+`benchmarks/protocol.py` and hashed into schema-4 run files
+([measurement-protocol.md](measurement-protocol.md), [ADR 010](adr/010-committed-measurement-protocol.md));
+`classical.cuda_kernel.time_phases` separates handle/allocate/execute/transfer/
+reduce with CUDA events, leaving `partial_sum` unchanged for archive
+comparability; `quantum/quantization.py` derives the plateau as the finite
+range **m = 10..17** and reproduces all 15 archived QAE outcomes to 1e-12, 8 of
+them on the conjugate peak.
+
+**Two boxes remain open and are blocked, not deferred by choice.** Profiling
+needs a GPU, and re-establishing the Linux/WSL2 runtime is machine
+maintenance: `%LOCALAPPDATA%\wsl\` is empty, so the registered `Ubuntu` distro
+points at a deleted `ext4.vhdx` and must be re-created with the cudaq venv
+reinstalled. Until then no dispatch-bottleneck claim is licensed and
+`time_phases` has never executed on real hardware.
 
 ### P1-R4 — Repeat and review
 
@@ -269,7 +287,9 @@ Editing a checklist does not establish completion or authorize publication.
 ## Roadmap governance
 
 Material sequencing/architecture changes get an ADR. Update gates when evidence
-changes feasibility; avoid speculative dates. P1-R1 and P1-R2 are implemented locally; the next task is **P1-R3**.
+changes feasibility; avoid speculative dates. P1-R1, P1-R2 and P1-R3's
+unblocked scope are implemented locally; the next task is **P1-R4**, which
+needs the GPU runtime restored first.
 
 ## Anti-roadmap
 

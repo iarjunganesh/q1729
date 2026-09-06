@@ -3,7 +3,7 @@
 The contract every new q1729 experiment must satisfy, adopted in
 [Phase 0](../roadmap.md#phase-0--constitution-lightweight). These are requirements,
 not a claim of complete enforcement. The 2026-09-06 audit found incomplete provenance and final-outcome-only rows. P1-R1 replaced shallow
-key checks with [shared semantic validation](../run-file.md); P1-R2 adds [schema-3 traceability](../run-file.md) and human findings review records.
+key checks with [shared semantic validation](../run-file.md); P1-R2 adds [schema-3 traceability](../run-file.md) and human findings review records; P1-R3 adds the [committed measurement protocol](../measurement-protocol.md) with declared timing boundaries and uncertainty.
 
 ## Nine required fields
 

@@ -113,7 +113,13 @@ def test_quantum_seed_schedule_and_each_outcome_are_retained(monkeypatch):
 
     def estimate(m, n, shots, seed=None):
         calls.append(seed)
-        return {"pi_estimate": math.pi, "seed": seed, "counts": {"001": shots}, "target": "qpp-cpu"}
+        return {
+            "pi_estimate": math.pi,
+            "seed": seed,
+            "counts": {"001": shots},
+            "outcome": 1,
+            "target": "qpp-cpu",
+        }
 
     monkeypatch.setattr(qae, "estimate", estimate)
     row = harness.measure_quantum((3,), 2, 10, 2, "qpp-cpu", seed=100)[0]

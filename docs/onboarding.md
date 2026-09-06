@@ -3,7 +3,8 @@
 q1729 is a research repository growing toward a reusable platform. Read the
 [README](../README.md) for the research thread, [PATHWAYS](PATHWAYS.md) for
 orientation and [roadmap](roadmap.md) for phase gates. The next code milestone
-is P1-R3 protocol/profiling work; P1-R1 and P1-R2 are implemented and locally tested.
+is P1-R4, blocked on restoring the GPU runtime. P1-R1, P1-R2 and P1-R3's
+unblocked scope are implemented and locally tested; profiling is not.
 
 ## What you can run today
 

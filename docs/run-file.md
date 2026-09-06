@@ -6,7 +6,8 @@ a future decoding study needs an explicitly specified schema extension.
 
 | Format | Accepted use |
 | --- | --- |
-| `q1729/run-file/3` | Current measured output with source/device provenance and per-repeat outcomes |
+| `q1729/run-file/3` | Read-only. Source/device provenance and per-repeat outcomes |
+| `q1729/run-file/4` | Current measured output; adds the committed protocol block, its digest and per-configuration uncertainty |
 | `q1729/run-file/2` | Legacy read-only input with control/row target consistency |
 | `q1729/run-file/1`, measured | Legacy read-only input; existing archive stays unchanged |
 | `q1729/run-file/1`, synthetic | Explicitly labeled narrator example only |

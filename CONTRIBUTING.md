@@ -15,7 +15,7 @@ outside JIT kernel bodies. Real integration evidence is distinct from line cover
 
 ## Measured Windows coverage
 
-2026-09-06, Python 3.14.6, NIM key removed: 269 passed, 29 skipped.
+2026-09-06, Python 3.14.6, NIM key removed: 316 passed, 29 skipped.
 Generated from `pytest tests --cov --cov-report=json --cov-fail-under=100`:
 
 | Module | Statements | Missed | Windows coverage |
@@ -24,18 +24,20 @@ Generated from `pytest tests --cov --cov-report=json --cov-fail-under=100`:
 | `analysis/review.py` | 57 | 0 | 100.00% |
 | `benchmarks/archive.py` | 20 | 0 | 100.00% |
 | `benchmarks/environment.py` | 78 | 0 | 100.00% |
-| `benchmarks/harness.py` | 108 | 0 | 100.00% |
+| `benchmarks/harness.py` | 115 | 0 | 100.00% |
 | `benchmarks/plot.py` | 65 | 0 | 100.00% |
+| `benchmarks/protocol.py` | 37 | 0 | 100.00% |
 | `benchmarks/provenance.py` | 30 | 0 | 100.00% |
-| `benchmarks/run_file.py` | 224 | 0 | 100.00% |
-| `classical/cuda_kernel.py` | 76 | 0 | 100.00% |
+| `benchmarks/run_file.py` | 251 | 0 | 100.00% |
+| `classical/cuda_kernel.py` | 114 | 0 | 100.00% |
 | `classical/ramanujan_graph.py` | 110 | 0 | 100.00% |
 | `classical/ramanujan_series.py` | 21 | 0 | 100.00% |
 | `quantum/backend.py` | 38 | 3 | 92.11% |
 | `quantum/qae.py` | 53 | 0 | 100.00% |
+| `quantum/quantization.py` | 76 | 0 | 100.00% |
 | `scripts/release_check.py` | 34 | 0 | 100.00% |
 
-Total: **99.68%**, 945 statements, 3 missed. New/changed modules reach 100%
+Total: **99.73%**, 1130 statements, 3 missed. New/changed modules reach 100%
 statement coverage, including CUDA-Q wrapper paths tested with a fake backend.
 Real JIT circuit integration remains separate and was skipped on Windows.
 The full 100% command exits nonzero because CUDA-Q's backend diagnostic cannot

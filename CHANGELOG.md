@@ -5,6 +5,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **P1-R3 committed measurement protocol.** `benchmarks/protocol.py` fixes the timing boundaries, warm-up policy, exclusion rule, stopping rule and uncertainty method before data is collected; schema 4 carries the full declaration plus its SHA-256 so a run cannot claim a protocol it did not follow. Validation recomputes the digest from the declaration the file itself carries, so archives stay valid across protocol changes. Summaries gain standard error and a two-sided 95% Student's t interval. See [ADR 010](docs/adr/010-committed-measurement-protocol.md) and [measurement-protocol.md](docs/measurement-protocol.md).
+- **Separable timing phases.** `classical.cuda_kernel.time_phases` attributes cost to kernel-handle acquisition, allocation, device execution (CUDA events), transfer and host reduction, reporting the leftover as `unattributed_s` rather than absorbing it. `partial_sum` is unchanged so the existing archive stays comparable — this is a new measurement alongside it, not a reinterpretation. **It has not run on real hardware.**
+- **`quantum/quantization.py`, a closed-form QAE reference.** Derives the ideal outcome, error floor, plateau bounds and the exact two-peak outcome distribution with no cudaq import and nothing timed. It reproduces all 15 archived QAE outcomes to 1e-12 — 8 of them on the conjugate peak `2^m - y`, which carries equal weight and recovers an identical estimate — and derives the plateau as the finite range **m = 10..17**, previously asserted in a docstring. Every measured QAE row now carries this comparison.
+- Local validation: 316 passed, 29 skipped; 99.73% total Windows coverage, 1130 statements, 3 missed. Every module reaches 100% except the CUDA-Q backend diagnostic. **P1-R3's profiling and runtime boxes remain open**: they need a GPU, and the WSL2 distro points at a deleted `ext4.vhdx`. No new measured run, no dispatch-bottleneck claim, no release tag.
+
 ### Changed
 
 - P1-R2 schema-3 traceability: source revision/dirty state and file hashes, resolved installed distributions, selected GPU UUID/PCI identity, queried target/precision, runtime controls, and every timed classical/QAE outcome with count distributions and seed policy. Versions 1/2 remain read-only. Added human findings-review records checked by CI and release preflight/quality dependencies; removed the non-kernel coverage exclusion. See ADR 009.

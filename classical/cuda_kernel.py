@@ -37,6 +37,13 @@ THREADS_PER_BLOCK = 256
 #: kernel compiling identically whether NVRTC or nvcc builds it.
 NVRTC_OPTIONS = ("--std=c++17",)
 
+#: Stages :func:`time_phases` attributes cost to, in execution order. These are
+#: the non-``end_to_end`` keys of :data:`benchmarks.protocol.TIMING_BOUNDARIES`,
+#: duplicated as a plain tuple so ``classical`` never imports ``benchmarks`` —
+#: the measured module must not depend on the harness that measures it. The
+#: agreement between the two is asserted by a test, not by an import.
+PHASE_NAMES = ("kernel_handle", "allocate", "execute", "transfer", "host_reduce")
+
 
 def cuda_available() -> bool:
     """True when cupy is importable *and* a CUDA device is actually visible.
@@ -172,6 +179,98 @@ def time_partial_sum(
         "samples_s": samples,
         "mean_s": math.fsum(samples) / len(samples),
         "min_s": min(samples),
+    }
+
+
+def time_phases(
+    n_terms: int,
+    repeats: int = 5,
+    threads_per_block: int = THREADS_PER_BLOCK,
+) -> dict[str, Any]:
+    """Time :func:`partial_sum`'s stages separately, per roadmap P1-R3.
+
+    :func:`time_partial_sum` reports one number covering kernel-handle
+    acquisition, device allocation, launch, execution, the device-to-host copy
+    and the host reduction. That is the honest end-to-end cost, and it is what
+    the archived stage-1 run measured — but it cannot support a claim about
+    device execution, arithmetic throughput or dispatch overhead, because
+    those are a fraction of it. This function splits the same work into the
+    phases named in :data:`benchmarks.protocol.TIMING_BOUNDARIES` so cost can
+    be attributed instead of assumed.
+
+    ``execute`` is measured with CUDA events on the device; every other phase
+    is host wall time. The phases are timed in one pass, so their sum is
+    slightly below the enclosing ``end_to_end`` — the difference is the
+    interpreter overhead of the timing itself, reported as ``unattributed_s``
+    rather than hidden by scaling the parts up to the whole.
+
+    :func:`partial_sum` is deliberately left unchanged: altering what it does
+    would break comparability with the existing archive. This measures the
+    same sequence of operations, it does not replace it.
+    """
+    if n_terms < 1:
+        raise ValueError(f"need at least 1 term, got {n_terms}")
+    if repeats < 1:
+        raise ValueError(f"need at least 1 repeat, got {repeats}")
+
+    import time
+
+    import cupy
+
+    partial_sum(n_terms, threads_per_block)  # warm-up: compile + context
+
+    blocks = math.ceil(n_terms / threads_per_block)
+    phases: dict[str, list[float]] = {name: [] for name in PHASE_NAMES}
+    totals: list[float] = []
+    values: list[float] = []
+
+    for _ in range(repeats):
+        start = time.perf_counter()
+
+        mark = time.perf_counter()
+        kernel = _load_kernel()
+        phases["kernel_handle"].append(time.perf_counter() - mark)
+
+        mark = time.perf_counter()
+        block_sums = cupy.zeros(blocks, dtype=cupy.float64)
+        cupy.cuda.runtime.deviceSynchronize()
+        phases["allocate"].append(time.perf_counter() - mark)
+
+        begin, end = cupy.cuda.Event(), cupy.cuda.Event()
+        begin.record()
+        kernel(
+            (blocks,),
+            (threads_per_block,),
+            (n_terms, block_sums),
+            shared_mem=threads_per_block * 8,
+        )
+        end.record()
+        end.synchronize()
+        # get_elapsed_time reports milliseconds; every other figure is seconds.
+        phases["execute"].append(cupy.cuda.get_elapsed_time(begin, end) / 1000.0)
+
+        mark = time.perf_counter()
+        host_values = block_sums.get().tolist()
+        phases["transfer"].append(time.perf_counter() - mark)
+
+        mark = time.perf_counter()
+        value = math.fsum(host_values)
+        phases["host_reduce"].append(time.perf_counter() - mark)
+
+        totals.append(time.perf_counter() - start)
+        values.append(value)
+
+    attributed = [math.fsum(phases[name][i] for name in PHASE_NAMES) for i in range(repeats)]
+    return {
+        "n_terms": n_terms,
+        "threads_per_block": threads_per_block,
+        "blocks": blocks,
+        "repeats": repeats,
+        "partial_sums": values,
+        "samples_s": totals,
+        "phases_s": phases,
+        "unattributed_s": [total - part for total, part in zip(totals, attributed, strict=True)],
+        "phase_boundary": "execute is CUDA-event device time; all other phases are host wall time",
     }
 
 

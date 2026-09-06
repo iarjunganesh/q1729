@@ -1,8 +1,10 @@
 """Versioned validation of the pi experiment's evidence, without rewriting it.
 
-Versions 1 and 2 are read-only legacy formats (including the version-1 demo).
-Version 3 is emitted by current writers. Validation establishes structural and
-internal consistency, not that a measurement happened or a hypothesis is true.
+Versions 1 to 3 are read-only legacy formats (including the version-1 demo).
+Version 4 is emitted by current writers and adds the committed measurement
+protocol (roadmap P1-R3) alongside version 3's traceability. Validation
+establishes structural and internal consistency, not that a measurement
+happened or a hypothesis is true.
 """
 
 import argparse
@@ -13,9 +15,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-CURRENT_SCHEMA = "q1729/run-file/3"
+CURRENT_SCHEMA = "q1729/run-file/4"
+TRACEABLE_SCHEMA = "q1729/run-file/3"
 PREVIOUS_SCHEMA = "q1729/run-file/2"
 LEGACY_SCHEMA = "q1729/run-file/1"
+
+#: Every schema this module will read. Only CURRENT_SCHEMA is ever written.
+READABLE_SCHEMAS = (CURRENT_SCHEMA, TRACEABLE_SCHEMA, PREVIOUS_SCHEMA, LEGACY_SCHEMA)
+
+#: Schemas carrying the version-3 provenance/traceability block.
+PROVENANCE_SCHEMAS = (CURRENT_SCHEMA, TRACEABLE_SCHEMA)
 
 
 def require(condition: bool, message: str) -> None:
@@ -56,7 +65,7 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
     synthetic = payload["synthetic"]
     require(allow_synthetic or not synthetic, "synthetic demo data cannot be used as measured evidence")
     schema = payload.get("schema")
-    require(schema in (CURRENT_SCHEMA, PREVIOUS_SCHEMA, LEGACY_SCHEMA), "unknown run-file schema")
+    require(schema in READABLE_SCHEMAS, "unknown run-file schema")
     require(allow_legacy or schema == CURRENT_SCHEMA, "legacy schema is read-only")
     finite_tree(payload)
     for key in ("hardware_id", "series", "question"):
@@ -87,7 +96,7 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
         require(isinstance(limitations, list) and bool(limitations), "limitations must be a nonempty array")
         for item in limitations:
             text(item, "limitation")
-        if schema != CURRENT_SCHEMA:
+        if schema not in PROVENANCE_SCHEMAS:
             text(controls.get("precision"), "controls.precision")
         integer(controls.get("threads_per_block"), "controls.threads_per_block")
         env = payload.get("environment")
@@ -160,10 +169,12 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
     require(methods == {"classical-cuda", "qae-cudaq"}, "both experiment arms are required")
     if not synthetic:
         require(len(targets) == 1, "mixed quantum targets require separate run files")
-        if schema in (CURRENT_SCHEMA, PREVIOUS_SCHEMA):
+        if schema != LEGACY_SCHEMA:
             require(controls.get("quantum_target") in tuple(targets), "controls.quantum_target mismatch")
-        if schema == CURRENT_SCHEMA:
+        if schema in PROVENANCE_SCHEMAS:
             validate_provenance(payload)
+        if schema == CURRENT_SCHEMA:
+            validate_protocol(payload)
     return payload
 
 
@@ -268,6 +279,40 @@ def validate_provenance(payload: dict[str, Any]) -> None:
         if row["method"] == "qae-cudaq":
             for key in ("counts", "outcome", "seed", "precision", "peak_probability"):
                 require(row.get(key) == outcomes[-1][key], "QAE row differs from final timed outcome")
+
+
+def validate_protocol(payload: dict[str, Any]) -> None:
+    """Validate the committed measurement protocol and uncertainty block (v4).
+
+    The digest is recomputed from the declaration the file itself carries, not
+    from the current :mod:`benchmarks.protocol`. An archived run must stay
+    valid after the protocol changes — what the check establishes is that the
+    declaration and its digest were not altered independently of each other,
+    so a run cannot claim a protocol it did not follow.
+    """
+    from benchmarks import protocol
+
+    block: Any = payload.get("protocol")
+    require(isinstance(block, dict), "protocol block required")
+    declared = block.get("declaration")
+    require(isinstance(declared, dict), "protocol.declaration must be an object")
+    integer(declared.get("protocol_version"), "protocol_version")
+    for key in ("warmup_policy", "exclusion_rule", "stopping_rule", "uncertainty_method"):
+        text(declared.get(key), f"protocol.{key}")
+    boundaries = declared.get("timing_boundaries")
+    require(isinstance(boundaries, dict) and bool(boundaries), "timing boundaries required")
+    for name, description in boundaries.items():
+        text(name, "timing boundary name")
+        text(description, "timing boundary description")
+    require(block.get("digest") == protocol.digest_of(declared), "protocol digest disagrees with its declaration")
+
+    for row in payload["runs"]:
+        samples = row["samples_s"]
+        expected = protocol.uncertainty(samples)
+        for key in ("sem_s", "ci95_low_s", "ci95_high_s", "relative_stdev"):
+            number(row.get(key), key)
+            require(math.isclose(row[key], expected[key], rel_tol=1e-9, abs_tol=1e-15), f"{key} disagrees with samples")
+        require(row["ci95_low_s"] <= row["mean_s"] <= row["ci95_high_s"], "mean must lie inside its own interval")
 
 
 def load(path: str | Path, *, allow_synthetic: bool = False) -> dict[str, Any]:

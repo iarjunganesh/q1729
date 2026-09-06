@@ -64,6 +64,19 @@ def _fake_cupy(monkeypatch, device_count=1, block_sums=(1103.0,)):
             },
         )
     )
+
+    class FakeEvent:
+        """CUDA event stub: time_phases only records and synchronizes."""
+
+        def record(self):
+            launched["events"] = launched.get("events", 0) + 1
+
+        def synchronize(self):
+            launched["synchronized"] = launched.get("synchronized", 0) + 1
+
+    fake.cuda.Event = FakeEvent
+    # get_elapsed_time reports milliseconds; 2.0 ms must surface as 0.002 s.
+    fake.cuda.get_elapsed_time = lambda begin, end: 2.0
     monkeypatch.setitem(sys.modules, "cupy", fake)
     return launched
 
@@ -251,3 +264,45 @@ def test_module_main_prints_report(monkeypatch, capsys):
     for key, value in cuda_kernel.report().items():
         print(f"{key}: {value}")
     assert "cuda_available" in capsys.readouterr().out
+
+
+def test_time_phases_attributes_cost_to_each_stage(monkeypatch):
+    """P1-R3: the end-to-end number must decompose into named phases."""
+    launched = _fake_cupy(monkeypatch, block_sums=(1000.0, 103.0))
+
+    result = cuda_kernel.time_phases(512, repeats=3, threads_per_block=256)
+
+    assert result["repeats"] == 3
+    assert result["blocks"] == 2
+    assert set(result["phases_s"]) == set(cuda_kernel.PHASE_NAMES)
+    for name in cuda_kernel.PHASE_NAMES:
+        assert len(result["phases_s"][name]) == 3
+    # Device time comes from CUDA events in milliseconds, not perf_counter.
+    assert result["phases_s"]["execute"] == [0.002, 0.002, 0.002]
+    # One event pair recorded per repeat, each synchronized once.
+    assert launched["events"] == 6
+    assert launched["synchronized"] == 3
+    assert result["partial_sums"] == [1103.0, 1103.0, 1103.0]
+    assert len(result["samples_s"]) == 3
+
+
+def test_time_phases_reports_unattributed_time_rather_than_hiding_it(monkeypatch):
+    """The parts must not be silently scaled up to match the whole."""
+    _fake_cupy(monkeypatch)
+
+    result = cuda_kernel.time_phases(1, repeats=2)
+
+    for index, total in enumerate(result["samples_s"]):
+        attributed = sum(result["phases_s"][name][index] for name in cuda_kernel.PHASE_NAMES)
+        # execute is device time, so the host total need not exceed the sum;
+        # what matters is that the gap is reported, not absorbed.
+        assert result["unattributed_s"][index] == pytest.approx(total - attributed)
+    assert len(result["unattributed_s"]) == 2
+
+
+@pytest.mark.parametrize(("n_terms", "repeats"), [(0, 1), (1, 0)])
+def test_time_phases_rejects_degenerate_requests(monkeypatch, n_terms, repeats):
+    """Refuse before touching the GPU, like the rest of the module."""
+    _fake_cupy(monkeypatch)
+    with pytest.raises(ValueError, match="at least 1"):
+        cuda_kernel.time_phases(n_terms, repeats=repeats)

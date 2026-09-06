@@ -26,6 +26,7 @@ live in the [handbook](../handbook/principles.md):
 | [007](./007-evidence-first-phase-gates.md) | Evidence-first phase gates and publication path | Accepted | Repair evidence, validate classical decoding then feasible qLDPC, extract shared code after reuse; publication conditional |
 | [008](./008-versioned-evidence-validation-and-exclusive-archives.md) | Versioned evidence validation and exclusive archives | Accepted | Shared semantic checks, legacy readers and no-overwrite JSON/SVG creation |
 | [009](./009-traceable-outcomes-and-reviewed-releases.md) | Traceable outcomes and reviewed releases | Accepted | Source/device provenance, all timed outcomes, human review sidecars and release quality dependencies |
+| [010](./010-committed-measurement-protocol.md) | A committed measurement protocol and an analytic QAE reference | Accepted | Protocol hashed into schema-4 runs, separable timing phases, closed-form QAE floor |
 
 ---
 

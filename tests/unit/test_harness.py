@@ -12,6 +12,7 @@ import math
 import pytest
 
 from benchmarks import environment, harness
+from quantum import quantization
 
 
 @pytest.fixture
@@ -42,8 +43,24 @@ def test_summarize_reports_mean_min_and_spread():
 
 
 def test_summarize_handles_a_single_sample():
-    """One repeat has no spread — must not raise."""
-    assert harness.summarize([1.5]) == {"mean_s": 1.5, "min_s": 1.5, "stdev_s": 0.0}
+    """One repeat has no spread and a degenerate interval — must not raise."""
+    assert harness.summarize([1.5]) == {
+        "mean_s": 1.5,
+        "min_s": 1.5,
+        "stdev_s": 0.0,
+        "sem_s": 0.0,
+        "ci95_low_s": 1.5,
+        "ci95_high_s": 1.5,
+        "relative_stdev": 0.0,
+    }
+
+
+def test_summarize_reports_an_interval_bracketing_the_mean():
+    """Several repeats must produce a real interval, not a collapsed one."""
+    summary = harness.summarize([0.10, 0.12, 0.11, 0.13])
+    assert summary["ci95_low_s"] < summary["mean_s"] < summary["ci95_high_s"]
+    assert summary["sem_s"] > 0.0
+    assert summary["min_s"] == 0.10
 
 
 def test_measure_classical_keeps_every_raw_sample(monkeypatch, no_gpu_sampling):
@@ -71,7 +88,14 @@ def test_measure_quantum_records_circuit_shape_and_warms_up(monkeypatch, no_gpu_
 
     def fake_estimate(m, n, shots, seed=None):
         calls.append(m)
-        return {"counting_qubits": m, "pi_estimate": math.pi, "grover_applications": 2**m - 1}
+        outcome = quantization.ideal_outcome(m)
+        return {
+            "counting_qubits": m,
+            "pi_estimate": math.pi,
+            "grover_applications": 2**m - 1,
+            "outcome": outcome,
+            "counts": {format(outcome, f"0{m}b"): shots},
+        }
 
     monkeypatch.setattr(qae, "estimate", fake_estimate)
 
@@ -82,6 +106,10 @@ def test_measure_quantum_records_circuit_shape_and_warms_up(monkeypatch, no_gpu_
     assert [row["counting_qubits"] for row in rows] == [3, 4]
     assert rows[0]["target"] == "qpp-cpu"
     assert len(rows[0]["samples_s"]) == 2
+    # The analytic cross-check travels with every measured row.
+    report = rows[0]["quantization"]
+    assert report["agrees_with_theory"] and not report["landed_on_conjugate"]
+    assert report["quantization_error"] == quantization.quantization_error(3)
 
 
 def test_build_run_file_satisfies_the_research_standards_contract(current_run):
@@ -111,7 +139,7 @@ def test_build_run_file_marks_measured_data_as_not_synthetic():
     """The flag plot.py keys off — a real run must never be mistakable for the sample."""
     payload = harness.build_run_file([], [], "turbo", 1, 2, "id", {})
     assert payload["synthetic"] is False
-    assert payload["schema"] == "q1729/run-file/3"
+    assert payload["schema"] == "q1729/run-file/4"
 
 
 def test_limitations_name_the_accuracy_plateau_and_the_dispatch_bound():

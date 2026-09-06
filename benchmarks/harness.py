@@ -17,12 +17,11 @@ not somebody's mean.
 import argparse
 import json
 import math
-import statistics
 import time
 from pathlib import Path
 from typing import Any
 
-from benchmarks import archive, environment, provenance, run_file
+from benchmarks import archive, environment, protocol, provenance, run_file
 
 #: Term counts swept on the classical arm. Deliberately spans past the point
 #: where double precision saturates, so the saturation shows up as measured
@@ -72,9 +71,12 @@ LIMITATIONS = (
 STATISTICAL_TREATMENT = (
     "One warm-up call per configuration (discarded) to absorb NVRTC/JIT compilation "
     "and CUDA context creation, then N timed repeats recorded individually. Reported "
-    "summaries are the mean, the minimum, and the sample standard deviation over "
-    "those repeats. No outlier rejection is applied; the raw samples are retained in "
-    "the run file so any later treatment can be applied and audited after the fact."
+    "summaries are the mean, minimum, sample standard deviation, standard error and "
+    "a two-sided 95% t interval for the mean over those repeats. No outlier rejection "
+    "is applied; the raw samples are retained in the run file so any later treatment "
+    "can be applied and audited after the fact. The full declaration — timing "
+    "boundaries, warm-up, exclusions, stopping rule — is committed in "
+    "benchmarks/protocol.py and travels in this file's protocol block with its digest."
 )
 
 
@@ -91,12 +93,15 @@ def correct_digits(estimate: float) -> float:
 
 
 def summarize(samples: list[float]) -> dict[str, float]:
-    """Mean/min/stdev over timing samples, keeping the samples themselves."""
-    return {
-        "mean_s": statistics.fmean(samples),
-        "min_s": min(samples),
-        "stdev_s": statistics.stdev(samples) if len(samples) > 1 else 0.0,
-    }
+    """Summary and uncertainty for timing samples, keeping the samples themselves.
+
+    Delegates to :func:`benchmarks.protocol.uncertainty` so the treatment a run
+    file reports is literally the one the committed protocol declares, rather
+    than a second implementation that could drift away from it.
+    """
+    summary = protocol.uncertainty(samples)
+    summary.pop("repeats")  # the row carries its own repeat count
+    return summary
 
 
 def measure_classical(term_counts: tuple[int, ...], repeats: int) -> list[dict[str, Any]]:
@@ -176,10 +181,49 @@ def measure_quantum(
                 "samples_s": samples,
                 "vram_used_mib_before": before,
                 "vram_used_mib_after": after,
+                "quantization": quantization_report(m, result, shots),
                 **summarize(samples),
             }
         )
     return rows
+
+
+def quantization_report(counting_qubits: int, result: dict[str, Any], shots: int) -> dict[str, Any]:
+    """Compare a QAE result against what closed-form theory predicts.
+
+    Roadmap P1-R3 asks for the quantization to be explained analytically and
+    the sampled distribution to be checked, rather than the estimate being
+    reported alone. :mod:`quantum.quantization` derives the ideal outcome, the
+    error floor and the ideal distribution independently of the simulator, so
+    a disagreement here means the run and the theory diverged — which is
+    information, not a failure to hide.
+
+    ``total_variation`` is a diagnostic read against ``sampling_tolerance``,
+    not a pass/fail: finite shots always leave a positive distance.
+    """
+    from quantum import quantization
+
+    ideal = quantization.ideal_outcome(counting_qubits)
+    outcome = result["outcome"]
+    plateau_first, plateau_last = quantization.plateau_bounds(counting_qubits)
+    return {
+        "ideal_outcome": ideal,
+        "conjugate_outcome": quantization.conjugate_outcome(ideal, counting_qubits),
+        "landed_on_conjugate": outcome != ideal,
+        "agrees_with_theory": quantization.agrees_with_theory(outcome, counting_qubits),
+        "ideal_estimate": quantization.ideal_estimate(counting_qubits),
+        "quantization_error": quantization.quantization_error(counting_qubits),
+        "relative_quantization_error": quantization.relative_quantization_error(counting_qubits),
+        "plateau_first_m": plateau_first,
+        "plateau_last_m": plateau_last,
+        "total_variation": quantization.total_variation(result["counts"], counting_qubits),
+        "sampling_tolerance": quantization.sampling_tolerance(counting_qubits, shots),
+        "interpretation": (
+            "quantization_error is the floor set by the distance from the true "
+            "phase to the 2^m grid; shots do not reduce it. total_variation is a "
+            "diagnostic against sampling_tolerance, not a hypothesis test."
+        ),
+    }
 
 
 def build_run_file(
@@ -196,6 +240,7 @@ def build_run_file(
     return {
         "schema": run_file.CURRENT_SCHEMA,
         "synthetic": False,
+        "protocol": {"declaration": protocol.declaration(), "digest": protocol.digest()},
         "provenance": env.get("source"),
         "execution": env.get("execution"),
         "configuration": {
@@ -205,6 +250,10 @@ def build_run_file(
             "seed_schedule": "base + counting_qubits * repeats + repeat_index; warmup unseeded",
             "outcome_summary": "last timed repeat; every repeat is retained",
             "timing_boundary": "classical partial_sum wrapper; quantum estimate wrapper; warmup discarded",
+            "phase_attribution": (
+                "End-to-end only. Per-phase attribution is available from "
+                "classical.cuda_kernel.time_phases and is not part of this sweep."
+            ),
             "nvrtc_options": ["--std=c++17"],
         },
         "series": "ramanujan-1914",

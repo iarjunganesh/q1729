@@ -15,10 +15,11 @@ def measured_run():
 
 @pytest.fixture
 def current_run(measured_run):
-    """Artificial schema-3 fixture, never written into the measured archive."""
-    from benchmarks import run_file
+    """Artificial current-schema fixture, never written into the measured archive."""
+    from benchmarks import protocol, run_file
 
     p = measured_run
+    p["protocol"] = {"declaration": protocol.declaration(), "digest": protocol.digest()}
     p["schema"] = run_file.CURRENT_SCHEMA
     p["provenance"] = {"revision": "a" * 40, "dirty": False, "files_sha256": {"main.py": "b" * 64}}
     p["execution"] = {
@@ -65,6 +66,8 @@ def current_run(measured_run):
             )
             outcome = {k: v for k, v in r.items() if k not in ("samples_s", "repeats", "method")}
         r["outcomes"] = [copy.deepcopy(outcome) for _ in range(r["repeats"])]
+        # Schema 4 carries the declared uncertainty alongside mean/min/stdev.
+        r.update({k: v for k, v in protocol.uncertainty(r["samples_s"]).items() if k != "repeats"})
     return p
 
 

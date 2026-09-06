@@ -32,7 +32,7 @@ test ! -e "$run_path" && python -m benchmarks.harness --power-profile turbo --sh
 python -m benchmarks.plot "$run_path" --out-dir "benchmarks/plots/${run_id}"
 ```
 
-The writer validates schema-3 records and exclusively creates the output file;
+The writer validates schema-4 records and exclusively creates the output file;
 existing files are rejected, including competing-writer collisions. `make
 benchmark` generates a date-plus-UUID name and defaults to 2000 shots. `make
 plot` defaults to a run-specific subdirectory; both theme paths must be unused.

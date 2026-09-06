@@ -539,3 +539,66 @@ not a repo defect. CUDA-Q coverage, GPU measurement and any seeded reproduction
 therefore remain unverified, as P1-R2's roadmap entry already states.
 
 No new measured run, live NIM call, tag or push. Next task is P1-R3.
+
+## 2026-09-06 — P1-R3 measurement protocol, phase timing and analytic QAE reference
+
+Continued in roadmap order after committing P1-R2 as `500a153`. Implemented
+every P1-R3 item that does not require a GPU, and left the two that do
+explicitly open rather than marking the gate complete.
+
+Committed the protocol as code. `benchmarks/protocol.py` declares timing
+boundaries, warm-up policy, exclusion rule, stopping rule and uncertainty
+method as module constants, so changing any of them is a reviewable diff.
+Schema 4 carries the declaration and its SHA-256. The digest is recomputed from
+the declaration the file itself carries, never from the current module —
+otherwise every past run would fail validation the moment the protocol changed,
+which is backwards. Summaries gained standard error and a two-sided 95%
+Student's t interval from a small table (no scipy: the core requirements file
+must stay CPU-installable). Between tabulated degrees of freedom it falls back
+to the nearest lower entry, overstating the interval rather than understating.
+
+Separated the timing phases. `classical.cuda_kernel.time_phases` measures
+kernel-handle acquisition, allocation, device execution, transfer and host
+reduction, using CUDA events for the device phase and perf_counter for the
+host phases, and reports the leftover as `unattributed_s` instead of scaling
+the parts up to the whole. `partial_sum` was deliberately left unchanged:
+altering it would break comparability with the only archive this repo has, so
+phase attribution is a new measurement beside the old one. Noted for P1-R4:
+`_load_kernel()` builds a `RawModule` on every call inside the timed region,
+which is a plausible explanation for the audit's 2.714 ms two-term mean — but
+that is a hypothesis, recorded as one, not a finding.
+
+Derived the QAE quantization instead of asserting it. `quantum/quantization.py`
+is closed-form, CPU-only, no cudaq import, nothing timed. It computes the ideal
+outcome, absolute and relative error floor, the plateau bounds and the exact
+two-peak distribution (Grover's eigenphases theta and 1-theta, averaged
+Dirichlet kernels, normalizing to 1.0 to 1e-14). Strongest available check: all
+15 archived QAE rows agree with theory to 1e-12, and 8 of them landed on the
+conjugate peak 2^m - y, which recovers an identical estimate — so agreement is
+asserted on the recovered estimate, never the raw integer. The plateau comes
+out as the finite range m = 10..17, confirming the correction P1-R2 made to the
+earlier "improves no further" wording. `harness.quantization_report` attaches
+this comparison to every measured QAE row.
+
+Verification on this Windows host: 316 passed, 29 skipped; 1130 statements, 3
+missed, 99.73%. Every module is at 100% except `quantum/backend.py:80-92`, the
+CUDA-Q diagnostic, which needs cudaq. No `# pragma: no cover` was added — the
+five that exist are all CUDA-Q kernel bodies. Ruff lint/format, mypy (21 source
+modules), legacy archive validation, the findings-review archive check and
+`git diff --check` all pass. The schema bump to 4 kept the only measured
+archive readable, asserted by a test.
+
+Not done, and blocked rather than deferred: profiling representative cases
+needs a GPU, and re-establishing the Linux/WSL2 runtime is machine maintenance
+on the owner's box — `%LOCALAPPDATA%\wsl\` is empty, so the registered Ubuntu
+distro points at a deleted ext4.vhdx and must be re-created with the cudaq venv
+reinstalled. Both P1-R3 checkboxes stay unticked. No dispatch-bottleneck or
+arithmetic-bound claim is made anywhere, `time_phases` has never executed on
+real hardware, and no new measured run, tag or push was produced.
+
+Tag question raised by the owner and answered: no tag yet. `scripts.release_check`
+verifies main ancestry against `origin/main`, and all four commits are unpushed,
+so a tag would fail its own preflight; CI has never run on this work; and P1-R3's
+exit criteria require fresh integration evidence that does not exist. The
+sequence is push main, let CI verify, finish P1-R3/R4, then tag v0.3.0 with the
+version and CHANGELOG bump in one commit.
