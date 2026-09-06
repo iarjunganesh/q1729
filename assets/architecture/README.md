@@ -56,3 +56,13 @@ one.
 
 - [Project README](../../README.md) — the Architecture section, embedded via
   a `<picture>` element that switches on `prefers-color-scheme`.
+
+## 2026-09-06 audit status
+
+The existing diagram is a legacy conceptual illustration, not an execution
+trace or evidence of an H100 run. The series does not feed QAE: QAE encodes
+known π/4 independently. NIM prose is unchecked and exact SymPy validates
+the classical partial sums, not every path. README now uses an inline diagram
+with those boundaries. Correct the `.mmd` and regenerate both SVG themes
+together before presenting the legacy graphic as a current pipeline; no
+source/renders were changed during this Markdown-only audit.

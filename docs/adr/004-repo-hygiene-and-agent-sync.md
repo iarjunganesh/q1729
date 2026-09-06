@@ -115,3 +115,7 @@ same reasons, and the paragraph still records that they came from external
 references rather than being invented here. Only the proper nouns are gone.
 The standing rule now lives in `AGENTS.md` under Git History ("Never
 reference another repository by name"), so this does not recur.
+
+## 2026-09-06 audit amendment
+
+CLAUDE.md is now exactly the one-line @AGENTS.md import, removing the earlier nonessential wrapper. The 100% CI gate remains unchanged. Non-kernel coverage exclusions remain a code defect to resolve. Release automation exists but does not itself prove quality checks, main ancestry or version agreement. Current status is updated in live guides; historical records are preserved with amendments.

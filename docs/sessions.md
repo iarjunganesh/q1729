@@ -243,3 +243,190 @@ badge URLs fetched and their rendered SVG text inspected, not just their HTTP
 status. Both restored tags re-checked with `git merge-base --is-ancestor`
 against `main` and both GitHub releases re-read to confirm notes and dates
 survived.
+
+---
+
+## 2026-08-05 (follow-up) — Scouted AMD ROCm/MI300 and recorded the answer as ADR 006
+
+**What changed:** the owner asked whether q1729 should target AMD ROCm and
+cloud MI300-series GPUs, given that the laptop is an AMD CPU with an NVIDIA
+GPU. Answered by scouting first and writing the decision down, without touching
+any measured artifact:
+
+1. **[ADR 006](adr/006-rocm-as-phase-4-second-backend.md)** — ROCm/MI300 is the
+   designated roadmap **Phase 4** second backend, staying behind Phases 2 and 3.
+   It records four commitments: the phase order does not change (the outstanding
+   H100 axis comes first — reproducing on a second machine of the same vendor is
+   a smaller claim than a second vendor); an AMD run publishes the classical arm
+   only and is labeled a portability result; a second quantum simulator needs its
+   own ADR plus a same-GPU control run; and the kernel stays HIP-portable.
+2. **Portability constraint on `classical/ramanujan_kernel.cu`** — written into
+   the kernel's header comment *and* `AGENTS.md`, not only the ADR, so the next
+   person to edit the kernel sees it there rather than having to know an ADR
+   exists.
+3. Roadmap Phase 4 now names ROCm as *the* chosen backend and summarizes what
+   ADR 006 settled, so Phase 4 does not re-litigate it. ADR index and CHANGELOG
+   `[Unreleased]` updated.
+
+**Why:** the tempting move — rent an MI300X, run both arms, publish a second
+crossover — is available and would produce a plausible-looking invalid result.
+CUDA-Q has no ROCm target, so on AMD silicon `select_target` falls through to
+`qpp-cpu`, and a "crossover" plot would really be GPU classical vs CPU quantum
+with a crossing point that is an artifact of the fallback. Naming that failure
+mode before any money is spent was the whole point of the session.
+
+**Verified against:** `classical/ramanujan_kernel.cu` read in full and confirmed
+free of NVIDIA-specific intrinsics — no `__shfl_*`, no cooperative groups, no
+PTX asm — which is what makes the portability claim inspection rather than
+assumption. CUDA-Q's published simulator-backend list checked directly: all GPU
+targets (`nvidia`, `nvidia option=mgpu/mqpu`, `tensornet`) are cuQuantum-based
+and NVIDIA-only. Qiskit Aer on ROCm confirmed against AMD's own ROCm blog
+running Aer `statevector` on MI300X under ROCm 7.2 (dated 2026-05-29), and the
+qsim HIP backend against its SC '23 paper. CuPy ROCm/hipRTC `RawModule` support
+confirmed from CuPy's install docs and v14 release notes (ROCm 6.4, Jan 2026),
+still marked experimental.
+
+**Not verified, and not claimed anywhere:** nothing was executed on AMD
+hardware. No MI300X instance was rented, no ROCm build attempted, no timing on
+AMD silicon asserted. The portability claims are source-level compatibility
+claims only. Docs-only session — no Python changed, so the 156-test/100%
+coverage figures from the entry above stand unretested and unrestated here.
+
+---
+
+## 2026-08-05 (follow-up 2) — Roadmap Phase 2 begins: LPS Ramanujan expander graphs
+
+**What changed:**
+
+1. **`classical/ramanujan_graph.py`** — the Lubotzky-Phillips-Sarnak
+   construction. Jacobi four-square generators, `sqrt(-1) mod q`, and a
+   breadth-first walk of the subgroup those matrices generate inside
+   `PGL(2, q)`. The design choice worth keeping: BFS *discovers* the vertex
+   set instead of enumerating the group and filtering for subgroup
+   membership, and the resulting order is then compared against the Legendre
+   symbol `(p|q)`'s prediction — so a construction bug fails an assertion
+   instead of silently producing a wrong graph.
+2. **`tests/unit/test_ramanujan_graph.py`** — 30 tests, 100% coverage of the
+   new module, **no `# pragma: no cover`**. The three internal guards are each
+   driven to fire by monkeypatching the *upstream* check rather than being
+   excluded from coverage, per ADR 004's rule that a pragma outside a CUDA-Q
+   kernel body is a bug.
+3. Status sweep: test counts 156 → 186 (WSL2) and 128 → 158 passed (Windows)
+   across `AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `docs/roadmap.md`;
+   Windows total coverage re-measured 96% → 97%; roadmap phase table, "Where
+   the repo actually is", and the Phase 2 build list updated; `AGENTS.md`
+   repository-surfaces list extended.
+4. Recorded the deferred **`q1729.arjunganesh.dev` results site** in roadmap
+   Phase 6 with an explicit trigger (multiple runs across multiple
+   `hardware_id`s) and the binding constraint that it must be *generated* from
+   `benchmarks/runs/*.json` with zero hand-authored numbers.
+
+**Why:** the owner asked to start Phase 2. The expander graph is the correct
+first brick because everything downstream — parity-check matrices, the
+hypergraph-product qLDPC code, the decoder — is checked *against* it, exactly
+as the CUDA kernel is checked against `ramanujan_series.py`. Doing it first
+means the Phase 2 GPU arm has ground truth waiting for it rather than being
+validated retroactively.
+
+**Two real bugs found and fixed during the session, both by testing rather
+than review:**
+
+- `four_square_solutions` returned **zero** solutions for `p = 13`. The even
+  sweep was `range(-isqrt(p), isqrt(p) + 1, 2)`, which walks *odd* values
+  whenever `isqrt(p)` is odd. `p = 5` gave `isqrt = 2` and worked by luck,
+  which is why the first test written (p = 5) passed. Fixed by rounding the
+  bound down to even before building the range.
+- The default `report()` pair was `(5, 11)`, which is illegal: `q` must be
+  `1 mod 4` for `sqrt(-1)` to exist and `11 = 3 mod 4`. Corrected to `(5, 13)`,
+  the canonical LPS textbook pair — and 13 is the *smallest* legal partner for
+  `p = 5`, not merely a convenient one.
+
+**Verified against:** **186 passed / 100.00% coverage** on WSL2 (cudaq 0.15.1,
+real RTX 5070 Laptop GPU) with `--cov-fail-under=100`; **158 passed / 28
+skipped / 97%** on Windows, the skip count unchanged because the new module is
+pure numpy/sympy and needs neither cudaq nor a GPU. `ruff check`,
+`ruff format --check`, and `mypy classical` all clean. Spectral results
+confirmed by running the module: `PSL(2,13)` 1092 vertices / 18-regular /
+λ₂ = 7.850855 ≤ 8.246211, and `PGL(2,13)` 2184 vertices / 6-regular /
+λ₂ = 4.249721 ≤ 4.472136 — both Ramanujan, and the bipartite/non-bipartite
+split matches `(p|q)` in each case.
+
+**Not done, and not claimed:** no parity-check matrices, no qLDPC code, no
+decoder, no CUDA-Q QEC run, no second run file. Phase 2 is started, not
+delivered, and every status document says so in those words.
+
+---
+
+## 2026-09-06 — Repository audit and direction assessment
+
+**What changed:** audited the current working tree, including the pre-existing
+staged Phase 2 changes and untracked `docs/PATHWAYS.md`. Saved a detailed local
+report at `.tmp/q1729-audit-2026-09-06.md` and added this session/changelog record.
+No implementation, tests, requirements, generated assets, measured JSON, or
+staged index entries were changed. No architectural decision was adopted or
+amended; the report recommends a bounded feasibility milestone for later work.
+
+**Why:** the owner requested a whole-repository audit and a candid assessment
+of whether to continue q1729 or choose another direction.
+
+**Verified this session:** Windows Python 3.14.6; Ruff lint and format clean
+(57 files); mypy clean (13 source files); `pip check` clean; `main.py` succeeds.
+The suite collected 186 tests and completed with 157 passed / 29 skipped and
+97.19% coverage. The 100% threshold therefore exits unsuccessfully on this host;
+the missing paths require CUDA-Q. The live NIM test was deliberately skipped by
+removing its key only from the test subprocess environment, explaining the
+extra skip relative to the historical 158/28 Windows split. No live NIM request
+was made. Windows `nvidia-smi` reports RTX 5070 Laptop GPU, 8151 MiB, driver
+616.56. The public CI run `31050071005` has four successful jobs at `f88a926`,
+and v0.2.0 is the latest published release; neither verifies the staged graph
+work. All 27 archived run rows' summary statistics recompute from their five
+retained timing samples.
+
+**Open findings:** the harness can overwrite an existing run; generated findings
+incorrectly confirm submillisecond execution and misstate the cheapest
+five-digit QAE result; a plateau in the tested phase range is overstated as a
+permanent limit. Dispatch and H100 performance claims need profiling. Per-repeat
+quantum outcomes, complete software/code provenance, backend/device labeling,
+run validation, release enforcement, and stale onboarding text need attention.
+The current QAE oracle encodes a known amplitude using pi, so its strongest
+defensible framing is a simulator resource-cost/educational experiment.
+
+**Phase 2 exploration:** built the canonical LPS graph on CPU and examined its
+1092-by-1092 bipartite parity-check matrix using exact GF(2) elimination: rank
+794, classical dimension 298. Its self hypergraph product would have 2,384,928
+physical qubits; this is a parameter calculation, not an implemented or decoded
+quantum code. The graph spectrum is a numerical verification of an exact
+integer construction, not an exact computational spectral proof. Any next code
+experiment needs a specified construction and sparse memory/runtime budget.
+
+**Unverified:** WSL2 failed to attach its configured `ext4.vhdx` with
+`HCS/ERROR_PATH_NOT_FOUND`, so historical WSL2 100% coverage and real CUDA/QAE
+behavior were not reproduced. No runtime repair, package installation, GPU
+benchmark, cloud rental, commit, tag, or push was performed. Historical measured
+numbers and hypotheses remain intact; the findings above remain open.
+
+## 2026-09-06 — Complete Markdown audit and phased roadmap revision
+
+Read all 26 original authored Markdown files, 3379 lines, including the local
+scratch audit. Added `docs/markdown-audit-2026-09-06.md` with original line ranges,
+dispositions, evidence limits and unresolved implementation gates. README retains
+the three-stage research thread; roadmap Phases 0–6 now have explicit dependencies
+and exits. Next code work is P1-R1 archive protection/semantic validation, then
+provenance, profiling and a bounded repeat. Phase 2 bridges classical decoding
+to feasible qLDPC. Publication may precede the platform if contribution/evidence
+gates pass; novelty and arXiv acceptance are unverified. ADR 007 records this decision.
+
+Corrected setup/onboarding, AI-prose guarantees, graph proof language, timing and
+utilization interpretation, data transmission scope, coverage and release claims.
+Kept measured JSON unchanged and preserved the narrator draft beneath a
+supersession note, adding separate reviewed findings. Historical ADR bodies,
+session entries and published changelog sections remain intact. Legacy visual
+source/renders remain unchanged, with limitations recorded beside them.
+
+Verification: Ruff lint/format and mypy pass; Windows no-key suite 157 passed,
+29 skipped, 97.19% coverage (518/533). The unchanged 100% gate exits nonzero on
+this host. Coverage table regenerated from JSON. WSL2 retry fails attaching its
+configured disk with HCS/ERROR_PATH_NOT_FOUND, so no fresh GPU evidence. Local
+document links/anchors, fenced blocks, CI documentation checks, whitespace,
+preserved bytes and unchanged staged diff checked before handoff. No code fixes,
+package changes, live NIM calls, cloud spending, runtime repair, commit or push.

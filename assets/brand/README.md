@@ -59,3 +59,11 @@ python build_banner.py
 The filenames are referenced directly from `README.md` via a `<picture>`
 element that switches on `prefers-color-scheme` — keep them stable, or update
 the README's `<source>` paths in the same commit if you ever rename them.
+
+## 2026-09-06 audit status
+
+The banner is illustrative branding, not evidence of a quantum computer or
+measured H100 execution. q1729 currently simulates quantum circuits on classical
+hardware. Any wording correction to the artwork must go through `build_banner.py`
+and both generated themes; this Markdown audit leaves source/renders unchanged.
+The palette table is a selected palette, not an exhaustive count of source colors.

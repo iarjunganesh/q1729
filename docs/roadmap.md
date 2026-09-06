@@ -1,407 +1,265 @@
 # Q1729 — Vision & Roadmap
 
-> **Vision:** Build Q1729 into the most trusted open-source computational
-> research platform for studying the boundary between classical, accelerated,
-> and emerging computational paradigms.
+q1729 aims to become a reproducible computational research platform built around
+Ramanujan mathematics, accelerated classical computation and quantum simulation.
+Today it has one archived GPU experiment and an initial graph construction.
+The platform is the destination, earned through validated experiments and reuse.
 
-> This is the single source of truth for where Q1729 is going. Every idea from
-> the original Blueprint v1.0 survives here — what changes is **order**: each
-> layer of architecture is earned by a real result before it is built, never
-> imposed ahead of one.
-
-The **README** remains authoritative for *what the project is today* and its
-three-stage research thread. This document is authoritative for *how the project
-grows* — the North Star it serves and the sequence in which it earns its
-architecture. The two are kept consistent: the README's Stage 1 is this
-roadmap's Phase 1; the README's Stage 3 is this roadmap's Phase 2.
-
----
-
-# North Star
-
-Q1729 is **not** a benchmark repository.
-
-Q1729 is a **research platform**.
-
-Principles:
-
-1. **Reproducibility over convenience.**
-2. **Measured data over anecdotes.**
-3. **Architecture over feature accumulation.**
-4. **Extensibility over hard-coding.**
-5. **Education alongside engineering.**
-6. **AI explains results; it never invents them.**
-
-These six principles are adopted in Phase 0 and upheld through every phase that
-follows. Principle 6 is enforced in code today by ADR-003: the NIM/Nemotron
-narrator narrates run-file numbers and never simulates.
-
----
-
-# Roadmap Philosophy
-
-Every phase exists to earn the right to build the next one.
-
-Q1729 deliberately evolves from evidence to abstraction:
-
-```
-Working Result
-  → Repeated Result
-    → Recognized Pattern
-      → Shared Abstraction
-        → Extensible Platform
-```
-
-At no point is architecture introduced solely because it appears desirable.
-Every abstraction must be justified by real experimental evidence and must
-reduce the cost of future research.
-
-Each phase answers three questions:
-
-- **Why now?** What evidence makes this the correct time to begin?
-- **Why not earlier?** What speculative design is intentionally being avoided?
-- **What becomes possible afterwards?** What new capabilities does this phase unlock?
-
-Every phase must produce something independently valuable even if no later phase
-is ever completed.
-
----
+The [README](../README.md) defines the three-stage research thread: π;
+community/publication; Ramanujan graphs → qLDPC. This document defines execution
+order: Stage 1 maps to Phase 1, Stage 3 to Phase 2, and Stage 2 is a continuing
+workstream. [PATHWAYS](PATHWAYS.md) explains the direction without introducing
+another plan. [ADR 007](adr/007-evidence-first-phase-gates.md) records this revision.
 
 ## Where the repo actually is (v0.2.0)
 
-Honest baseline, so every phase below is measured against reality. Verified
-2026-08-05 on WSL2 with a real RTX 5070 Laptop GPU:
+Audit date: **2026-09-06**, working tree based on `f88a926`. The graph module
+and tests are staged work beyond that release; released CI does not verify them.
 
-- **Phase 0 is complete.** `docs/handbook/principles.md` and
-  `docs/handbook/research-standards.md` exist and are linked from the README
-  and the ADR index. The nine-field contract is enforced in code —
-  `benchmarks/harness.py` emits every field, and CI rejects a measured run
-  file that omits one.
-- **Phase 1 is delivered on the consumer axis.** `classical/ramanujan_kernel.cu`
-  is a real hand-written CUDA C++ kernel (5 ADRs now; NVRTC compilation is
-  ADR 005), `quantum/qae.py` is a working canonical QAE circuit, and
-  `benchmarks/runs/2026-08-05-rtx5070-turbo.json` is a **real measured run**
-  with a narrated writeup and theme-aware crossover plots beside it.
-- `classical/ramanujan_series.py` remains exact SymPy — the **ground truth**
-  the kernel is asserted against to 1e-15 relative, not a competitor to it.
-- `data/sample_run.json` is still **synthetic** and still labeled as such. It
-  is no longer the only run file, and `benchmarks/plot.py` refuses to plot it.
-- 156 tests, 100% coverage on WSL2/CI; ruff (lint + format) and mypy are
-  separate enforced CI gates.
+- Phase 0 standards are adopted, but enforcement is incomplete. JSON key
+  presence does not validate the nine-field research contract.
+- Phase 1 delivered a CUDA kernel, known-amplitude QAE circuit, harness, figures
+  and the 2026-08-05 RTX 5070 Laptop GPU archive. Interpretation and
+  reproducibility repair gates are open. There is no H100 result.
+- QAE encodes the already-known amplitude `math.pi / 4`. This is a simulator
+  case study, not an independent π algorithm or quantum-advantage result.
+  No crossing was observed within the tested sweep.
+- Phase 2 has exact modular LPS graph construction and floating-point spectral
+  checks, not an exact spectral proof. No parity-check implementation, decoder,
+  qLDPC experiment or second measured run exists.
+- The Windows audit recorded 157 passed, 29 skipped with the NIM key removed,
+  and 97.19% coverage. Historical WSL2 results were 186 passed / 100%; they
+  were not reproduced because WSL2 could not attach its virtual disk. CI CPU
+  simulation and GPU integration evidence must be distinguished.
+- NIM drafts unchecked prose from JSON. Its output needs human review; raw
+  measured JSON is never corrected by rewriting its numbers.
 
-**What has *not* been done:** the optional datacenter axis of Phase 1. No H100
-run has been executed, so nothing here establishes how the curves move on
-other silicon. The first run also produced a result worth carrying forward:
-the quantum arm never exceeded 20% GPU utilization, so the H100 question is
-about qubit ceiling rather than speed.
+See the [Markdown audit](markdown-audit-2026-09-06.md) for the complete file
+inventory and the distinction between documentation corrections and open code work.
 
-The core result the whole project exists to produce now exists, once, on one
-machine. Reproducing it elsewhere — and then earning a second experiment — is
-what sets the order of everything below.
+## Sequence at a glance
 
----
+```mermaid
+flowchart LR
+    A[Now: one archive + LPS graphs] --> B[Phase 1: repair evidence and repeat]
+    B --> C[Phase 2: classical decoding study]
+    C --> D[Phase 2: feasible qLDPC study]
+    C --> P[Focused paper if contribution survives review]
+    D --> P
+    D --> E[Phase 3: shared experiment engine]
+    E --> F[Phases 4–6: portability, analysis, community]
+```
 
-## Phase sequence at a glance
+| Phase | Deliverable | Status |
+| --- | --- | --- |
+| 0 — constitution | Evidence standards and decision records | Adopted; enforcement gaps remain |
+| 1 — first real result | Reproducible, correctly scoped π case study | Archive delivered; repair/repeat gates open |
+| 2 — second experiment | Classical decoding controls, then feasible qLDPC | Graph construction only |
+| 3 — shared engine | Reuse extracted from two validated experiments | Deferred until repeated needs exist |
+| 4 — backend independence | Controlled portability study; ROCm per ADR 006 | Conditional; no verified port or AMD run |
+| 5 — longitudinal analysis | Reusable cross-run analysis tools | Deferred tooling; statistics required now |
+| 6 — research community | Independent reproduction and maintenance | Participation welcome; platform maturity unearned |
 
-| Phase | Name | Exit artifact |
-|---|---|---|
-| **0** | Constitution (lightweight) | ✅ **Done** — [principles](handbook/principles.md) + [research-standards](handbook/research-standards.md) committed |
-| **1** | The First Real Result | ✅ **Done (consumer axis)** — [measured RTX 5070 crossover](../benchmarks/runs/2026-08-05-rtx5070-turbo.json) + narrated writeup; H100 axis outstanding |
-| **2** | The Second Experiment | qLDPC/graphs run reusing Phase 1 by hand |
-| **3** | Extract the Experiment Engine | Abstraction refactored *from* real code |
-| **4** | Backend Independence | 2nd backend behind the same interface |
-| **5** | Research Intelligence | Stats + regression + publication figures |
-| **6** | Ecosystem & Governance | RFC process, docs site, release automation |
-
----
-
-# Engineering Principles
-
-Beyond the project's North Star principles, the roadmap itself follows these engineering rules:
-
-- Prefer evolutionary architecture over revolutionary rewrites.
-- Abstractions are extracted from working systems, never imposed on empty scaffolding.
-- Optimize only after measurement.
-- Documentation explains intent; code explains implementation.
-- Every architectural abstraction should reduce the effort required to build the next experiment.
-- New contributors should understand *why* the architecture exists before learning *how* it works.
-
----
-
-# Anti-Roadmap
-
-Q1729 deliberately refuses to:
-
-- Optimize before measuring.
-- Introduce abstractions without multiple concrete implementations.
-- Publish benchmarks that cannot be independently reproduced.
-- Add AI features that generate unsupported conclusions.
-- Chase every accelerator, framework, or research trend without a concrete experimental need.
-- Introduce governance before multiple maintainers actually exist.
-- Build infrastructure that has no immediate research value.
-
-This section serves as the project's non-goals. Anything on this list requires an ADR to overturn.
-
----
+Every gate closes with linked evidence, not a date or an implementation checkbox.
+Independent design work can overlap; later phases cannot waive earlier gates.
 
 ## Phase 0 — Constitution (lightweight)
 
-**Why now?** These documents cost hours, not weeks, and they shape every run that follows. Delaying them means running the first experiment without a contract for what makes it valid.
+Keep the [principles](handbook/principles.md) and
+[research standards](handbook/research-standards.md) as requirements. Distinguish
+a rule, its implementation and evidence that it was exercised. Preserve session
+history and ADR bodies; add dated amendments. Commit prospective protocols
+before new runs. A hypothesis constant first committed with its result does not
+prove preregistration; the existing archive remains useful exploratory evidence.
 
-**Why not earlier?** Nothing precedes this phase.
+## Phase 1 — The first real result
 
-**What becomes possible afterwards?** Every future run has a defined standard of evidence; every future design decision has principles to be evaluated against.
+**Immediate milestone: repair the evidence path and produce one bounded repeat.**
+Preserve the old archive and read its
+[reviewed interpretation](../benchmarks/runs/2026-08-05-rtx5070-turbo-reviewed.md).
 
-**Do now:**
-- ✅ `docs/handbook/principles.md` — the six North Star principles above, one page.
-- ✅ `docs/handbook/research-standards.md` — the required contract every experiment must define before it runs. The canonical contract is [Research Standards](#research-standards) below: **question, hypothesis, variables, controls, hardware, software versions, statistical treatment, raw data, limitations.**
-- ✅ The **Anti-Roadmap** section above serves as the non-goals document — linked from the handbook.
-- ✅ Linked from the README and from `docs/adr/README.md`.
+### P1-R1 — Protect and validate evidence
+
+- [ ] Refuse to overwrite measured JSON; preserve figures under run-specific paths.
+- [ ] Introduce versioned semantic validation: nonempty required values, types,
+  finite numbers, repeat counts, backend identity and measured/synthetic status.
+- [ ] Apply validation at writer, plotter, narrator and CI boundaries, with
+  explicit legacy handling and meaningful malformed-input/overwrite tests.
 
-**Explicitly deferred to later phases:** architecture handbook, glossary, contributor expectations. They are written when there is architecture and contributors to describe — Phases 3 and 6.
+**Exit:** conflicting outputs and invalid records are rejected without altering
+archives; valid old data stays readable under its legacy schema.
 
-**Independently valuable because:** even if nothing else ships, the repo gains a public, citable standard of evidence — rare in benchmark projects.
+### P1-R2 — Make each claim traceable
 
-**Exit criteria:** principles and research-standards are committed, and the next run cannot begin without filling in the research-standards contract.
+- [ ] Capture source revision/dirty state, resolved dependencies, selected device,
+  actual simulator target/precision and complete experiment configuration.
+- [ ] Retain each repeat's outcome, timing and QAE counts; record supported seeds
+  and any backend nondeterminism. Current rows retain only their final outcome.
+- [ ] Derive plot/control labels from actual backend metadata, including CPU fallback.
+- [ ] Require review of every numerical and causal statement in NIM findings.
+- [ ] Resolve non-kernel coverage exclusions; make release checks verify quality
+  results, version/changelog agreement and main ancestry.
+
+**Exit:** every plotted point is traceable to samples, configuration and source.
+The 100% CI coverage gate stays unchanged. Release automation already exists;
+these are missing checks, not a request to rebuild release tooling.
+
+### P1-R3 — Define and verify the measurement
 
----
+- [ ] Commit a bounded protocol: sweep, repeats/shots, uncertainty, exclusions
+  and stopping rule before collecting new data.
+- [ ] Separate wrapper construction, allocation, transfer and device execution
+  when attributing costs. Warmup does not remove all wrapper work.
+- [ ] Profile representative cases before asserting a dispatch/arithmetic bottleneck.
+- [ ] Explain QAE quantization analytically and check sample distributions;
+  distinguish relative/absolute error and floating-point reference limits.
+- [ ] Re-establish Linux/WSL2 runtime availability and run real-backend tests;
+  report Windows, CPU simulator CI and GPU evidence separately.
+
+**Exit:** declared timing boundaries and uncertainty, supported causal claims or
+explicit hypotheses, and fresh relevant integration evidence. Runtime restoration
+is separate machine maintenance; it is not performed by this documentation update.
+
+### P1-R4 — Repeat and review
+
+- [ ] Execute the predeclared local protocol into a new unique archive.
+- [ ] Generate run-specific figures and human-reviewed findings.
+- [ ] Explain disagreements with the old archive without selecting favorable runs.
+- [ ] Demonstrate reproduction from documented setup and resolved dependencies.
+
+**Exit:** a new auditable run and reproducible analysis including limitations.
+H100 is optional: proceed only with a specific question after local profiling
+and an explicit resource budget. Cost is not the only current blocker.
+
+## Phase 2 — The second experiment
+
+Prospective question family: how do explicit LPS-derived sparse codes behave
+under controlled decoding, and where does GPU acceleration help at matched
+accuracy? Novelty is not yet established.
 
-## Phase 1 — The First Real Result
+### P2-A — Choose the question and construction
 
-**Why now?** The entire repo exists to produce this result, and it does not exist yet. Everything else in the Blueprint is in service of it.
+- [ ] Build a literature/contribution table for graph-derived LDPC codes,
+  hypergraph-product codes and existing CPU/GPU decoders.
+- [ ] Commit a one-page protocol: code sizes, noise, decoder, baselines, metrics,
+  statistics, stopping rule, memory/runtime budget and contribution candidate.
 
-**Why not earlier?** N/A — this is as early as it can be. The premature design being avoided: building any engine, plugin API, or multi-backend layer before a single measured number exists.
+**Exit:** a feasible falsifiable question useful even if acceleration loses.
+If novelty or feasibility fails, revise the question before implementation.
 
-**What becomes possible afterwards?** Publication, community benchmark submissions against real data, and — after one more experiment — honest abstraction.
+### P2-B — Classical code and reference decoder
 
-**Build, in order:**
-1. ✅ **The CUDA kernel.** `classical/` gets a real hand-written CUDA C++ kernel: one Ramanujan term per thread, parallel reduction to the partial sum. Validated against the existing exact SymPy ground truth so any float drift surfaces immediately.
-2. ✅ **The QAE path on real silicon.** Run the CUDA-Q Quantum Amplitude Estimation circuit on the `nvidia` (cuStateVec) backend in WSL2 on the RTX 5070 — the verified target from ADR-002.
-3. ✅ **The real run file.** Replace `data/sample_run.json` with **measured** data: timing, VRAM, qubit ceiling, digit count, and the `hardware` field. This run file must satisfy the Phase 0 research-standards contract.
-4. ✅ **One crossover plot.** Time (and VRAM) vs digit count / qubit count, classical vs quantum, on a single figure. Save under `benchmarks/`.
-5. ✅ **The narrator writes it up.** Feed the real run file to the existing NIM narrator to draft the findings, under the ADR-003 guardrail (numbers in, prose out — never invented).
-6. ⬜ **The datacenter axis (optional within this phase).** *Not done — rolls to the start of Phase 2 as this section already allowed.* Repeat the QAE path once on a rented H100 (`nvidia-mgpu`) to get the second point on the crossover curve. If time-boxed out, this rolls to the start of Phase 2 — it does not block publication of the RTX result.
+- [ ] Specify the graph-to-parity-check mapping and implement sparse matrices.
+- [ ] Calculate exact GF(2) rank/dimension and justified distance bounds.
+- [ ] Implement a CPU decoder with independent exhaustive tiny-case controls.
 
-**Independently valuable because:** a reproducible RTX-5070 crossover analysis is a publishable, portfolio-grade result on its own — even if the platform vision never materializes.
+**Exit:** validated classical code parameters and decoder behavior. This is
+classical LDPC work, not yet qLDPC or quantum error correction.
 
-**Exit criteria:** a reproducible, measured crossover result exists in the repo with a narrator-drafted writeup, all conforming to the research-standards contract. `sample_run.json` is no longer the only data in the repo.
+### P2-C — Controlled classical decoding study
 
-**Why this is the hinge:** until this exists, no abstraction has anything to abstract over. This phase converts the repo from "well-scaffolded skeleton" into "answers one specific question with real evidence" — which is the whole differentiator.
+- [ ] Compare CPU/GPU with identical code/noise instances and matched accuracy
+  and stopping criteria; include small workloads where CPU may win.
+- [ ] Record failure rates with uncertainty, throughput, latency, memory and
+  transfer/batching costs. Archive protocol, outcomes and reproducible analysis.
 
----
+**Exit:** a defensible classical study, potentially enough for a focused paper.
+It does not by itself complete Phase 2.
 
-## Phase 2 — The Second Experiment
+### P2-D — Feasible quantum construction and decoding
 
-**Why now?** One working result exists (Phase 1). A second, structurally similar experiment is the minimum evidence base for recognizing a genuine pattern.
+- [ ] Validate a tiny known CSS control, including `Hx * Hz.T = 0` over GF(2).
+- [ ] Choose a budgeted LPS-derived qLDPC construction; verify parameters,
+  commutation, sparse representation and the decoder interface.
+- [ ] Run a specified quantum-code noise/decoding study with controls and
+  uncertainty, then archive reviewed findings and reproduction instructions.
 
-**Why not earlier?** Running it before Phase 1 published would split focus across two unfinished experiments. The premature design being avoided: generalizing the runner/collector flow off a single data point.
+The audit's exploratory 1092×1092 bipartite parity-check matrix has GF(2)
+rank 794 and dimension 298. Its self hypergraph product would have **2,384,928
+physical qubits**; one dense uint8 stabilizer matrix would need about 2.84 TB.
+These are parameter calculations, not an implemented or decoded quantum code.
+Sparse decoding can avoid a statevector but still needs a memory/runtime budget.
 
-**What becomes possible afterwards?** Honest abstraction — the shared shape of two real experiments becomes visible through use, not guesswork.
+**Phase 2 exit:** a validated quantum-code experiment, beyond graph construction,
+classical decoding or an unrelated tiny CSS demonstration.
 
-**Do:**
-- Implement the **Stage 3 thread from the README** as the second experiment: Ramanujan expander graphs → quantum LDPC codes, simulated/decoded with CUDA-Q QEC (CUDA-QX) plus custom kernels.
-- Deliberately **copy-paste and adapt** the Phase 1 runner/collector/plot flow rather than prematurely generalizing it. The duplication is intentional — it is the data that will drive Phase 3.
-- Produce a second real run file + writeup under the same research-standards contract.
-- **Community starts here but stays minimal:** invite benchmark submissions of the Phase 1 run on other GPUs (the run-file schema is already hardware-agnostic). Add the benchmark-submission issue template *now* because there is finally real data worth submitting against. Governance still deferred.
+### Publication and arXiv gate
 
-**Independently valuable because:** the qLDPC experiment stands alone as an open, reproducible QEC lab — the README's Stage 3 promise, delivered.
+A paper can precede the platform. Start with a focused technical report; pursue
+a preprint when evidence supports a contribution beyond reproducing known facts.
 
-**Exit criteria:** two real experiments exist in the repo, each with measured data, and the duplication between them is obvious and slightly painful. That pain is the signal to begin Phase 3.
+- [ ] Related work and a precise contribution statement.
+- [ ] Correct mathematics, fair baselines and declared statistical analysis.
+- [ ] Archived code/data/configuration and independent reproduction or documented
+  reproduction feedback, including limitations and negative findings.
+- [ ] Complete manuscript reviewed by someone able to challenge the method.
+- [ ] Human authorship responsibility, appropriate AI-use disclosure, and current
+  category/endorsement/submission requirements checked at submission time.
 
----
+A controlled graph-derived decoding study is the provisional candidate; novelty
+remains unverified. An expanded simulator study is possible if related work
+supports a substantive contribution. arXiv is moderated and is not peer review;
+endorsement and acceptance are not guaranteed. See the official
+[moderation policy](https://info.arxiv.org/help/moderation/index.html) and
+[endorsement requirements](https://info.arxiv.org/help/endorsement.html).
 
-## Phase 3 — Extract the Experiment Engine
+## Phase 3 — Shared experiment engine
 
-**Why now?** Two working experiments share visible, felt duplication. The Recognized Pattern step of the philosophy ladder has been reached with evidence.
+Extract repeated configuration, provenance, persistence, validation and analysis
+needs from two validated experiments. Keep experiment-specific logic separate.
+Do not precommit to package trees, plugins or multiple storage formats.
+**Exit:** both studies reproduce through shared code with less duplication and
+no weakened scientific contract.
 
-**Why not earlier?** Designing the engine off zero or one experiment would encode guesses. The premature design being avoided: the full ten-package `src/q1729/` layout built as empty scaffolding.
+## Phase 4 — Backend independence
 
-**What becomes possible afterwards?** Experiment #3 becomes cheaper than #2 was — the only honest justification an abstraction has.
+ROCm remains designated by [ADR 006](adr/006-rocm-as-phase-4-second-backend.md).
+Establish same-vendor reproduction as that ADR requires, then budget a real
+portability study. Source compatibility is not a verified port. Never interpret
+an AMD GPU classical path versus CPU quantum fallback as a GPU crossover.
+A second simulator requires its own ADR and same-device control.
+**Exit:** a real portability result with confounds stated.
 
-**Do:**
-- Introduce the Blueprint's pipeline as a refactor, not a rewrite:
-  `Research Question → Hypothesis → Experiment → Runner → Collector → Statistics → Report → Archive`.
-- Migrate to the [`src/q1729/` layout](#repository-target-layout) **incrementally**, adding a package only when a real experiment already needs it:
-  - `core/`, `experiments/`, `runners/`, `reporting/` first — because Phases 1–2 already exercise these.
-  - `statistics/`, `visualization/` when Phase 4/5 need them.
-  - `plugins/`, `cli/` last.
-- Write the **architecture handbook** and **glossary** deferred from Phase 0 — there is now real architecture to document.
-- Add the metadata schema, result model, and JSON/CSV/Parquet outputs from the Blueprint's Experiment Engine — driven by what the two experiments actually emitted.
+## Phase 5 — Longitudinal analysis
 
-**Independently valuable because:** even frozen here, the repo would be two rigorous experiments running through one clean, documented engine.
+Build reusable cross-run uncertainty/regression tools when archives demonstrate
+recurring needs. Statistical design and uncertainty are required in Phase 1
+and every subsequent study. **Exit:** compatible runs can be compared without
+silently pooling different protocols.
 
-**Exit criteria:** both existing experiments run through one shared engine with no externally observable behavior change and no loss of the exact-ground-truth validation.
+## Phase 6 — Research community
 
----
+Prioritize independent reproduction, usable contribution guidance and maintainable
+releases. Add a site, governance roles or plugins when researchers need them.
+**Exit:** others can reproduce and extend a study without private guidance.
 
-## Phase 4 — Backend Independence
+## Research standards
 
-**Why now?** A stable engine exists (Phase 3), and a real experiment demands a second backend — the forcing function that proves the interface.
+The [nine-field contract](handbook/research-standards.md) applies throughout.
+Close gates with dated, host-specific source/data/check evidence.
 
-**Why not earlier?** Abstracting across backends before one produced a number is speculative generality. The premature design being avoided: a plugin API shaped by imagined ROCm/SYCL/JAX needs rather than one concrete integration.
+## Repository target layout
 
-**What becomes possible afterwards?** Community benchmark submissions from non-NVIDIA hardware; the crossover analysis gains new axes.
+Keep the current layout until Phase 3 demonstrates useful shared abstractions.
 
-**Do:**
-- Formalize the plugin/backend API around the backends **already in use**: CUDA, CUDA-Q, CPU (`qpp-cpu`). The interface is extracted from the existing `quantum/backend.py` selection logic, which already does `nvidia → tensornet → qpp-cpu`.
-- Add exactly **one** new backend from the Blueprint's future list (ROCm, SYCL, Triton, JAX, OpenMP) — chosen because a real experiment needs it.
-- Do not add the remaining backends until an experiment demands each. Each one is a pull, never a push.
+## Definition of success
 
-**Independently valuable because:** a proven two-backend interface is itself a reference design for accelerator-portable benchmarking.
+First earn a reproducible finding, then a possible paper and reusable research
+tools. Platform maturity requires repeated experiments and independent use.
+No phase requires a predetermined positive result.
 
-**Exit criteria:** the same experiment runs unmodified across at least two genuinely different backends behind one interface.
+## GitHub strategy
 
----
+Use small reviewable changes, preserve archives and release verified main commits.
+Editing a checklist does not establish completion or authorize publication.
 
-## Phase 5 — Research Intelligence
+## Roadmap governance
 
-**Why now?** An archive of real runs exists across experiments and hardware — statistics finally has a population, not a sample of one.
+Material sequencing/architecture changes get an ADR. Update gates when evidence
+changes feasibility; avoid speculative dates. The next code task is **P1-R1**.
 
-**Why not earlier?** Confidence intervals over one run are decoration. The premature design being avoided: building analysis infrastructure before there is data to analyze.
+## Anti-roadmap
 
-**What becomes possible afterwards?** Statistically defensible publications and automatic detection of regressions across releases.
-
-**Do:**
-- Statistical analysis + confidence intervals over repeated runs.
-- Regression detection: flag when a new run is meaningfully slower/heavier than the archived baseline for the same hardware.
-- Evolve the narrator from single-run drafter into the tiered analyst: research-assistant mode (question-grounded), then lab-notebook accumulation across runs — still under the ADR-003 never-invent guardrail.
-- Publication-quality figure generation in `visualization/`.
-
-**Independently valuable because:** the run archive + regression detection is useful to every contributor from the day it lands.
-
-**Exit criteria:** the project can produce a statistically defensible, explainable writeup from its run archive without manual plotting.
-
----
-
-## Phase 6 — Ecosystem & Governance
-
-**Why now?** External interest actually exists — forks, submitted benchmarks, contributors. There are now people to govern and readers to teach.
-
-**Why not earlier?** Per the Anti-Roadmap: no governance before multiple maintainers exist. An RFC process for a solo repo is costume, not process.
-
-**What becomes possible afterwards?** The [Definition of Success](#definition-of-success), in full.
-
-**Do:**
-- Documentation site, tutorials, contributor expectations (deferred all the way from Phase 0 — written when there are contributors to expect things of).
-- RFC process and governance — introduced when there is more than one decision-maker, so it is real process rather than costume.
-- Release automation; milestones v0.2 → v1.0 (see [GitHub Strategy](#github-strategy)).
-
-**Independently valuable because:** each ecosystem piece (docs site, tutorials, automation) reduces maintenance load immediately upon landing.
-
-**Exit criteria:** the [Definition of Success](#definition-of-success) is reachable — researchers reproduce every result, engineers extend without touching core, every decision is documented, every release reproducible — and it was earned one real result at a time.
-
----
-
-# Roadmap Governance
-
-This roadmap is treated as architecture rather than a TODO list.
-
-Until Phase 6, major sequencing or architectural changes to this roadmap are recorded as **ADRs** in `docs/adr/` — the decision system the repo already uses. This keeps changes intentional, stable, and historically understandable without installing a solo-maintainer RFC process the Anti-Roadmap forbids.
-
-The **RFC process arrives in Phase 6**, when there is more than one decision-maker and roadmap changes genuinely require proposal and review. From that point, major changes go through RFC before implementation.
-
----
----
-
-# Reference — the platform being earned
-
-Everything below is the durable target the phases above build **toward**. It is
-reference material, not a to-do list: nothing here is scaffolded ahead of the
-real experiment that needs it (see the Anti-Roadmap). This is where Blueprint
-v1.0's architecture, standards, and definition of success now live in full.
-
-## Repository Target Layout
-
-The destination layout, extracted incrementally in Phase 3+ (annotations show the
-earliest phase that justifies each package — none is created before then):
-
-```text
-src/q1729/
-    core/            # Phase 3 — result model, metadata schema, config
-    experiments/     # Phase 3 — Ramanujan π (P1), qLDPC (P2)
-    runners/         # Phase 3 — run orchestration + collection
-    backends/        # Phase 4 — CUDA, CUDA-Q, CPU behind one interface
-    statistics/      # Phase 5 — confidence intervals, regression detection
-    visualization/   # Phase 5 — publication-quality figures
-    reporting/       # Phase 3 — JSON/CSV/Parquet outputs, writeups
-    ai/              # Phase 5 — narrator as tiered analyst (ADR-003 guardrail)
-    plugins/         # Phase 4+ — third-party backends/experiments
-    cli/             # Phase 3+ — unified command-line entry point
-
-docs/
-    handbook/        # Phase 0 principles + research-standards; Phase 3 architecture + glossary
-    adr/             # in use today — architecture decision records
-    rfc/             # Phase 6 — proposals once >1 decision-maker exists
-    tutorials/       # Phase 6
-    architecture/    # Phase 3
-    roadmap/         # this document
-
-benchmarks/          # Phase 1 — real run files + crossover plots
-papers/              # published writeups
-results/             # archived run files across hardware
-examples/
-notebooks/
-```
-
-## Engineering Standards
-
-Every PR should include, where applicable:
-
-- **Tests** — new modules ship with tests that cover them fully (100% coverage is the standard; CI gates at a literal 100%, no buffer — [ADR 004](adr/004-repo-hygiene-and-agent-sync.md)).
-- **Documentation** — intent-level docs for anything a contributor would otherwise have to reverse-engineer.
-- **ADR (or, from Phase 6, RFC) reference** if the change is architectural.
-- **Benchmark impact** if the change touches a measured path.
-- **Changelog entry** — CHANGELOG.md follows Keep a Changelog; the release workflow extracts the tagged version's notes from it.
-
-## Research Standards
-
-Every experiment must define, before it runs — this is the Phase 0 contract, enforced from the first real run in Phase 1:
-
-- **Question** — the specific question the run answers.
-- **Hypothesis** — the expected outcome and why.
-- **Variables** — what is being varied (e.g. digit count, qubit count).
-- **Controls** — what is held fixed.
-- **Hardware** — the exact silicon (recorded in the run file's `hardware` field).
-- **Software versions** — CUDA, CUDA-Q, driver, Python, package versions.
-- **Statistical treatment** — repetitions, confidence intervals, how outliers are handled.
-- **Raw data** — the run file itself, archived, reproducible.
-- **Limitations** — what the run does *not* establish.
-
-## GitHub Strategy
-
-- **Project:** Roadmap (this document, tracked as issues once Phase 3's architecture defines them — per the Blueprint, issues are created only after the architecture they touch is defined).
-- **Milestones:** v0.3 → v0.4 → v0.5 → v1.0 (the repo is at v0.2.0 today — v0.2 was the Phase 0 + Phase 1 release).
-- **Epics:** Foundation · Experiment Engine · Plugin System · Benchmarking · AI · Visualization · Documentation · Governance — each maps onto a phase above.
-
-## Definition of Success
-
-A 10/10 Q1729 repository is one where:
-
-- Researchers can **reproduce every published result**.
-- Engineers can **extend it without modifying the core**.
-- Educators can **teach from it**.
-- AI **augments analysis without fabricating evidence**.
-- **Every architectural decision is documented.**
-- **Every benchmark is statistically defensible.**
-- **Every release is reproducible.**
-- The project is **respected for engineering rigor rather than feature count**.
-
-## Final Goal
-
-Become the reference implementation for modern computational research
-engineering — not merely for CUDA or quantum computing, but for how rigorous
-computational experiments should be designed, executed, analyzed, documented,
-and shared.
-
----
-
-## Provenance
-
-This document supersedes and absorbs **Blueprint v1.0** in full — its Vision,
-North Star, 24-month roadmap, repository target layout, engineering and research
-standards, GitHub strategy, and definition of success all live here. Nothing was
-dropped; the 24-month platform vision is intact, re-sequenced so each layer is
-shaped by evidence from the layer beneath it, and so the project always has a
-sharp, specific identity while it grows into the general one.
-
-*Author: Arjun Ganesh — github.com/iarjunganesh/q1729*
+No speculative platform scaffold, unsupported quantum advantage, automatic trust
+in AI prose, cloud rental without a question, promised paper acceptance, or
+statistics deferred until the end. Reassess when novelty or resource gates fail.

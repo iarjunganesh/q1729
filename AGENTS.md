@@ -28,22 +28,29 @@ video, no judging criteria, and no `submission/` directory. Never add
 submission material, devpost-style write-ups, or "built in N hours" framing.
 It is a research repo whose value is measured claims that stay true.
 
-**Current phase**: roadmap **Phase 1 is delivered** on the consumer axis and
-**Phase 0 is complete**. Present in the repo, verified 2026-08-05:
+**Current phase (documentation audit, 2026-09-06):** Phase 0 standards are
+adopted; enforcement gaps remain. Phase 1 has a real 2026-08-05 RTX 5070 Laptop
+GPU archive, CUDA kernel, known-amplitude QAE circuit and harness. Its
+evidence/reproducibility repair gates are open. QAE encodes `math.pi / 4`;
+it is a simulator case study, not an independent π algorithm or quantum advantage.
 
-- `classical/ramanujan_kernel.cu` — real hand-written CUDA C++, compiled via
-  NVRTC (ADR 005), validated against exact SymPy to 1e-15 relative.
-- `quantum/qae.py` — canonical Quantum Amplitude Estimation, converging on π.
-- `benchmarks/` — harness, environment capture, plotter, and a **real measured
-  run file** (`benchmarks/runs/2026-08-05-rtx5070-turbo.json`) plus its
-  narrated writeup and theme-aware crossover plots.
-- `docs/handbook/` — Phase 0 principles + the nine-field research-standards
-  contract.
-- 156 tests, 100% coverage on WSL2/CI.
+**Phase 2 has started:** `classical/ramanujan_graph.py` and its tests are staged
+work beyond released `f88a926`. The modular construction is exact; dense
+floating-point spectral checks are numerical verification, not an exact proof.
+No parity-check implementation, decoder, qLDPC experiment or second run exists.
 
-**Next**: the optional cloud-H100 axis of Phase 1, then roadmap Phase 2 (the
-qLDPC second experiment). `docs/roadmap.md` is the evidence-sequenced plan and
-must not contradict the README's 3-stage table.
+**Next:** P1-R1 archive protection and semantic validation, then provenance,
+profiling and a bounded repeat. Phase 2 proceeds through a specified classical
+code/reference decoder and controlled GPU study before a feasible qLDPC study.
+Literature/protocol design may proceed alongside evidence repairs. Publication
+is conditional on contribution and evidence; shared platform code follows reuse.
+H100 remains optional and unmeasured, with runtime/evidence/budget gates beyond
+access cost. See `docs/roadmap.md` and ADR 007; README's three stages remain
+the research thread.
+
+Windows no-key audit: 157 passed, 29 skipped, 97.19% coverage. Historical WSL2
+186 passed / 100% was not reproduced: the configured virtual disk could not
+be attached. Public CI on a released commit does not verify staged changes.
 
 ## Key commands
 
@@ -64,18 +71,20 @@ make coverage     # pytest tests --cov --cov-report=term-missing --cov-fail-unde
 ```
 
 No `make` on the Windows host: run the underlying commands directly (they're
-one-liners).
+one-liners). `make benchmark` currently reuses a date-only output path and
+`make plot` reuses figure names. Use unique paths from `benchmarks/README.md`
+until P1-R1 enforces archive protection.
 
 ## Two-host workflow (ADR 002)
 
 - **Windows host** (Python 3.14, `.venv/`): editing, classical math, unit
-  tests, lint. Neither cudaq nor a usable cupy installs here —
+  tests, lint. The complete native-Windows CUDA-Q/CuPy runtime path is unverified —
   `quantum/backend.py`, `quantum/qae.py` and `classical/cuda_kernel.py` must
-  all degrade gracefully. Expect **128 passed, 28 skipped**.
+  all degrade gracefully. No-key audit: **157 passed, 29 skipped**; live NIM is a separate optional check.
 - **WSL2 Ubuntu** (Python 3.12, venv at `~/q1729-cudaq`): everything CUDA-Q
   and everything CUDA. Run tests there with
   `wsl -e bash -c "cd /mnt/c/ws/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
-  Expect **156 passed**.
+  Historical result: **186 passed**; current WSL2 disk availability blocks a fresh run.
 - CI (ubuntu, Python 3.13) installs cudaq and runs the CUDA-Q integration
   suite on the `qpp-cpu` target — real simulator, no GPU. The CUDA-kernel
   integration tests skip there (no GPU); that split is ADR 005, not a gap.
@@ -83,7 +92,7 @@ one-liners).
 ## Why the sync-discipline sections below exist
 
 q1729's docs make dated, specific, verified claims: "cudaq 0.15.1 selects
-`nvidia` on the RTX 5070, verified 2026-08-05," "156 tests, 100% coverage,"
+`nvidia` on the RTX 5070, verified 2026-08-05," "186 tests, 100% coverage,"
 "the QAE arm peaks at 12–20% GPU utilization." That specificity is the whole
 value of the documentation — a vague doc can't go stale, but it also can't be
 trusted. Every session that touches code, tests, or a version number is
@@ -160,6 +169,17 @@ without that extra scrutiny.
   This is deliberate: atomic float accumulation commits in nondeterministic
   order, and a benchmark whose output moves between identical runs is not
   evidence. Don't "optimize" this into an atomic reduction.
+- **`ramanujan_kernel.cu` stays inside the HIP-portable CUDA subset (ADR
+  006).** No warp primitives (`__shfl_*`), cooperative groups, PTX inline asm,
+  `__nv_*` intrinsics, or device-side CUDA library calls without amending that
+  ADR. This preserves source compatibility options; a working ROCm port and its effort remain unverified.
+- **An AMD/ROCm run is a portability result, never a crossover point (ADR
+  006).** CUDA-Q has no ROCm target — every GPU target is cuQuantum-based — so
+  on AMD silicon `select_target` lands on `qpp-cpu`. Never plot a GPU classical
+  arm against a CPU quantum arm on one crossover axis; the crossing point would
+  be an artifact of the fallback. Introducing a second quantum simulator (Aer,
+  qsim-HIP) to avoid this needs its own ADR *and* a same-GPU
+  simulator-vs-simulator control run first.
 - **Target preference order is `nvidia-mgpu` → `nvidia` → `tensornet` →
   `qpp-cpu`** (`PREFERRED_TARGETS`) — the stage-1 benchmark matrix. **On a
   driverless host, `cudaq.set_target()` on a GPU target hard-aborts the
@@ -179,7 +199,7 @@ without that extra scrutiny.
   carries `"synthetic": true` and `benchmarks/plot.py` raises on it. Never
   relax that guard, and never let a synthetic file lose its label because
   real run files now exist alongside it.
-- **Secrets**: only `NVIDIA_API_KEY` exists; `.env` is gitignored,
+- **Runtime secrets**: `NVIDIA_API_KEY` is the runtime credential; CI may use `CODECOV_TOKEN`; `.env` is gitignored,
   `.env.example` documents it, the key is read from the environment at call
   time and never logged.
 
@@ -190,19 +210,24 @@ A measured claim in this repo is only worth what its provenance is worth.
 - **Every run file must satisfy the nine-field contract** in
   `docs/handbook/research-standards.md`: question, hypothesis, variables,
   controls, hardware, software versions, statistical treatment, raw data,
-  limitations. `benchmarks/harness.py` emits all nine — if you add a field to
-  the schema, add it there, not by hand-editing JSON.
-- **The hypothesis is committed before the run.** It lives as a module
-  constant in `benchmarks/harness.py` so changing it is a visible diff.
-  Never edit it to match a result.
-- **Raw per-repeat samples are never discarded** in favour of summaries.
+  limitations. `benchmarks/harness.py` emits the current fields, but semantic validation and
+  complete provenance are open Phase 1 work. Add schema fields in the writer,
+  not by hand-editing measured JSON.
+- **The hypothesis is committed before the run.** It currently lives as a module
+  constant in `benchmarks/harness.py`, which makes changes visible but does not
+  prove pre-run commitment. Commit new protocols before running; the first
+  archive is exploratory. Never edit an old hypothesis to match its result.
+- **Raw per-repeat samples and outcomes must be retained**, including QAE
+  counts and seed limitations. Current timing arrays exist, but each row keeps
+  only its final outcome; complete outcome retention is an open repair gate.
 - **The power/thermal profile is a required argument, not a default.** On a
   laptop it changes every timing. `make benchmark` refuses to run without it.
 - **Never hand-edit a run file's numbers.** If a run is wrong, re-run it and
   say so. A run file is a record of something that happened.
 - **Don't delete or overwrite an existing measured run file** to make a
   newer one look like the only result. Add alongside; the archive is the
-  point.
+  point. The current writer can overwrite an existing path; enforced protection
+  is P1-R1. Use a unique run path and run-specific figure directory meanwhile.
 
 ## Style / conventions
 
@@ -220,7 +245,8 @@ A measured claim in this repo is only worth what its provenance is worth.
   thread uses a bounded helper that fails with a message instead of hanging
   the suite.
 - Ruff (`line-length 120`, `E,F,I,W,B`, plus `ruff format --check`) and mypy
-  are the lint/format/type gates — all three run as separate CI jobs.
+  are the lint/format/type gates. Lint and formatting share the CI lint job;
+  type checking runs separately.
 - **100% test coverage is the CI gate, no buffer** (owner's explicit
   requirement — see [ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md)):
   `--cov-fail-under=100`, matched by `codecov.yml`. Coverage sources are
@@ -229,7 +255,7 @@ A measured claim in this repo is only worth what its provenance is worth.
   JIT-compiled CUDA-Q kernel body (`# pragma: no cover` — coverage can't
   trace it), and each one must be exercised by a `tests/integration/` test
   instead. Measure where cudaq exists (WSL2/CI); Windows-local runs
-  under-count `quantum/` and will show ~96% there — that's expected, not a
+  under-count `quantum/` and showed 97.19% in the no-key audit — that's expected, not a
   gate failure (CI is what's authoritative).
 - **A `# pragma: no cover` that isn't a CUDA-Q kernel body is a bug.** Don't
   reach for it to close a coverage gap; write the test.
@@ -246,7 +272,8 @@ Fields that move together in the **same commit**, before a tag is created:
 - `CHANGELOG.md` — a new `## [x.y.z] — <date> — <summary>` heading. This is
   not optional: `.github/workflows/release.yml` extracts the GitHub release
   body from the heading matching the pushed tag via `awk`; a missing or
-  mismatched heading ships a release with an empty body.
+  mismatched heading can make extraction fail. The workflow rejects empty notes;
+  quality, ancestry and version agreement still need explicit enforcement.
 - git tag `vX.Y.Z` — annotated, created only after the above two are on
   `main`.
 
@@ -274,6 +301,7 @@ nit:
   preference order, coverage gate number, test counts, two-host workflow.
   `CLAUDE.md` itself never goes stale because it's just the import — don't
   add facts there that would need separate upkeep.
+- **docs/PATHWAYS.md** — current orientation, subordinate to README and roadmap.
 - **README.md** — badges (including pinned versions in badge text), the
   "first real result" numbers, the "Built to be trusted" coverage and test
   counts, the Project structure list, the Hardware table, the roadmap status
@@ -355,6 +383,7 @@ nit:
   never a duplicate of what's here.
 - `AGENTS.md` (this file) — canonical instructions and the discipline for
   keeping everything below honest over time.
+- `docs/PATHWAYS.md` — orientation subordinate to README and roadmap.
 - `docs/roadmap.md` — single source of truth for sequencing; see Session
   start above.
 - `docs/handbook/` — Phase 0 constitution: `principles.md` and
@@ -369,6 +398,9 @@ nit:
 - `classical/cuda_kernel.py` — NVRTC compile/launch/timing wrapper (ADR 005).
 - `classical/ramanujan_series.py` — the 1914 series, exact SymPy (ground
   truth for the CUDA kernel).
+- `classical/ramanujan_graph.py` — LPS Ramanujan expander graphs + spectral
+  verification (ground truth for the Phase 2 qLDPC experiment). Pure
+  numpy/sympy, CPU-only, never timed.
 - `quantum/qae.py` — canonical Quantum Amplitude Estimation circuit.
 - `quantum/backend.py` — CUDA-Q target selection + environment diagnostic.
 - `analysis/narrator.py` — NIM/Nemotron findings narrator (`make narrate`).

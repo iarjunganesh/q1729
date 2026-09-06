@@ -4,8 +4,9 @@ The six commitments q1729 is built on. Adopted in
 [roadmap Phase 0](../roadmap.md#phase-0--constitution-lightweight); every phase
 after it is held to them.
 
-These are not aspirations. Each one names a concrete thing the repo does, or
-refuses to do, and points at where that is enforced.
+These are adopted requirements. Each names supporting mechanisms; the audit
+found incomplete enforcement, tracked in Phase 1. A written rule is not proof
+that every artifact satisfies it.
 
 ---
 
@@ -18,8 +19,8 @@ software versions, and the controls that were held fixed
 
 *Enforced by:* `benchmarks/harness.py` writes the environment block
 automatically rather than relying on anyone to remember it; the CUDA kernel sums
-block partials on the host instead of using `atomicAdd`, so identical inputs give
-bit-identical output across runs.
+block partials on the host instead of using `atomicAdd`, avoiding nondeterministic atomic reduction order. Cross-hardware/toolchain
+bit identity and complete provenance are not guaranteed.
 
 ## 2. Measured data over anecdotes
 
@@ -44,7 +45,7 @@ requires an ADR — and the phase ordering, which puts the experiment engine
 ## 4. Extensibility over hard-coding
 
 Where behavior varies by machine, the variation belongs in data, not in branches.
-Cloud and consumer runs execute the same code path.
+Cloud and consumer execution are intended to share code; no cloud run exists.
 
 *Enforced by:* run files carry a `hardware_id` and an environment block instead of
 the code forking per machine; `quantum/backend.py` selects a target by preference
@@ -62,14 +63,15 @@ global-phase correction and states plainly what the circuit does *not* prove.
 
 ## 6. AI explains results; it never invents them
 
-The narrator receives numbers from a run file and writes prose about them. It never
-generates, estimates, or fills in a measurement, and no classical or quantum
+The narrator receives numbers from a run file and writes prose about them. It must never
+generate, estimate, or fill in a measurement, and no classical or quantum
 computation is ever routed through a language model.
 
 *Enforced by:* [ADR 003](../adr/003-hybrid-cloud-nim.md), restated as a
 non-negotiable constraint in `AGENTS.md`, and by the narrator's shape — it takes a
 run file as input and returns prose, with no path by which a model output can
-re-enter the data.
+re-enter the numerical pipeline. This does not validate the prose: the model
+can produce unsupported statements, so reviewed findings must check each claim.
 
 ---
 

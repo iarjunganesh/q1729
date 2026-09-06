@@ -1,3 +1,7 @@
+> Historical narrator draft. Its interpretation is superseded by the
+> [2026-09-06 reviewed findings](2026-08-05-rtx5070-turbo-reviewed.md).
+> The original draft below is preserved unchanged.
+
 **Findings (q1729)**  
 
 **Classical CUDA kernel (Ramanujan‑1914 series)**  

@@ -97,3 +97,7 @@ Verified on 2026-08-05, WSL2, RTX 5070 Laptop GPU, cupy 13.6.0, NVRTC 13.3.33:
 - `pi_approximation(3)` returns 3.141592653589793 — π to every digit a double
   carries.
 - Results are bit-identical across repeated runs and across block sizes 32–512.
+
+## 2026-09-06 audit amendment
+
+Correction to the CI discussion: real CUDA-Q integration runs on qpp-cpu in CI; CUDA-kernel GPU integration skips without hardware. Mocked wrapper coverage is distinct from real numerical verification. Warmup does not eliminate wrapper construction/allocation from current harness timings. The WSL2 GPU result was not reproduced in this audit.

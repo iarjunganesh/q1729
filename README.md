@@ -5,7 +5,7 @@
     <source media="(prefers-color-scheme: dark)" srcset="assets/brand/q1729-banner-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="assets/brand/q1729-banner-light.svg">
     <img width="900" src="assets/brand/q1729-banner-light.svg"
-         alt="q1729 — Ramanujan's mathematics meets the NVIDIA stack. How fast can a GPU compute π, classically and as a quantum computer? Consumer RTX to datacenter H100, with an AI layer that writes up what the numbers show."/>
+         alt="q1729 — Ramanujan's mathematics meets the NVIDIA stack. Classical CUDA computation and quantum-circuit simulation on a GPU. Consumer RTX to datacenter H100, with an AI layer that writes up what the numbers show."/>
   </picture>
 </p>
 
@@ -39,73 +39,68 @@
 [![Cloud GPU](https://img.shields.io/badge/cloud-H100_80GB_%28planned%29-6B7280?logo=nvidia&logoColor=76B900)](https://www.nvidia.com/en-us/data-center/h100/)
 [![WSL2](https://img.shields.io/badge/runtime-WSL2-0078D4?logo=linux&logoColor=white)](docs/adr/002-wsl2-runtime.md)
 
+Version badges describe repository dependency floors or the archived stack,
+not a freshly resolved GPU environment. CUDA-QX is a planned extension.
+
 ---
 
 ## Why q1729?
 
 When G. H. Hardy visited Srinivasa Ramanujan, he remarked that his taxicab's number, **1729**, seemed rather dull. Ramanujan replied instantly: *"No, it is a very interesting number; it is the smallest number expressible as the sum of two cubes in two different ways"* — 1729 = 1³ + 12³ = 9³ + 10³. The `q` is for quantum. This repo carries that spirit: taking mathematics that looks ordinary from the outside and finding the structure inside it.
 
-The mathematics is not decoration. Ramanujan's 1914 series delivers **~8 correct digits of π per term** — still among the fastest-converging classical algorithms known — and each term is independent, so it parallelizes perfectly across CUDA cores:
+The mathematics is not decoration. Ramanujan's 1914 series delivers **~8 correct digits of π per term** in exact arithmetic. Independent terms permit parallel evaluation, but unequal term costs, launch overhead and fp64 saturation limit useful GPU scaling:
 
 $$\frac{1}{\pi} = \frac{2\sqrt{2}}{9801} \sum_{k=0}^{\infty} \frac{(4k)!\,(1103 + 26390k)}{(k!)^4\, 396^{4k}}$$
 
 And the thread doesn't stop at π: the same territory — modular forms, Ramanujan expander graphs — underpins modern **quantum LDPC error-correcting codes**, which is where this project is ultimately headed (stage 3).
 
-## The central question
+## The current experiment
 
-> **At what problem size does quantum simulation stop being competitive with a hand-written CUDA kernel — on the same silicon — and does datacenter silicon move the crossover, or just postpone it?**
-
-Classical wins locally; that was never in doubt. The finding is the *shape* of that loss, measured rather than asserted — and the two mechanisms behind it, which turned out to be more interesting than the gap itself.
+How do a CUDA implementation of Ramanujan's series and a simulated canonical
+QAE circuit behave under a declared local timing/accuracy sweep? QAE encodes
+the already-known amplitude `math.pi / 4`; this is a simulator case study,
+not an independent π algorithm or a quantum-advantage experiment.
 
 ## The first real result
 
-Measured on an RTX 5070 Laptop GPU on **2026-08-05** — the full run file, including every raw timing sample, is [`benchmarks/runs/2026-08-05-rtx5070-turbo.json`](benchmarks/runs/2026-08-05-rtx5070-turbo.json).
+The [2026-08-05 archive](benchmarks/runs/2026-08-05-rtx5070-turbo.json)
+contains 27 configurations, five timing repeats each and 4000 shots per QAE
+estimate, recorded on an RTX 5070 Laptop GPU in turbo mode.
 
-<p align="center">
-  <a href="benchmarks/plots/crossover-light.svg" target="_blank" rel="noopener noreferrer">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="benchmarks/plots/crossover-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="benchmarks/plots/crossover-light.svg">
-      <img width="960" src="benchmarks/plots/crossover-light.svg"
-           alt="Two panels. Left: wall time against correct digits of pi, log scale — the classical CUDA kernel reaches 16 digits in about 2.6 milliseconds, while simulated QAE plateaus at 5 digits and costs seconds. Right: Grover operators applied against counting qubits, showing the 2^m - 1 exponential."/>
-    </picture>
-  </a>
-</p>
-
-| | Classical — hand-written CUDA kernel | Quantum — QAE on cuStateVec |
+| Selected row | Mean wall time | Reported accuracy |
 | --- | --- | --- |
-| Best accuracy reached | **16 digits** (double-precision ceiling) | **5.0 digits** |
-| Time to get there | **2.6 ms** (2 series terms) | **0.44 s** (m = 10) |
-| Cost of one more digit | flat until ~1024 terms | ×2 per precision bit |
-| Peak GPU utilization | **95%** | **12–20%** |
+| Classical, 2 terms | 2.714 ms | 15.85 relative-error digits against `math.pi` |
+| QAE, 10 counting qubits | 0.441 s | 5.00 relative-error digits against `math.pi` |
 
-Three things the data says that prose alone would not have:
+No crossover was observed within this sweep. These two selected rows differ
+by about 162.5× in wall time and have different accuracy; this is not a
+matched-accuracy speedup or a universal claim about the hardware.
+The observed QAE plateau is consistent with dyadic phase quantization.
+Sampled GPU utilization alone does not establish a dispatch bottleneck or
+predict H100 performance. Wrapper work is included in the recorded timings.
 
-1. **No crossover exists on this silicon** — the classical kernel is ~170× faster while delivering three times the digits. That is the expected result, and now it is a measured one.
-2. **The quantum arm never saturates the GPU.** At 12–20% utilization it is bound by per-gate dispatch, not statevector arithmetic. Faster silicon would barely move these numbers; *wider circuits* would. That reframes the H100 question — the datacenter axis is about qubit ceiling, not speed.
-3. **Accuracy plateaus at m = 10 while cost keeps doubling.** Not a bug: the eigenphase 0.34668271 lies within 3.0 × 10⁻⁶ of the 10-bit dyadic 355/1024, so further counting qubits correctly return zeros. Every run row carries `phase_error` and `phase_resolution` so a reader can verify this rather than take it on faith.
+Read the [reviewed findings](benchmarks/runs/2026-08-05-rtx5070-turbo-reviewed.md)
+for row-level qualifications. The original narrated draft and measured JSON
+are preserved; the draft's stronger claims are superseded by that review.
 
-The narrator's draft of these findings — numbers in, prose out, nothing invented (ADR 003) — is [`…-findings.md`](benchmarks/runs/2026-08-05-rtx5070-turbo-findings.md).
+## Architecture and direction
 
-## Architecture — one codebase, consumer to datacenter
+```mermaid
+flowchart LR
+    S[Exact SymPy partial sums] --> C[Classical CUDA validation]
+    A[Known amplitude pi/4] --> Q[CUDA-Q simulation]
+    C --> R[Measured run JSON]
+    Q --> R
+    R --> H[Human-reviewed analysis]
+    R --> N[Optional NIM draft]
+    N --> H
+```
 
-<p align="center">
-  <a href="assets/architecture/pipeline-light.svg" target="_blank" rel="noopener noreferrer">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="assets/architecture/pipeline-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="assets/architecture/pipeline-light.svg">
-      <img width="960" src="assets/architecture/pipeline-light.svg"
-           alt="q1729 pipeline: Ramanujan's 1914 series feeds one CUDA-Q codebase that picks its target — a hand-written CUDA kernel and a QAE circuit locally on an RTX 5070, the same QAE circuit again on a cloud H100 — into a crossover analysis, validated throughout by the exact SymPy ground truth, then narrated by NIM/Nemotron into a findings draft."/>
-    </picture>
-  </a>
-</p>
-
-<p align="center"><sub>Source: <a href="assets/architecture/pipeline.mmd">Mermaid</a> · renders: <a href="assets/architecture/pipeline-light.svg">light SVG</a> / <a href="assets/architecture/pipeline-dark.svg">dark SVG</a></sub></p>
-
-Two rules keep the hybrid honest (ADR 003):
-
-1. **NIM/Nemotron is the analysis layer, never the simulator.** The narrator turns benchmark run files into findings drafts — every number comes from the run file, never from the model.
-2. **Cloud is a second axis, not a replacement.** The same `quantum/backend.py` code selects `nvidia` on the RTX 5070 in WSL2, `qpp-cpu` in CI, and H100/multi-GPU targets on a rented cloud box — run files carry a `hardware_id` field and an environment block so curves from different machines land in one analysis.
+The series and QAE arms are distinct computations. NIM receives JSON and
+drafts prose; the current code does not verify its statements. It never
+supplies numerical simulation results. Cloud H100 and multi-GPU execution
+remain unmeasured extensions. The [legacy diagram](assets/architecture/README.md)
+is a conceptual illustration with limitations documented beside its source.
 
 ## Roadmap
 
@@ -113,9 +108,9 @@ The three stages below are the research thread. The full evidence-sequenced plan
 
 | Stage | Focus | Status |
 | --- | --- | --- |
-| **1 — π benchmark** | Ramanujan's 1914 1/π series as a hand-written CUDA kernel vs Quantum Amplitude Estimation with CUDA-Q, on the `nvidia` (cuStateVec) backend | ✅ **RTX 5070 crossover measured** — kernel, QAE circuit, harness, run file, plot, and narrated writeup all in the repo. Remaining: the optional cloud-H100 axis |
-| **2 — community** | Upstream contributions to CUDA-Q / CUDA-Q Academic; publish results; invite benchmark submissions from other GPUs (the run-file schema is hardware-agnostic) | Next |
-| **3 — Ramanujan graphs → qLDPC** | Ramanujan expander graphs underpin modern quantum LDPC codes. Simulate and decode them with CUDA-Q QEC (CUDA-QX) plus custom CUDA kernels | Planned |
+| **1 — π benchmark** | Ramanujan's 1914 1/π series as a hand-written CUDA kernel vs Quantum Amplitude Estimation with CUDA-Q, on the `nvidia` (cuStateVec) backend | **RTX archive delivered; evidence/reproducibility repairs open.** Optional H100 unmeasured |
+| **2 — community** | Upstream contributions to CUDA-Q / CUDA-Q Academic; publish results; invite benchmark submissions from other GPUs (the run-file schema is hardware-agnostic) | Ongoing workstream; publication depends on contribution/evidence gates |
+| **3 — Ramanujan graphs → qLDPC** | Ramanujan expander graphs underpin modern quantum LDPC codes. Simulate and decode them with CUDA-Q QEC (CUDA-QX) plus custom CUDA kernels | Started: graph construction only; classical decoder and feasible qLDPC study next |
 
 ## Stack
 
@@ -126,29 +121,34 @@ The three stages below are the research thread. The full evidence-sequenced plan
 - **NIM / Nemotron** — findings narrator via the NVIDIA NIM chat-completions API (`analysis/narrator.py`)
 - **SymPy** — exact-rational reference implementation; any float drift in the GPU kernel shows up immediately
 
-Runtime: CUDA-Q is Linux-only — on Windows, develop inside **WSL2** or the NGC container (`nvcr.io/nvidia/quantum/cuda-quantum`).
-
-✅ **Verified on this machine, 2026-08-05**: cudaq 0.15.1 in WSL2 selects the `nvidia` (cuStateVec) target on the RTX 5070 Laptop GPU; the CUDA kernel compiles through NVRTC 13.3.33 and matches the exact SymPy partial sums to 1e-15 relative; 156 tests pass at 100% coverage.
+Runtime: this repository uses **WSL2/Linux** for the CUDA-Q and CUDA path.
+The 2026-08-05 WSL2 GPU verification is historical. The 2026-09-06 audit
+could not repeat it because WSL2 could not attach its virtual disk.
 
 ## Built to be trusted
 
-- **Exact ground truth** — series terms are exact SymPy rationals, not floats; the CUDA kernel is asserted against them term by term, so a bad reduction or a precision regression fails a test rather than quietly shifting a result
-- **Reproducible by construction** — the kernel sums block partials on the host instead of using `atomicAdd`, so identical inputs give bit-identical output; run files carry the machine, the software versions, the declared power profile, and every raw timing sample
-- **Nothing plots itself into a result** — `data/sample_run.json` is labeled synthetic and `benchmarks/plot.py` refuses to plot it
-- **The AI layer can't invent results** — the narrator receives run-file numbers verbatim and only narrates; it is optional and degrades cleanly without a key (ADR 003)
-- **Real-backend integration tests** — the CUDA kernel and the QAE circuit are exercised on real hardware/simulators, not only mocks; unit tests mock at the module boundary
-- **100% coverage, no buffer** — measured 100% on WSL2/CI across 156 tests; CI gates at 100% with zero threshold ([ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md))
-- **A written standard of evidence** — [`docs/handbook/`](docs/handbook/) states the principles and the nine-field contract every experiment must satisfy before it runs
-- **Decisions are written down** — `docs/adr/`: CUDA-Q over PennyLane/Qiskit (001), WSL2 runtime (002), hybrid cloud + NIM (003), repo hygiene (004), NVRTC over an nvcc build step (005)
+- Exact SymPy partial sums provide a reference for the CUDA integration test
+  at 1e-15 relative tolerance. Host reduction avoids atomic accumulation order;
+  this does not guarantee bitwise identity across hardware/toolchains.
+- Synthetic sample data is labeled and rejected by the plotter.
+- CI requires 100% coverage. Windows audit: 157 passed, 29 skipped, 97.19%
+  with no NIM key. CUDA-Q CPU integration runs in CI; GPU integration requires
+  a GPU. Historical WSL2 counts are not current CI counts.
+- The [research contract](docs/handbook/research-standards.md) is a requirement;
+  semantic validation, provenance and archive protection have open
+  [Phase 1 repair gates](docs/roadmap.md#phase-1--the-first-real-result).
+- [ADRs](docs/adr/README.md) record decisions, including ROCm as a conditional
+  Phase 4 backend and the evidence-first sequence in ADR 007.
 
 ## Project structure
 
 - `classical/ramanujan_kernel.cu` — the hand-written CUDA C++ kernel: one series term per thread, shared-memory tree reduction
 - `classical/cuda_kernel.py` — compiles, launches and times the kernel; degrades cleanly on hosts without a GPU
 - `classical/ramanujan_series.py` — the 1914 series, exact SymPy (ground truth for the kernel)
+- `classical/ramanujan_graph.py` — LPS Ramanujan expander graphs, spectrally verified against the `2√(k−1)` bound (ground truth for the Stage 3 / Phase 2 qLDPC experiment; CPU-only, never timed)
 - `quantum/qae.py` — canonical Quantum Amplitude Estimation of π/4, with the resource-cost caveats stated in the module
 - `quantum/backend.py` — CUDA-Q target selection (`nvidia-mgpu` → `nvidia` → `tensornet` → `qpp-cpu`) + environment diagnostic
-- `benchmarks/harness.py` — runs both arms and emits a contract-conforming run file
+- `benchmarks/harness.py` — runs both arms and emits run JSON; semantic validation is an open repair gate
 - `benchmarks/environment.py` — captures hardware, versions, and GPU load during a run
 - `benchmarks/plot.py` — theme-aware crossover plots; refuses synthetic input
 - `benchmarks/runs/`, `benchmarks/plots/` — measured run files, narrated writeups, and figures
@@ -177,38 +177,43 @@ pytest tests
 NIM findings narrator (any host; key from [build.nvidia.com](https://build.nvidia.com)):
 
 ```bash
-cp .env.example .env           # or: export NVIDIA_API_KEY=nvapi-...
+# Export NVIDIA_API_KEY in this shell; .env is not loaded automatically.
+# Obtain/set the key privately; do not commit or print it.
 make narrate                   # drafts findings from data/sample_run.json
 ```
 
 GPU work — the CUDA kernel and CUDA-Q (WSL2 / Linux only):
 
 ```bash
+pip install -r requirements.txt
 pip install -r requirements-gpu.txt
 python -m quantum.backend       # diagnostic: which CUDA-Q target initialized
 python -m classical.cuda_kernel  # diagnostic: which GPU the kernel will use
 pytest tests                     # now includes the real-hardware integration tests
 ```
 
-Reproduce the benchmark (declare your power profile — it is a recorded control):
+Reproduction and unique output-path instructions are in
+[benchmarks/README.md](benchmarks/README.md). `make benchmark` currently writes
+`<date>-run.json` and can overwrite a same-day run; its default 2000 shots
+also differs from the archive's 4000. Archive-safe enforcement remains P1-R1.
 
-```bash
-make benchmark POWER_PROFILE=turbo    # writes benchmarks/runs/<date>-<host>.json
-make plot RUN=benchmarks/runs/<file>.json
-```
-
-`make install` / `make test` / `make lint` / `make coverage` wrap the same commands (see `Makefile`).
+`make install` / `make test` / `make lint` / `make coverage` wrap the commands
+in the [Makefile](Makefile). Use separate Windows and Linux virtual environments;
+see [setup](docs/setup.md).
 
 ## Hardware
 
-| Axis | Component | Spec |
-| --- | --- | --- |
-| Local | GPU | NVIDIA GeForce RTX 5070 Laptop GPU, 8151 MiB (Blackwell, SM 12.0), CUDA 13.3, driver 610.88 (verified 2026-08-05) |
-| Local | CPU / RAM / OS | AMD Ryzen 9, 32GB DDR5, Windows 11 + WSL2 |
-| Cloud | GPU | NVIDIA H100 80GB — planned datacenter axis (rented per-run); no H100 run has been executed yet |
-| Cloud | AI | NVIDIA NIM API — Nemotron (findings narrator) |
+| Axis | Evidence |
+| --- | --- |
+| Local archive | RTX 5070 Laptop GPU, 8151 MiB; recorded driver 610.88 on 2026-08-05 |
+| Current Windows audit | Same GPU model; driver 616.56 reported by `nvidia-smi` on 2026-09-06; WSL2/CUDA runtime not reverified |
+| H100 / multi-GPU | Planned only; no measured archive |
+| NIM | Optional external narrator; no live call in this audit |
 
-8GB VRAM caps statevector simulation at roughly 29–30 qubits at the `nvidia` target's default fp32 precision; a single 80GB H100 moves that to ~33, and reaching ~34 needs a second GPU (`nvidia-mgpu`, see [docs/nvidia-access.md](docs/nvidia-access.md)). The stage-1 circuits are far below that ceiling — which is itself the finding in point 2 above: on this workload the constraint is dispatch, not memory.
+Statevector storage grows as bytes-per-amplitude × 2^qubits. Bare fp32 storage
+is 4 GiB at 29 qubits and 8 GiB at 30, before simulator workspace and other
+allocations. This is a storage estimate, not a measured usable qubit ceiling.
+The archive's largest circuit has only 19 total qubits (4 MiB bare fp32 state).
 
 ## Contributing
 

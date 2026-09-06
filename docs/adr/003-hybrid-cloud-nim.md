@@ -37,3 +37,7 @@ Adopt the cloud stack in the two places it genuinely earns:
   codebase, consumer to datacenter — with an AI layer that writes up what
   the numbers show"
 - Stage-1 deliverable now includes the cloud-GPU comparison run
+
+## 2026-09-06 audit amendment
+
+NIM receives run-file JSON but its prose is not validated by code and can contain unsupported claims. Human review is required. Current records use hardware_id and environment metadata; key-presence checks are not semantic research-contract enforcement. The full JSON payload leaves the machine. H100 remains conditional and unmeasured.

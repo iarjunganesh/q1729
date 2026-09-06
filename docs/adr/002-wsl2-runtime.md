@@ -29,3 +29,7 @@ without GPU passthrough, cudaq's `qpp-cpu` target runs there and in CI.
 - CI installs cudaq and runs `tests/integration` on `qpp-cpu`; GPU benchmark
   numbers are produced manually in WSL2 and committed as results, not
   regenerated in CI
+
+## 2026-09-06 audit amendment
+
+WSL2 remains the chosen Windows GPU workflow, but the configured disk could not be attached in this audit. Historical success is not fresh verification. Native Windows wheel availability for individual packages does not verify the complete repository GPU path. See ../setup.md for separate host environments and current target order.

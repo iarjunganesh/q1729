@@ -37,3 +37,7 @@ marked for deletion. The stage-1 layout (`classical/` / `quantum/`, with
 - `classical/ramanujan_series.py` (exact SymPy) is the ground truth the
   stage-1 CUDA kernel benchmarks against; `quantum/backend.py` owns CUDA-Q
   target selection
+
+## 2026-09-06 audit amendment
+
+CUDA-Q remains the selected simulator. Historical platform-support claims are not a current cross-platform support matrix. The chosen Windows workflow is WSL2/Linux; QEC remains planned, with only graph construction present.

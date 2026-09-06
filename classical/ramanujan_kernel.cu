@@ -12,6 +12,13 @@
 // Compiled at runtime by NVRTC via cupy.RawModule; see
 // docs/adr/005-cuda-kernel-via-nvrtc.md for why there is no nvcc build step.
 //
+// Portability constraint (docs/adr/006-rocm-as-phase-4-second-backend.md):
+// this kernel stays inside the HIP-portable subset of CUDA C++ so a roadmap
+// Phase 4 ROCm port stays a shim rather than a rewrite. Everything below has a
+// 1:1 HIP equivalent. Do not add warp-level primitives (__shfl_*), cooperative
+// groups, PTX inline asm, __nv_* intrinsics, or device-side CUDA library calls
+// without amending that ADR.
+//
 // Accuracy note: the term is built as a running product that interleaves the
 // (4k)! numerator factors with the (k!)^4 and 396^(4k) denominators, so the
 // accumulator never leaves double's exponent range. Computing (4k)! first

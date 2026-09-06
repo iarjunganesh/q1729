@@ -1,57 +1,45 @@
 # Contributing
 
-q1729 is a solo research project until stage 2 of the README roadmap, which opens it up properly (published results, benchmark submissions from other GPUs). Until then: issues and benchmark-idea discussions are welcome; PRs may sit.
+Issues, reproduction feedback and benchmark ideas are welcome. q1729 is a
+maintainer-led research project; review capacity is limited. The
+[README](README.md) defines its research thread and [roadmap](docs/roadmap.md)
+orders work. Read relevant [ADRs](docs/adr/README.md) before proposing a change.
 
-## Local development
+## Development
 
-```bash
-git clone https://github.com/iarjunganesh/q1729.git
-cd q1729
-pip install -r requirements.txt   # CPU-safe on any host
-make test                         # integration tests skip without cudaq
-```
+Follow [setup](docs/setup.md) for separate Windows CPU and Linux/WSL2 GPU
+environments. Install core requirements first and GPU requirements only in the
+appropriate environment. Run `python main.py`, unit tests, Ruff and mypy.
+New code must satisfy the unchanged 100% CI coverage gate; do not add exclusions
+outside JIT kernel bodies. Real integration evidence is distinct from line coverage.
 
-CUDA-Q work needs Linux — on Windows, WSL2:
+## Measured Windows coverage
 
-```bash
-pip install -r requirements-gpu.txt
-python -m quantum.backend         # diagnostic: which target initialized
-```
+2026-09-06, Python 3.14.6, NIM key removed: 157 passed, 29 skipped.
+Generated from `pytest tests --cov --cov-report=json --cov-fail-under=100`:
 
-## Ground rules
+| Module | Statements | Missed | Windows coverage |
+| --- | --- | --- | --- |
+| `analysis/narrator.py` | 35 | 0 | 100.00% |
+| `benchmarks/environment.py` | 77 | 0 | 100.00% |
+| `benchmarks/harness.py` | 75 | 0 | 100.00% |
+| `benchmarks/plot.py` | 60 | 0 | 100.00% |
+| `classical/cuda_kernel.py` | 74 | 0 | 100.00% |
+| `classical/ramanujan_graph.py` | 110 | 0 | 100.00% |
+| `classical/ramanujan_series.py` | 21 | 0 | 100.00% |
+| `quantum/backend.py` | 38 | 3 | 92.11% |
+| `quantum/qae.py` | 43 | 12 | 72.09% |
 
-- The README roadmap is authoritative; check `docs/adr/` before proposing a direction change — several "why not X" questions are answered there as deliberate decisions
-- 100% test coverage, no buffer: new code ships with its tests (CI gate is a literal `--cov-fail-under=100`, see [ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md))
-- `requirements.txt` must stay installable on a CPU-only host
+Total: **97.19%**, 533 statements, 15 missed. The command exits nonzero because
+it does not meet 100%. Missing CUDA-Q runtime paths are expected on this Windows
+environment; the CI threshold is not lowered. CUDA wrapper line coverage comes
+from mocks and does not substitute for GPU numerical integration tests.
 
-## Test coverage
+Historical WSL2 evidence recorded 186 passed / 100% on 2026-08-05; this audit
+could not reproduce it because the configured virtual disk could not attach.
+CI runs real CUDA-Q integration on `qpp-cpu`; CUDA-kernel GPU tests skip there.
+Released-commit CI does not validate the staged graph work automatically.
 
-Measured directly with `pytest tests --cov --cov-report=term-missing` (verified 2026-08-05):
-
-| Host | Tests | classical/ | quantum/ | analysis/ | benchmarks/ | Total |
-|---|---|---|---|---|---|---|
-| Windows 3.14 (no cudaq, no GPU) | 128 passed, 28 skipped | 100% | 92% backend, 72% qae | 100% | 100% | 96% |
-| WSL2 3.12 (cudaq 0.15.1, RTX 5070) | 156 passed | 100% | 100% | 100% | 100% | **100%** |
-
-The Windows shortfall is expected and documented, not a gap to fix. `quantum/`
-imports `cudaq` and runs JIT-compiled kernels, so those paths can only execute
-where cudaq is installed; `tests/integration/` exercises them for real in
-WSL2/CI. CI (`.github/workflows/ci.yml`) installs the CPU `cudaq` wheel and
-gates on a literal `--cov-fail-under=100` — no buffer, since WSL2/CI measure
-the real 100% ([ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md)).
-
-The CUDA-kernel integration tests additionally need a real GPU, so they skip on
-CI as well as on Windows; that split is [ADR 005](docs/adr/005-cuda-kernel-via-nvrtc.md).
-`classical/cuda_kernel.py` still reaches 100% on CI through its mocked unit
-tests — the integration tests prove numeric correctness, not line coverage.
-
-```bash
-# Unit tests only (any host, no GPU, no key needed)
-pytest tests/unit -v
-
-# Full suite with coverage (run in WSL2 for the true number)
-make coverage
-```
-
-Coverage report is a terminal `term-missing` table (`Makefile`'s `coverage`
-target) — no HTML report is generated locally.
+Preserve measured files and use the [research contract](docs/handbook/research-standards.md).
+Submit source/configuration and raw outcomes alongside claims. Never use
+synthetic examples or unchecked narration as performance evidence.
