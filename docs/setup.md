@@ -42,7 +42,24 @@ uv pip install --python ~/q1729-cudaq/bin/python -r requirements.txt -r requirem
 ```
 
 `uv venv` does not seed pip, so install through `uv pip --python <venv python>`
-rather than `python -m pip`. Output on 2026-09-06:
+rather than `python -m pip`.
+
+**Set `core.autocrlf` in WSL, or every run file will claim a dirty source.**
+The checkout is shared with Windows, whose system git config sets
+`core.autocrlf=true`, so the working tree holds CRLF while the index holds LF.
+A fresh Linux git has `autocrlf` unset and therefore reports all 41 tracked
+text files as modified — `benchmarks/provenance.py` then records
+`"dirty": true` on an archive whose source is in fact identical to the commit:
+
+```bash
+git config --global core.autocrlf true   # in WSL, matches the Windows checkout
+```
+
+Verify with `git status --porcelain | wc -l`, which must print `0`, and with
+`python -c "from benchmarks import provenance; print(provenance.source()['dirty'])"`,
+which must print `False`, before collecting any measured run.
+
+Output on 2026-09-06:
 
 ```
 cudaq_available: True
