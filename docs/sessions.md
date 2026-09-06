@@ -687,3 +687,50 @@ so the run's recorded source revision is a verified commit rather than one later
 amended. The owner switched the laptop to the Turbo power profile for that run
 (verified: scheme GUID 6fecc5ae, GPU idle at 57 C on AC), matching the
 2026-08-05 archive so the two are comparable.
+
+## 2026-09-06 — P1-R4: first archived run under the committed protocol
+
+CI went green on `0543373` (all four jobs), which was the precondition I had set
+for collecting evidence, so the run's recorded revision is a verified commit.
+
+Two preconditions were fixed before measuring rather than after. The tree showed
+one modified file (an uncommitted `docs/setup.md` edit), so that was committed
+first as `15c0da6` — docs only, cannot affect a measurement. And WSL git had
+reported a false dirty source: 41 tracked files appeared modified purely because
+the checkout is shared with Windows, whose system config sets
+`core.autocrlf=true`, while a fresh Linux git leaves it unset. Setting it in the
+distro brought `provenance.source()["dirty"]` to `False`. Without that every
+archive would have claimed a dirty source identical to its own commit.
+
+The owner switched the laptop to Turbo and I verified it (scheme GUID 6fecc5ae,
+GPU idle 50 C on AC) before starting, so the run is comparable to the
+2026-08-05 archive rather than confounded by power profile.
+
+Collected `benchmarks/runs/2026-09-06-1286200412954fb4a59cac02c27a06df.json`: schema 4,
+protocol digest 24d1d3af702a, clean source 15c0da6, target nvidia/fp32, driver
+616.56, turbo, 4000 shots, 5 repeats, 27 rows, 2m18s. Figures written to a
+run-specific directory. The old archive was not touched and both validate.
+
+Comparison, like-for-like on profile and shots. The classical arm reproduces
+within +/-12% across all 12 term counts, with the large-n points closest
+(16384 terms 68.997 -> 67.584 ms) and saturation unchanged at 16.00 correct
+digits. QAE timing shifted systematically with register size: m=2 is ~25%
+faster and m=15/16 are ~7-10% slower, crossing near m=14. Small-m cost is
+dominated by fixed per-call overhead and large-m by statevector work, so a
+driver change could plausibly move them in opposite directions — but this run
+did not isolate that and thermal drift across the sweep is not excluded, so it
+is recorded as an observation and explicitly not as an explanation.
+
+The strongest check: all 15 QAE rows reproduce the archive's pi estimate to
+1e-12, every row agrees with closed-form theory, and each sampled distribution
+sits below its own sampling tolerance. Quantization is deterministic, so that is
+the expected outcome — and it is what makes the timing comparison meaningful,
+since both runs demonstrably computed the same thing. Nothing was selected
+across runs; this was the first run under the protocol and it is archived
+whatever it showed.
+
+P1-R4 is **not** closed. The findings document needs a human review record and
+agents must not approve on a reviewer's behalf, so no tag is cut. A findings
+draft plus a pending review template is being prepared for the owner; adding a
+findings Markdown file to the archive before its review record is complete would
+fail CI by design.

@@ -179,10 +179,45 @@ archive; the archived run under a declared profile is P1-R4.
 
 ### P1-R4 — Repeat and review
 
-- [ ] Execute the predeclared local protocol into a new unique archive.
-- [ ] Generate run-specific figures and human-reviewed findings.
-- [ ] Explain disagreements with the old archive without selecting favorable runs.
-- [ ] Demonstrate reproduction from documented setup and resolved dependencies.
+- [x] Execute the predeclared local protocol into a new unique archive.
+- [x] Generate run-specific figures. **Findings await human review** — see below.
+- [x] Explain disagreements with the old archive without selecting favorable runs.
+- [x] Demonstrate reproduction from documented setup and resolved dependencies.
+
+**First run under the committed protocol, 2026-09-06.** Archived as
+`benchmarks/runs/2026-09-06-1286200412954fb4a59cac02c27a06df.json`
+(schema 4, protocol digest `24d1d3af702a`, source `15c0da6` **clean**, target
+`nvidia`/fp32, driver 616.56, power profile `turbo`, shots 4000, 5 repeats,
+27 rows, 2m18s). Figures in `benchmarks/plots/2026-09-06-1286200412954fb4a59cac02c27a06df/`.
+The 2026-08-05 archive is untouched and both now validate side by side.
+
+**Comparison with the 2026-08-05 archive** (same profile, same shots, so this
+is like-for-like; driver moved 610.88 to 616.56):
+
+- **Classical arm reproduces within ±12%** across all 12 term counts
+  (ratios 0.88-1.10), and the large-n points agree closely: 16384 terms went
+  68.997 ms to 67.584 ms. Double-precision saturation is unchanged at 16.00
+  correct digits.
+- **QAE timing shifted systematically with m**: small registers are ~25%
+  faster (m=2 ratio 0.72) and the two largest are ~7-10% slower (m=15 ratio
+  1.10, m=16 ratio 1.07). The crossing sits near m=14. Small-m cost is
+  dominated by fixed per-call overhead and large-m by statevector work, so a
+  driver change plausibly moves those in opposite directions — but this run
+  did not isolate that, and thermal drift over a 2m18s sweep is not excluded.
+  **Recorded as an observation, not an explanation.**
+- **Every QAE outcome is unchanged.** All 15 rows reproduce the archive's pi
+  estimate to 1e-12 and agree with closed-form theory; each row's sampled
+  distribution sits below its own sampling tolerance. Quantization is
+  deterministic, so this is the expected result — and it is what makes the
+  timing comparison meaningful, because the two runs computed the same thing.
+- Best accuracy is unchanged: classical 16.00 correct digits, QAE 5.00.
+
+No result was selected across runs; this is the first run collected under the
+protocol and it is archived whatever it showed.
+
+**Open:** the findings document and its human review record. Agents must not
+approve on a reviewer's behalf ([findings-review.md](findings-review.md)), so
+P1-R4 stays open until a human completes the sidecar. **No tag before then.**
 
 **Exit:** a new auditable run and reproducible analysis including limitations.
 H100 is optional: proceed only with a specific question after local profiling
