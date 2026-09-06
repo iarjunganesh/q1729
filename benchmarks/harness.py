@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from benchmarks import archive, environment, run_file
+from benchmarks import archive, environment, provenance, run_file
 
 #: Term counts swept on the classical arm. Deliberately spans past the point
 #: where double precision saturates, so the saturation shows up as measured
@@ -61,19 +61,10 @@ LIMITATIONS = (
     "The classical arm is double precision and saturates near 15-16 correct digits "
     "regardless of term count; extending past that would need multi-precision "
     "arithmetic on the GPU, which this phase does not implement.",
-    "Peak VRAM is sampled from nvidia-smi either side of the run, so it includes any "
-    "other process's allocations and is an upper bound, not an isolated measurement.",
-    "The quantum arm's accuracy plateaus from m=10 upward. This is a property of the "
-    "target amplitude, not of QAE: the eigenphase 0.34668271 lies within 3.0e-6 of the "
-    "10-bit dyadic 355/1024, so the most-likely outcome stops changing while cost keeps "
-    "doubling per bit. Compare each row's phase_error against its phase_resolution to "
-    "see which regime it is in. A different target amplitude would move this plateau.",
-    "At these circuit widths the quantum arm does not saturate the GPU — check each "
-    "row's gpu_under_load.utilization.gpu. Its wall time is therefore dominated by "
-    "per-gate dispatch overhead rather than by statevector arithmetic, so it is a "
-    "measurement of this software stack on this circuit, not of the device's "
-    "simulation throughput. Faster silicon would not move these numbers much; wider "
-    "circuits would.",
+    "Device memory is sampled before/after each configuration, not a process-specific peak.",
+    "The observed m=10..16 plateau is consistent with proximity to 355/1024; it is not an infinite-precision floor.",
+    "Sampled utilization does not establish a dispatch bottleneck; profiling is required before causal claims.",
+    "Seeded sampling does not guarantee bitwise reproduction across hardware, targets or versions.",
     "Single machine, single GPU. The datacenter (H100) axis of roadmap Phase 1 has "
     "not been run, so nothing here establishes how the curves move on other silicon.",
 )
@@ -116,12 +107,24 @@ def measure_classical(term_counts: tuple[int, ...], repeats: int) -> list[dict[s
     for n_terms in term_counts:
         with environment.LoadSampler() as sampler:
             timing = cuda_kernel.time_partial_sum(n_terms, repeats=repeats)
-        estimate = cuda_kernel.pi_approximation(n_terms)
+        outcomes = []
+        for partial in timing["partial_sums"]:
+            estimate = 1.0 / ((2.0 * math.sqrt(2.0) / 9801.0) * partial)
+            outcomes.append(
+                {
+                    "partial_sum": partial,
+                    "pi_estimate": estimate,
+                    "abs_error": abs(estimate - math.pi),
+                    "correct_digits": correct_digits(estimate),
+                }
+            )
+        estimate = outcomes[-1]["pi_estimate"]
         rows.append(
             {
                 "method": "classical-cuda",
                 "gpu_under_load": sampler.summary(),
                 "n_terms": n_terms,
+                "outcomes": outcomes,
                 "pi_estimate": estimate,
                 "abs_error": abs(estimate - math.pi),
                 "correct_digits": correct_digits(estimate),
@@ -139,6 +142,7 @@ def measure_quantum(
     shots: int,
     repeats: int,
     target: str,
+    seed: int | None = None,
 ) -> list[dict[str, Any]]:
     """Time QAE across counting-register sizes on the selected CUDA-Q target."""
     from quantum import qae
@@ -150,17 +154,21 @@ def measure_quantum(
         before = environment.gpu_memory_used_mib()
         samples: list[float] = []
         result: dict[str, Any] = {}
+        outcomes: list[dict[str, Any]] = []
         with environment.LoadSampler() as sampler:
-            for _ in range(repeats):
+            for repeat in range(repeats):
                 start = time.perf_counter()
-                result = qae.estimate(m, domain_qubits, shots=shots)
+                repeat_seed = None if seed is None else seed + m * repeats + repeat
+                result = qae.estimate(m, domain_qubits, shots=shots, seed=repeat_seed)
                 samples.append(time.perf_counter() - start)
+                outcomes.append({**result, "correct_digits": correct_digits(result["pi_estimate"])})
         after = environment.gpu_memory_used_mib()
 
         rows.append(
             {
                 "method": "qae-cudaq",
                 "target": target,
+                "outcomes": outcomes,
                 "gpu_under_load": sampler.summary(),
                 **result,
                 "correct_digits": correct_digits(result["pi_estimate"]),
@@ -182,11 +190,23 @@ def build_run_file(
     domain_qubits: int,
     hardware_id: str,
     env: dict[str, Any],
+    seed: int | None = None,
 ) -> dict[str, Any]:
     """Assemble the complete, contract-conforming run file."""
     return {
         "schema": run_file.CURRENT_SCHEMA,
         "synthetic": False,
+        "provenance": env.get("source"),
+        "execution": env.get("execution"),
+        "configuration": {
+            "classical_term_counts": [row["n_terms"] for row in classical_rows],
+            "counting_qubits": [row["counting_qubits"] for row in quantum_rows],
+            "seed": seed,
+            "seed_schedule": "base + counting_qubits * repeats + repeat_index; warmup unseeded",
+            "outcome_summary": "last timed repeat; every repeat is retained",
+            "timing_boundary": "classical partial_sum wrapper; quantum estimate wrapper; warmup discarded",
+            "nvrtc_options": ["--std=c++17"],
+        },
         "series": "ramanujan-1914",
         "recorded_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "hardware_id": hardware_id,
@@ -202,7 +222,7 @@ def build_run_file(
             "power_profile": power_profile,
             "threads_per_block": 256,
             "quantum_target": quantum_rows[0]["target"] if quantum_rows else None,
-            "precision": "classical: fp64 in-kernel; quantum: cuStateVec target default (fp32)",
+            "precision": {"classical": "fp64", "quantum": env.get("execution", {}).get("quantum", {}).get("precision")},
         },
         "statistical_treatment": STATISTICAL_TREATMENT,
         "limitations": list(LIMITATIONS),
@@ -222,7 +242,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         required=True,
         help="declared vendor power/thermal mode (e.g. turbo, performance, silent) — a control, recorded verbatim",
     )
-    parser.add_argument("--hardware-id", default="rtx-5070-laptop-8gb", help="short id for this machine")
+    parser.add_argument("--hardware-id", default=None, help="short id for this machine")
+    parser.add_argument(
+        "--seed", type=int, default=None, help="optional positive CUDA-Q seed; unsupported targets reject it"
+    )
     parser.add_argument("--repeats", type=int, default=5, help="timed repeats per configuration")
     parser.add_argument("--shots", type=int, default=2000, help="shots per QAE circuit")
     parser.add_argument("--domain-qubits", type=int, default=DOMAIN_QUBITS)
@@ -247,21 +270,35 @@ def main(argv: list[str] | None = None) -> int:
         run_file.integer(getattr(args, key), key)
     run_file.integer(args.max_counting_qubits, "max_counting_qubits", 2)
     run_file.text(args.power_profile, "power_profile")
-    run_file.text(args.hardware_id, "hardware_id")
+    if args.hardware_id is not None:
+        run_file.text(args.hardware_id, "hardware_id")
+    if args.seed is not None:
+        run_file.integer(args.seed, "seed")
+        run_file.require(args.seed + 17 * args.repeats < 2**32, "seed schedule exceeds 32-bit range")
 
     from quantum import backend
 
     target = backend.select_target()
     print(f"CUDA-Q target: {target}")
 
+    execution = provenance.execution()
+    if execution["quantum"]["target"] != target:
+        raise ValueError("selected target disagrees with CUDA-Q runtime")
+    environment.GPU_SELECTOR = execution["classical"]["pci_bus_id"]
     env = environment.collect(args.power_profile)
+    run_file.require(isinstance(env["gpu"], dict) and bool(env["gpu"].get("uuid")), "selected GPU UUID unavailable")
+    execution["classical"]["uuid"] = env["gpu"]["uuid"]
+    execution["quantum"]["uuid"] = None if target == "qpp-cpu" else env["gpu"]["uuid"]
+    env.update(source=provenance.source(), packages=provenance.packages(), execution=execution)
+    if args.seed is not None and target == "tensornet":
+        raise ValueError("tensornet protocol does not support seeded sampling")
     counting = tuple(m for m in QUANTUM_COUNTING_QUBITS if m <= args.max_counting_qubits)
 
     print(f"classical arm: {len(CLASSICAL_TERM_COUNTS)} configurations")
     classical_rows = measure_classical(CLASSICAL_TERM_COUNTS, args.repeats)
 
     print(f"quantum arm: {len(counting)} configurations")
-    quantum_rows = measure_quantum(counting, args.domain_qubits, args.shots, args.repeats, target)
+    quantum_rows = measure_quantum(counting, args.domain_qubits, args.shots, args.repeats, target, args.seed)
 
     payload = build_run_file(
         classical_rows,
@@ -269,10 +306,13 @@ def main(argv: list[str] | None = None) -> int:
         power_profile=args.power_profile,
         shots=args.shots,
         domain_qubits=args.domain_qubits,
-        hardware_id=args.hardware_id,
+        hardware_id=args.hardware_id or env["gpu"]["uuid"],
         env=env,
+        seed=args.seed,
     )
 
+    if provenance.source() != env["source"]:
+        raise ValueError("source changed during measurement; no archive written")
     run_file.validate(payload, allow_legacy=False)
     encoded = (json.dumps(payload, indent=2, allow_nan=False) + "\n").encode("utf-8")
     with archive.create_outputs([args.out]) as streams:

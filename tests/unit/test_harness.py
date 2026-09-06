@@ -52,7 +52,7 @@ def test_measure_classical_keeps_every_raw_sample(monkeypatch, no_gpu_sampling):
     monkeypatch.setattr(
         cuda_kernel,
         "time_partial_sum",
-        lambda n, repeats=5, threads_per_block=256: {"samples_s": [0.1, 0.2]},
+        lambda n, repeats=5, threads_per_block=256: {"samples_s": [0.1, 0.2], "partial_sums": [1103.0, 1103.0]},
     )
     monkeypatch.setattr(cuda_kernel, "pi_approximation", lambda n, t=256: math.pi)
 
@@ -69,7 +69,7 @@ def test_measure_quantum_records_circuit_shape_and_warms_up(monkeypatch, no_gpu_
 
     calls = []
 
-    def fake_estimate(m, n, shots):
+    def fake_estimate(m, n, shots, seed=None):
         calls.append(m)
         return {"counting_qubits": m, "pi_estimate": math.pi, "grover_applications": 2**m - 1}
 
@@ -84,10 +84,10 @@ def test_measure_quantum_records_circuit_shape_and_warms_up(monkeypatch, no_gpu_
     assert len(rows[0]["samples_s"]) == 2
 
 
-def test_build_run_file_satisfies_the_research_standards_contract():
+def test_build_run_file_satisfies_the_research_standards_contract(current_run):
     payload = harness.build_run_file(
-        classical_rows=[{"method": "classical-cuda"}],
-        quantum_rows=[{"method": "qae-cudaq", "target": "nvidia"}],
+        classical_rows=current_run["runs"][:1],
+        quantum_rows=current_run["runs"][12:13],
         power_profile="turbo",
         shots=4000,
         domain_qubits=2,
@@ -111,7 +111,7 @@ def test_build_run_file_marks_measured_data_as_not_synthetic():
     """The flag plot.py keys off — a real run must never be mistakable for the sample."""
     payload = harness.build_run_file([], [], "turbo", 1, 2, "id", {})
     assert payload["synthetic"] is False
-    assert payload["schema"] == "q1729/run-file/2"
+    assert payload["schema"] == "q1729/run-file/3"
 
 
 def test_limitations_name_the_accuracy_plateau_and_the_dispatch_bound():
@@ -134,16 +134,19 @@ def test_parse_args_defaults_are_the_documented_ones():
     assert args.domain_qubits == harness.DOMAIN_QUBITS
 
 
-def test_main_writes_a_run_file_and_caps_the_quantum_sweep(monkeypatch, tmp_path, no_gpu_sampling, measured_run):
+def test_main_writes_a_run_file_and_caps_the_quantum_sweep(
+    monkeypatch, tmp_path, no_gpu_sampling, current_run, fake_provenance
+):
+    measured_run = current_run
     from quantum import backend
 
-    monkeypatch.setattr(backend, "select_target", lambda: "qpp-cpu")
+    monkeypatch.setattr(backend, "select_target", lambda: "nvidia")
     monkeypatch.setattr(environment, "collect", lambda profile: measured_run["environment"])
     monkeypatch.setattr(harness, "measure_classical", lambda counts, repeats: [measured_run["runs"][0]])
 
     captured = {}
 
-    def fake_measure_quantum(counting, domain_qubits, shots, repeats, target):
+    def fake_measure_quantum(counting, domain_qubits, shots, repeats, target, seed):
         captured["counting"] = counting
         row = measured_run["runs"][12]
         row.update(target=target, shots=shots)
@@ -152,7 +155,10 @@ def test_main_writes_a_run_file_and_caps_the_quantum_sweep(monkeypatch, tmp_path
     monkeypatch.setattr(harness, "measure_quantum", fake_measure_quantum)
 
     out = tmp_path / "nested" / "run.json"
-    assert harness.main(["--out", str(out), "--power-profile", "turbo", "--max-counting-qubits", "4"]) == 0
+    assert (
+        harness.main(["--out", str(out), "--power-profile", "turbo", "--max-counting-qubits", "4", "--shots", "4000"])
+        == 0
+    )
 
     assert captured["counting"] == (2, 3, 4)
     payload = json.loads(out.read_text(encoding="utf-8"))

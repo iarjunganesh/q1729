@@ -1,6 +1,7 @@
 name: CI Quality Gate
 
 on:
+  workflow_call:
   push:
     branches: [ "main" ]
   pull_request:
@@ -60,7 +61,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Mypy
-        run: mypy classical quantum analysis benchmarks
+        run: mypy classical quantum analysis benchmarks scripts
 
   tests:
     name: Tests and coverage
@@ -161,3 +162,6 @@ jobs:
       - name: Measured run files must satisfy the research-standards contract
         run: |
           python -m benchmarks.run_file benchmarks/runs/*.json
+
+      - name: New findings must have current human review records
+        run: python -m analysis.review --archive benchmarks/runs

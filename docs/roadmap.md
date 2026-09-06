@@ -18,7 +18,7 @@ and tests were committed in `e8b2060` beyond that release; released CI does not 
 
 - Phase 0 standards are adopted, but enforcement is incomplete. JSON key
   presence alone did not validate the contract; P1-R1 now supplies semantic validation.
-  Full provenance remains P1-R2 work.
+  P1-R2 now captures source/device metadata and per-repeat outcomes; fresh GPU verification remains pending.
 - Phase 1 delivered a CUDA kernel, known-amplitude QAE circuit, harness, figures
   and the 2026-08-05 RTX 5070 Laptop GPU archive. Interpretation and
   reproducibility repair gates are open. There is no H100 result.
@@ -28,8 +28,8 @@ and tests were committed in `e8b2060` beyond that release; released CI does not 
 - Phase 2 has exact modular LPS graph construction and floating-point spectral
   checks, not an exact spectral proof. No parity-check implementation, decoder,
   qLDPC experiment or second measured run exists.
-- The Windows audit recorded 219 passed, 29 skipped with the NIM key removed,
-  and 97.87% coverage. Historical WSL2 results were 186 passed / 100%; they
+- The Windows audit recorded 269 passed, 29 skipped with the NIM key removed,
+  and 99.68% coverage. Historical WSL2 results were 186 passed / 100%; they
   were not reproduced because WSL2 could not attach its virtual disk. CI CPU
   simulation and GPU integration evidence must be distinguished.
 - NIM drafts unchecked prose from JSON. Its output needs human review; raw
@@ -98,18 +98,24 @@ its disk. Do not treat local completion as release readiness.
 
 ### P1-R2 — Make each claim traceable
 
-- [ ] Capture source revision/dirty state, resolved dependencies, selected device,
+- [x] Capture source revision/dirty state, resolved dependencies, selected device,
   actual simulator target/precision and complete experiment configuration.
-- [ ] Retain each repeat's outcome, timing and QAE counts; record supported seeds
-  and any backend nondeterminism. Current rows retain only their final outcome.
-- [ ] Derive plot/control labels from actual backend metadata, including CPU fallback.
-- [ ] Require review of every numerical and causal statement in NIM findings.
-- [ ] Resolve non-kernel coverage exclusions; make release checks verify quality
+- [x] Retain each repeat's outcome, timing and QAE counts; record supported seeds
+  and any backend nondeterminism. Schema 3 retains every timed outcome.
+- [x] Derive plot/control labels from actual backend metadata, including CPU fallback.
+- [x] Require review of every numerical and causal statement in NIM findings.
+- [x] Resolve non-kernel coverage exclusions; make release checks verify quality
   results, version/changelog agreement and main ancestry.
 
 **Exit:** every plotted point is traceable to samples, configuration and source.
 The 100% CI coverage gate stays unchanged. Release automation already exists;
-these are missing checks, not a request to rebuild release tooling.
+it now depends on preflight checks and a fresh reusable CI run for the tag.
+
+**Implementation verified on CPU, 2026-09-06:** 269 passed, 29 skipped;
+new/changed modules have 100% statement coverage. Overall Windows coverage is
+99.68% because the real CUDA-Q backend diagnostic is unavailable. No real GPU
+run or seeded reproduction was performed. See [ADR 009](adr/009-traceable-outcomes-and-reviewed-releases.md)
+and [findings review](findings-review.md). Runtime verification stays open.
 
 ### P1-R3 — Define and verify the measurement
 
@@ -263,7 +269,7 @@ Editing a checklist does not establish completion or authorize publication.
 ## Roadmap governance
 
 Material sequencing/architecture changes get an ADR. Update gates when evidence
-changes feasibility; avoid speculative dates. P1-R1 implementation is complete locally; the next code task is **P1-R2**.
+changes feasibility; avoid speculative dates. P1-R1 and P1-R2 are implemented locally; the next task is **P1-R3**.
 
 ## Anti-roadmap
 

@@ -39,7 +39,7 @@ it is a simulator case study, not an independent π algorithm or quantum advanta
 floating-point spectral checks are numerical verification, not an exact proof.
 No parity-check implementation, decoder, qLDPC experiment or second run exists.
 
-**Next:** P1-R2 provenance and outcome retention, then
+**Next:** P1-R3 measurement protocol and profiling, then
 profiling and a bounded repeat. Phase 2 proceeds through a specified classical
 code/reference decoder and controlled GPU study before a feasible qLDPC study.
 Literature/protocol design may proceed alongside evidence repairs. Publication
@@ -48,9 +48,16 @@ H100 remains optional and unmeasured, with runtime/evidence/budget gates beyond
 access cost. See `docs/roadmap.md` and ADR 007; README's three stages remain
 the research thread.
 
-Windows no-key audit: 219 passed, 29 skipped, 97.87% coverage. Historical WSL2
+Windows no-key audit: 269 passed, 29 skipped, 99.68% coverage. Historical WSL2
 186 passed / 100% was not reproduced: the configured virtual disk could not
 be attached. Public CI on a released commit does not verify newer unreleased changes.
+
+P1-R2 is implemented and locally tested: schema-3 traceability, all timed
+outcomes, actual target/precision labels, human findings review records and
+release preflight/quality dependencies. Real GPU/seed behavior remains unverified
+until WSL2 is available. The measured harness now requires one visible CUDA
+device to identify its mapping unambiguously; the general backend diagnostic's
+preference order remains unchanged (ADR 009).
 
 ## Key commands
 
@@ -66,7 +73,7 @@ make plot RUN=benchmarks/runs/<f>.json  # theme-aware crossover SVGs
 make test         # pytest tests -v (integration skips without cudaq/GPU)
 make lint         # ruff check . && ruff format --check .
 make format       # ruff check --fix . && ruff format .  (applies what lint checks)
-make typecheck    # mypy classical quantum analysis benchmarks
+make typecheck    # mypy classical quantum analysis benchmarks scripts
 make coverage     # pytest tests --cov --cov-report=term-missing --cov-fail-under=100
 ```
 
@@ -79,7 +86,7 @@ defaults to a run-specific directory. JSON/SVG writes reject existing paths.
 - **Windows host** (Python 3.14, `.venv/`): editing, classical math, unit
   tests, lint. The complete native-Windows CUDA-Q/CuPy runtime path is unverified —
   `quantum/backend.py`, `quantum/qae.py` and `classical/cuda_kernel.py` must
-  all degrade gracefully. No-key audit: **219 passed, 29 skipped**; live NIM is a separate optional check.
+  all degrade gracefully. No-key audit: **269 passed, 29 skipped**; live NIM is a separate optional check.
 - **WSL2 Ubuntu** (Python 3.12, venv at `~/q1729-cudaq`): everything CUDA-Q
   and everything CUDA. Run tests there with
   `wsl -e bash -c "cd /mnt/c/ws/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
@@ -210,15 +217,16 @@ A measured claim in this repo is only worth what its provenance is worth.
   `docs/handbook/research-standards.md`: question, hypothesis, variables,
   controls, hardware, software versions, statistical treatment, raw data,
   limitations. `benchmarks/harness.py` emits the current fields, with shared semantic validation in
-  `benchmarks/run_file.py`. Complete provenance remains P1-R2 work. Add schema fields in the writer,
+  `benchmarks/run_file.py`. Schema 3 records source/device metadata and outcomes;
+  dirty source still needs matching files preserved separately. Add schema fields in the writer,
   not by hand-editing measured JSON.
 - **The hypothesis is committed before the run.** It currently lives as a module
   constant in `benchmarks/harness.py`, which makes changes visible but does not
   prove pre-run commitment. Commit new protocols before running; the first
   archive is exploratory. Never edit an old hypothesis to match its result.
 - **Raw per-repeat samples and outcomes must be retained**, including QAE
-  counts and seed limitations. Current timing arrays exist, but each row keeps
-  only its final outcome; complete outcome retention is an open repair gate.
+  counts and seed limitations. Schema 3 retains every timed
+  outcome/count distribution; row summaries identify the final timed repeat.
 - **The power/thermal profile is a required argument, not a default.** On a
   laptop it changes every timing. `make benchmark` refuses to run without it.
 - **Never hand-edit a run file's numbers.** If a run is wrong, re-run it and
@@ -249,12 +257,12 @@ A measured claim in this repo is only worth what its provenance is worth.
 - **100% test coverage is the CI gate, no buffer** (owner's explicit
   requirement — see [ADR 004](docs/adr/004-repo-hygiene-and-agent-sync.md)):
   `--cov-fail-under=100`, matched by `codecov.yml`. Coverage sources are
-  `classical`, `quantum`, `analysis`, `benchmarks`. Every new module ships
+  `classical`, `quantum`, `analysis`, `benchmarks`, `scripts`. Every new module ships
   with tests that cover it fully. The only permitted exclusion is a
   JIT-compiled CUDA-Q kernel body (`# pragma: no cover` — coverage can't
   trace it), and each one must be exercised by a `tests/integration/` test
   instead. Measure where cudaq exists (WSL2/CI); Windows-local runs
-  under-count `quantum/` and showed 97.87% in the no-key audit — that's expected, not a
+  under-count `quantum/` and showed 99.68% in the no-key audit — that's expected, not a
   gate failure (CI is what's authoritative).
 - **A `# pragma: no cover` that isn't a CUDA-Q kernel body is a bug.** Don't
   reach for it to close a coverage gap; write the test.
@@ -270,9 +278,9 @@ Fields that move together in the **same commit**, before a tag is created:
 - `pyproject.toml` — `version`
 - `CHANGELOG.md` — a new `## [x.y.z] — <date> — <summary>` heading. This is
   not optional: `.github/workflows/release.yml` extracts the GitHub release
-  body from the heading matching the pushed tag via `awk`; a missing or
-  mismatched heading can make extraction fail. The workflow rejects empty notes;
-  quality, ancestry and version agreement still need explicit enforcement.
+  body through `scripts/release_check.py`. Missing/ambiguous/empty notes, tag/version
+  mismatch, a wrong checkout or failure of main ancestry reject the release. The
+  release job also depends on a fresh reusable CI run for the tag.
 - git tag `vX.Y.Z` — annotated, created only after the above two are on
   `main`.
 
@@ -402,6 +410,9 @@ nit:
   numpy/sympy, CPU-only, never timed.
 - `quantum/qae.py` — canonical Quantum Amplitude Estimation circuit.
 - `quantum/backend.py` — CUDA-Q target selection + environment diagnostic.
+- `benchmarks/provenance.py` — source hashes, installed distributions and actual execution metadata.
+- `analysis/review.py` — human review sidecars; agents never approve on behalf of a reviewer.
+- `scripts/release_check.py` — release tag/version/notes/ancestry preflight.
 - `analysis/narrator.py` — NIM/Nemotron findings narrator (`make narrate`).
 - `benchmarks/` — harness, environment capture, plotter, and the measured
   `runs/` + `plots/` archive.

@@ -3,7 +3,7 @@
 The contract every new q1729 experiment must satisfy, adopted in
 [Phase 0](../roadmap.md#phase-0--constitution-lightweight). These are requirements,
 not a claim of complete enforcement. The 2026-09-06 audit found incomplete provenance and final-outcome-only rows. P1-R1 replaced shallow
-key checks with [shared semantic validation](../run-file.md); P1-R2 tracks the remaining gaps.
+key checks with [shared semantic validation](../run-file.md); P1-R2 adds [schema-3 traceability](../run-file.md) and human findings review records.
 
 ## Nine required fields
 
@@ -12,11 +12,11 @@ key checks with [shared semantic validation](../run-file.md); P1-R2 tracks the r
 | Question | Narrow enough to answer with this run | `question` |
 | Hypothesis | Reasoned prediction committed before collection | `hypothesis`; constant alone does not prove timing |
 | Variables | Explicit per-arm sweep | `variables` |
-| Controls | Power mode, precision, noise, shots, seeds and timing boundary as applicable | `controls`; actual backend labels need repair |
-| Hardware | Actual selected device identity and execution context | `hardware_id`, `environment.gpu`; selected UUID missing |
-| Software | Source revision/dirty state, runtime, resolved dependencies | `environment`; capture is incomplete |
+| Controls | Power mode, precision, noise, shots, seeds and timing boundary as applicable | `controls`, `execution`; actual target and precision recorded |
+| Hardware | Actual selected device identity and execution context | `hardware_id`, `environment.gpu`, `execution`; selected UUID/PCI identity |
+| Software | Source revision/dirty state, runtime, resolved dependencies | `environment.packages`, `provenance`, `execution`; source hashes and resolved distributions |
 | Statistical treatment | Repeats, warmup, uncertainty, exclusions, stopping rule | `statistical_treatment`; richer analysis remains needed |
-| Raw data | Every repeat's timing and numerical outcome/counts | `runs[].samples_s`; final outcome alone is insufficient |
+| Raw data | Every repeat's timing and numerical outcome/counts | `runs[].samples_s`, `runs[].outcomes`; every timed result and QAE count distribution |
 | Limitations | Explicit scope, confounds and unverified claims | `limitations` |
 
 Semantic validation must reject absent, empty, mistyped or inconsistent values;
@@ -55,7 +55,8 @@ timing. Preserve negative results and disagreements; do not rerun until favorabl
 ## Synthetic data and narration
 
 `data/sample_run.json` remains labeled synthetic and the plotter rejects it.
-NIM receives the full supplied run object and drafts unchecked prose. Source
+NIM receives the full supplied run object and drafts unchecked prose. New findings
+require [human review sidecars](../findings-review.md) before passing CI. Source
 data must remain separate from model output; review quantitative and causal
 claims before publishing findings. Never use narration to fill missing data.
 

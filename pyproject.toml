@@ -27,7 +27,7 @@ addopts = "-q"
 pythonpath = ["."]
 
 [tool.coverage.run]
-source = ["classical", "quantum", "analysis", "benchmarks"]
+source = ["classical", "quantum", "analysis", "benchmarks", "scripts"]
 
 [tool.coverage.report]
 show_missing = true

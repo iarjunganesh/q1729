@@ -20,8 +20,8 @@ Those files can contain environment or other user-supplied information.
 ## Build and CI
 
 CI uses read-only repository permissions. The tag-triggered release workflow
-has write permission for publishing releases; it does not currently depend on
-a separate quality-gate job. Quality/ancestry/version enforcement is open work.
+has write permission only for publishing after preflight and a fresh reusable
+quality workflow. Preflight checks tag/version/notes and fetched main ancestry.
 Dependency currency follows AGENTS.md; it does not guarantee dependency safety.
 
 Architecture rendering uses Node.js/Mermaid CLI and its browser tooling locally.

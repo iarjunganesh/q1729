@@ -461,3 +461,81 @@ readiness remain open. Next implementation is P1-R2 provenance/outcome retention
 No push or release was performed. Historical JSON, figures, prior session/ADR
 bodies and release notes remain unchanged; updated live docs distinguish the
 current implementation from the earlier dated audit findings.
+
+## 2026-09-06 — P1-R2 traceability, human review and release gates
+
+Implemented P1-R2 in roadmap order after 1255c4d. Schema 3 records source
+revision/dirty state and execution-source hashes, resolved installed packages,
+actual CuPy device PCI identity, GPU UUID, CUDA driver/runtime and CUDA-Q
+target/precision. Monitoring follows the selected device; the measured protocol
+rejects ambiguous multi-device visibility. Source changes during timing reject
+the new archive. Versions 1/2 remain readable and all measured JSON is preserved.
+
+Classical timings retain every partial sum and its derived estimate; no separate
+post-timing estimate replaces them. QAE retains every outcome/count distribution,
+queried precision and optional per-repeat seed. Ties use stable bitstring order.
+Seeds do not establish cross-platform determinism. Seeded tensornet is outside
+the currently validated protocol; current CUDA-Q tensor controls were checked
+in official documentation rather than treating old API limitations as current.
+
+New findings require human review sidecars for every paragraph, bound to exact
+source/draft hashes. No approvals were invented. CI checks new findings and
+preserves two historical pre-sidecar documents at fixed hashes. Release preflight
+checks tag/version/notes/checkout/main ancestry, then a reusable CI run gates the
+write-permission publish job. Release scripts join coverage/mypy. Removed the
+non-kernel TYPE_CHECKING exclusion without changing JIT circuit operations.
+
+Verification: 269 passed, 29 skipped; 942/945 statements, 99.68%. Every new or
+changed module has 100% statement coverage. Fake-backend wrapper coverage is
+distinct from real JIT/GPU integration. The full 100% command still fails on
+Windows because quantum/backend diagnostic paths are unavailable. Ruff/mypy,
+legacy run validation, findings-archive checks and doc checks pass. WSL2 retry
+fails with HCS/ERROR_PATH_NOT_FOUND; no fresh GPU or seeded run, live NIM call,
+reviewer approval, cloud spending, runtime repair, tag or push occurred.
+
+Official Action versions checked: checkout v7.0.1, setup-python v7.0.0,
+codecov-action v7.0.0 and action-gh-release v3.0.3; floating majors unchanged.
+ADR 009 records decisions and limitations. P1-R2 implementation is locally
+verified; P1-R3 protocol/profiling and fresh runtime evidence are next.
+
+## 2026-09-06 — Independent re-verification of P1-R2 and commit
+
+Picked up P1-R2 where the previous session stopped mid-verification: the
+implementation and documentation were complete in the working tree but nothing
+was committed, and the final format/test gate had not been re-run after the last
+edits to `benchmarks/run_file.py` and `quantum/qae.py`.
+
+Re-ran every gate on this Windows host rather than carrying the previous
+session's numbers forward. `ruff format --check` failed on those two files —
+trailing whitespace introduced by the last edits — and was corrected with
+`ruff format`; no logic changed. Ruff lint, `ruff format --check` and mypy
+(19 source modules, now including `scripts`) then pass.
+
+Full suite with the NIM key removed: **269 passed, 29 skipped**, 945 statements,
+3 missed, **99.68%**. The three uncovered lines are `quantum/backend.py:80-92`,
+the CUDA-Q backend diagnostic, unavailable without cudaq — the documented
+Windows shortfall, not a new gap. Every other module including all P1-R2
+additions (`benchmarks/provenance.py`, `analysis/review.py`,
+`scripts/release_check.py`) is at 100%. The `--cov-fail-under=100` command still
+exits nonzero here; the gate is unchanged and CI remains authoritative.
+Note: pytest's `tmp_path` needs an explicit writable `--basetemp` under this
+session's sandbox, otherwise 96 fixture errors mask the real result.
+
+Also verified independently: legacy archive validation
+(`python -m benchmarks.run_file`), the findings-review archive check
+(`python -m analysis.review --archive benchmarks/runs`), `git diff --check`,
+both workflow YAML files parse with the expected jobs (`ci`: lint/typecheck/
+tests/docs; `release`: preflight/quality/release), `ci.yml`'s `push`/
+`pull_request` triggers survived the `workflow_call` addition, and
+`scripts.release_check v0.2.0` fails closed as designed because HEAD is not the
+tagged commit, writing no `release_notes.md`.
+
+WSL2 was retried and fails identically:
+`Wsl/Service/CreateInstance/MountDisk/HCS/ERROR_PATH_NOT_FOUND`. The cause is
+now pinned down — `%LOCALAPPDATA%\wsl\` is empty, so the registered `Ubuntu`
+distro points at a deleted `ext4.vhdx`. This is a machine-level break needing
+the owner's decision (re-create the distro and reinstall the cudaq venv); it is
+not a repo defect. CUDA-Q coverage, GPU measurement and any seeded reproduction
+therefore remain unverified, as P1-R2's roadmap entry already states.
+
+No new measured run, live NIM call, tag or push. Next task is P1-R3.

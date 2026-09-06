@@ -79,6 +79,10 @@ def render(payload: dict[str, Any], out_dir: Path, stem: str = "crossover") -> l
     classical, quantum = split_arms(payload)
     gpu = (payload.get("environment", {}).get("gpu") or {}).get("name", "unknown GPU")
     profile = payload.get("controls", {}).get("power_profile", "unknown")
+    target = quantum[0]["target"]
+    processor = "CPU" if target == "qpp-cpu" else "GPU"
+    precision = payload.get("execution", {}).get("quantum", {}).get("precision", "legacy precision unverified")
+    quantum_label = f"QAE: {target} / {processor} / {precision}"
 
     out_dir.mkdir(parents=True, exist_ok=True)
     written = [out_dir / f"{stem}-{theme}.svg" for theme in THEMES]
@@ -102,7 +106,7 @@ def render(payload: dict[str, Any], out_dir: Path, stem: str = "crossover") -> l
                     [row["mean_s"] for row in quantum],
                     "s-",
                     color=QUANTUM_COLOR,
-                    label="quantum — QAE on cuStateVec",
+                    label=quantum_label,
                 )
                 left.set_yscale("log")
                 left.set_xlabel("correct digits of $\\pi$")

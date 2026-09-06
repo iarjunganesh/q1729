@@ -114,4 +114,4 @@ if __name__ == "__main__":
     # the narrower TextIO protocol, which omits reconfigure() even though
     # CPython's real stdout (TextIOWrapper) always has it.
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-    print(narrate(args.path, question=args.question))
+    print("# Unreviewed NIM draft\n\n" + narrate(args.path, question=args.question))

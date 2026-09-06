@@ -53,6 +53,7 @@ def _fake_cupy(monkeypatch, device_count=1, block_sums=(1103.0,)):
     fake.cuda = types.SimpleNamespace(
         runtime=types.SimpleNamespace(
             getDeviceCount=lambda: device_count,
+            getDevice=lambda: 0,
             deviceSynchronize=lambda: None,
             runtimeGetVersion=lambda: 13000,
             getDeviceProperties=lambda i: {

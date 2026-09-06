@@ -47,7 +47,7 @@ format:
 	ruff format .
 
 typecheck:
-	mypy classical quantum analysis benchmarks
+	mypy classical quantum analysis benchmarks scripts
 
 coverage:
 	pytest tests --cov --cov-report=term-missing --cov-fail-under=100

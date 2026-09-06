@@ -1,7 +1,7 @@
 """Versioned validation of the pi experiment's evidence, without rewriting it.
 
-Version 1 is a read-only legacy format (including the labeled synthetic demo).
-Version 2 is emitted by current writers. Validation establishes structural and
+Versions 1 and 2 are read-only legacy formats (including the version-1 demo).
+Version 3 is emitted by current writers. Validation establishes structural and
 internal consistency, not that a measurement happened or a hypothesis is true.
 """
 
@@ -13,7 +13,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-CURRENT_SCHEMA = "q1729/run-file/2"
+CURRENT_SCHEMA = "q1729/run-file/3"
+PREVIOUS_SCHEMA = "q1729/run-file/2"
 LEGACY_SCHEMA = "q1729/run-file/1"
 
 
@@ -55,7 +56,7 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
     synthetic = payload["synthetic"]
     require(allow_synthetic or not synthetic, "synthetic demo data cannot be used as measured evidence")
     schema = payload.get("schema")
-    require(schema in (CURRENT_SCHEMA, LEGACY_SCHEMA), "unknown run-file schema")
+    require(schema in (CURRENT_SCHEMA, PREVIOUS_SCHEMA, LEGACY_SCHEMA), "unknown run-file schema")
     require(allow_legacy or schema == CURRENT_SCHEMA, "legacy schema is read-only")
     finite_tree(payload)
     for key in ("hardware_id", "series", "question"):
@@ -86,7 +87,8 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
         require(isinstance(limitations, list) and bool(limitations), "limitations must be a nonempty array")
         for item in limitations:
             text(item, "limitation")
-        text(controls.get("precision"), "controls.precision")
+        if schema != CURRENT_SCHEMA:
+            text(controls.get("precision"), "controls.precision")
         integer(controls.get("threads_per_block"), "controls.threads_per_block")
         env = payload.get("environment")
         require(isinstance(env, dict), "environment must be an object")
@@ -158,9 +160,114 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
     require(methods == {"classical-cuda", "qae-cudaq"}, "both experiment arms are required")
     if not synthetic:
         require(len(targets) == 1, "mixed quantum targets require separate run files")
-        if schema == CURRENT_SCHEMA:
+        if schema in (CURRENT_SCHEMA, PREVIOUS_SCHEMA):
             require(controls.get("quantum_target") in tuple(targets), "controls.quantum_target mismatch")
+        if schema == CURRENT_SCHEMA:
+            validate_provenance(payload)
     return payload
+
+
+def validate_provenance(payload: dict[str, Any]) -> None:
+    """Validate traceability and per-repeat result/count relationships in v3."""
+    import re
+
+    source: Any = payload.get("provenance")
+    require(isinstance(source, dict), "provenance must be an object")
+    require(
+        isinstance(source.get("revision"), str) and bool(re.fullmatch(r"[0-9a-f]{40}", source["revision"])),
+        "source revision must be a Git SHA",
+    )
+    require(type(source.get("dirty")) is bool, "dirty must be boolean")
+    files = source.get("files_sha256")
+    require(isinstance(files, dict) and bool(files), "source file hashes required")
+    for name, digest in files.items():
+        text(name, "source path")
+        require(isinstance(digest, str) and bool(re.fullmatch(r"[0-9a-f]{64}", digest)), "invalid source hash")
+    execution: Any = payload.get("execution")
+    require(isinstance(execution, dict), "execution metadata required")
+    classical, quantum = execution.get("classical"), execution.get("quantum")
+    require(isinstance(classical, dict) and isinstance(quantum, dict), "both execution arms required")
+    for key in ("uuid", "pci_bus_id", "backend"):
+        text(classical.get(key), f"classical.{key}")
+    for key in ("cuda_runtime", "cuda_driver"):
+        integer(classical.get(key), key)
+    require(classical.get("precision") == "fp64", "classical precision mismatch")
+    require(quantum.get("target") == payload["controls"]["quantum_target"], "execution target mismatch")
+    require(quantum.get("precision") in ("fp32", "fp64"), "quantum precision required")
+    require(
+        payload["controls"]["precision"] == {"classical": "fp64", "quantum": quantum["precision"]},
+        "precision controls mismatch",
+    )
+    cpu = quantum["target"] == "qpp-cpu"
+    require(quantum.get("processor") == ("cpu" if cpu else "gpu"), "processor mismatch")
+    require(quantum.get("uuid") == (None if cpu else classical["uuid"]), "quantum device mismatch")
+    require(quantum.get("pci_bus_id") == (None if cpu else classical["pci_bus_id"]), "quantum PCI mapping mismatch")
+    require(payload["environment"]["gpu"].get("uuid") == classical["uuid"], "environment device mismatch")
+    config: Any = payload.get("configuration")
+    require(isinstance(config, dict), "configuration required")
+    for key in ("seed_schedule", "outcome_summary", "timing_boundary"):
+        text(config.get(key), key)
+    for key, method, parameter in (
+        ("classical_term_counts", "classical-cuda", "n_terms"),
+        ("counting_qubits", "qae-cudaq", "counting_qubits"),
+    ):
+        require(
+            config.get(key) == [row[parameter] for row in payload["runs"] if row["method"] == method],
+            "configuration sweep mismatch",
+        )
+    seed = config.get("seed")
+    if seed is not None:
+        integer(seed, "seed")
+    for row in payload["runs"]:
+        outcomes = row.get("outcomes")
+        require(isinstance(outcomes, list) and len(outcomes) == row["repeats"], "outcome/repeat count mismatch")
+        for i, outcome in enumerate(outcomes):
+            require(isinstance(outcome, dict), "outcome must be an object")
+            for key in ("pi_estimate", "abs_error", "correct_digits"):
+                number(outcome.get(key), key)
+            error = abs(outcome["pi_estimate"] - math.pi)
+            require(math.isclose(outcome["abs_error"], error, rel_tol=1e-9, abs_tol=1e-15), "outcome error mismatch")
+            digits = 16.0 if error == 0 else -math.log10(error / math.pi)
+            require(
+                math.isclose(outcome["correct_digits"], digits, rel_tol=1e-9, abs_tol=1e-12), "outcome digits mismatch"
+            )
+            if row["method"] == "classical-cuda":
+                number(outcome.get("partial_sum"), "partial_sum", 0)
+                require(outcome["partial_sum"] > 0, "partial sum must be positive")
+                estimate = 1 / ((2 * math.sqrt(2) / 9801) * outcome["partial_sum"])
+                require(math.isclose(estimate, outcome["pi_estimate"], rel_tol=1e-12), "partial sum estimate mismatch")
+            else:
+                require(
+                    outcome.get("target") == quantum["target"] and outcome.get("precision") == quantum["precision"],
+                    "outcome backend mismatch",
+                )
+                m = row["counting_qubits"]
+                for key in ("counting_qubits", "domain_qubits", "shots", "total_qubits", "grover_applications"):
+                    require(outcome.get(key) == row[key], "outcome configuration mismatch")
+                counts = outcome.get("counts")
+                require(isinstance(counts, dict) and bool(counts), "QAE counts required")
+                for bits, count in counts.items():
+                    require(
+                        isinstance(bits, str) and len(bits) == m and set(bits) <= {"0", "1"}, "invalid count bitstring"
+                    )
+                    integer(count, "count", 0)
+                require(sum(counts.values()) == row["shots"], "count total differs from shots")
+                best = min(counts, key=lambda bits: (-counts[bits], bits))
+                require(outcome.get("outcome") == int(best, 2), "selected outcome mismatch")
+                require(outcome.get("peak_probability") == counts[best] / row["shots"], "peak probability mismatch")
+                estimate = 4 * math.sin(math.pi * int(best, 2) / 2**m) ** 2
+                require(math.isclose(estimate, outcome["pi_estimate"], abs_tol=1e-14), "QAE estimate/count mismatch")
+                require(
+                    outcome.get("seed") == (None if seed is None else seed + m * row["repeats"] + i),
+                    "repeat seed mismatch",
+                )
+                text(outcome.get("seed_policy"), "seed policy")
+                text(outcome.get("reproducibility_limit"), "reproducibility limit")
+        for key in ("pi_estimate", "abs_error", "correct_digits"):
+            require(row[key] == outcomes[-1][key], "row must summarize the last timed outcome")
+        if row["method"] == "qae-cudaq":
+            for key in ("counts", "outcome", "seed", "precision", "peak_probability"):
+                require(row.get(key) == outcomes[-1][key], "QAE row differs from final timed outcome")
 
 
 def load(path: str | Path, *, allow_synthetic: bool = False) -> dict[str, Any]:

@@ -15,27 +15,31 @@ outside JIT kernel bodies. Real integration evidence is distinct from line cover
 
 ## Measured Windows coverage
 
-2026-09-06, Python 3.14.6, NIM key removed: 219 passed, 29 skipped.
+2026-09-06, Python 3.14.6, NIM key removed: 269 passed, 29 skipped.
 Generated from `pytest tests --cov --cov-report=json --cov-fail-under=100`:
 
 | Module | Statements | Missed | Windows coverage |
 | --- | --- | --- | --- |
 | `analysis/narrator.py` | 31 | 0 | 100.00% |
+| `analysis/review.py` | 57 | 0 | 100.00% |
 | `benchmarks/archive.py` | 20 | 0 | 100.00% |
-| `benchmarks/environment.py` | 77 | 0 | 100.00% |
-| `benchmarks/harness.py` | 84 | 0 | 100.00% |
-| `benchmarks/plot.py` | 61 | 0 | 100.00% |
-| `benchmarks/run_file.py` | 144 | 0 | 100.00% |
-| `classical/cuda_kernel.py` | 74 | 0 | 100.00% |
+| `benchmarks/environment.py` | 78 | 0 | 100.00% |
+| `benchmarks/harness.py` | 108 | 0 | 100.00% |
+| `benchmarks/plot.py` | 65 | 0 | 100.00% |
+| `benchmarks/provenance.py` | 30 | 0 | 100.00% |
+| `benchmarks/run_file.py` | 224 | 0 | 100.00% |
+| `classical/cuda_kernel.py` | 76 | 0 | 100.00% |
 | `classical/ramanujan_graph.py` | 110 | 0 | 100.00% |
 | `classical/ramanujan_series.py` | 21 | 0 | 100.00% |
 | `quantum/backend.py` | 38 | 3 | 92.11% |
-| `quantum/qae.py` | 43 | 12 | 72.09% |
+| `quantum/qae.py` | 53 | 0 | 100.00% |
+| `scripts/release_check.py` | 34 | 0 | 100.00% |
 
-Total: **97.87%**, 703 statements, 15 missed. All new/changed evidence modules
-have 100% statement coverage. The full command exits nonzero because missing
-CUDA-Q runtime paths prevent this Windows host from meeting 100%; the gate
-is unchanged. Mocked CUDA wrapper coverage is not GPU numerical verification.
+Total: **99.68%**, 945 statements, 3 missed. New/changed modules reach 100%
+statement coverage, including CUDA-Q wrapper paths tested with a fake backend.
+Real JIT circuit integration remains separate and was skipped on Windows.
+The full 100% command exits nonzero because CUDA-Q's backend diagnostic cannot
+run here; the threshold is unchanged. Coverage now includes release scripts.
 
 Historical WSL2 evidence recorded 186 passed / 100% on 2026-08-05; this audit
 could not reproduce it because the configured virtual disk could not attach.

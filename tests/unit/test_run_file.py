@@ -19,10 +19,12 @@ def test_archive_and_labeled_demo_remain_readable(measured_run):
         run_file.validate(measured_run, allow_legacy=False)
 
 
-def test_current_schema_and_single_repeat(measured_run):
+def test_current_schema_and_single_repeat(current_run):
+    measured_run = current_run
     measured_run["schema"] = run_file.CURRENT_SCHEMA
     measured_run["controls"]["quantum_target"] = "nvidia"
     for row in measured_run["runs"]:
+        row["outcomes"] = row["outcomes"][-1:]
         row.update(repeats=1, samples_s=[0.1], mean_s=0.1, min_s=0.1, stdev_s=0.0)
     assert run_file.validate(measured_run, allow_legacy=False) is measured_run
 
@@ -188,7 +190,10 @@ def test_plot_default_directory_is_run_specific(measured_run, tmp_path, monkeypa
 
 
 @pytest.mark.parametrize("competing_writer", [False, True])
-def test_writer_rejects_invalid_outcomes_and_late_collisions(measured_run, tmp_path, monkeypatch, competing_writer):
+def test_writer_rejects_invalid_outcomes_and_late_collisions(
+    current_run, tmp_path, monkeypatch, competing_writer, fake_provenance
+):
+    measured_run = current_run
     from benchmarks import environment
     from quantum import backend
 

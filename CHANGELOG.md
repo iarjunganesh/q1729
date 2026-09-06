@@ -5,6 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- P1-R2 schema-3 traceability: source revision/dirty state and file hashes, resolved installed distributions, selected GPU UUID/PCI identity, queried target/precision, runtime controls, and every timed classical/QAE outcome with count distributions and seed policy. Versions 1/2 remain read-only. Added human findings-review records checked by CI and release preflight/quality dependencies; removed the non-kernel coverage exclusion. See ADR 009.
+- Local validation: 269 passed, 29 skipped; 99.68% total Windows coverage, with all new/changed modules at 100%. Real GPU/seed verification remains blocked by WSL2's missing disk. No new measured run or release tag.
+
 ### Fixed
 
 - **P1-R1 evidence protection:** shared semantic validation at harness, plotter, narrator and CI boundaries; current writers emit schema 2 while the valid schema-1 archive and labeled synthetic narrator example remain readable unchanged. Exclusive JSON/SVG creation protects existing and competing outputs, with cleanup of newly created files on write/render exceptions. Run/figure paths are unique by default. Added malformed-record and overwrite tests; full Linux/CI verification remains pending because WSL2 cannot attach its configured disk.

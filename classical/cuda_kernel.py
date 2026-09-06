@@ -155,17 +155,20 @@ def time_partial_sum(
     partial_sum(n_terms, threads_per_block)  # warm-up: compile + context
 
     samples: list[float] = []
+    values: list[float] = []
     value = 0.0
     for _ in range(repeats):
         start = time.perf_counter()
         value = partial_sum(n_terms, threads_per_block)
         samples.append(time.perf_counter() - start)
+        values.append(value)
 
     return {
         "n_terms": n_terms,
         "threads_per_block": threads_per_block,
         "repeats": repeats,
         "partial_sum": value,
+        "partial_sums": values,
         "samples_s": samples,
         "mean_s": math.fsum(samples) / len(samples),
         "min_s": min(samples),
@@ -176,7 +179,7 @@ def device_info() -> dict[str, Any]:
     """Describe the CUDA device the kernel will run on."""
     import cupy
 
-    props = cupy.cuda.runtime.getDeviceProperties(0)
+    props = cupy.cuda.runtime.getDeviceProperties(cupy.cuda.runtime.getDevice())
     name = props["name"]
     return {
         "gpu": name.decode() if isinstance(name, bytes) else str(name),

@@ -20,6 +20,8 @@ from typing import Any
 
 #: Packages whose versions materially affect a measurement and therefore
 #: belong in every run file.
+GPU_SELECTOR: str | None = None
+
 TRACKED_PACKAGES = ("cudaq", "cupy-cuda13x", "numpy", "sympy")
 
 #: Fields queried from nvidia-smi. Clocks and temperature are here so a reader
@@ -34,6 +36,8 @@ TRACKED_PACKAGES = ("cudaq", "cupy-cuda13x", "numpy", "sympy")
 #: dispatch overhead. Both occur in this benchmark, on different arms.
 NVIDIA_SMI_FIELDS = (
     "name",
+    "uuid",
+    "pci.bus_id",
     "memory.total",
     "driver_version",
     "clocks.current.graphics",
@@ -65,7 +69,7 @@ def nvidia_smi() -> dict[str, str] | None:
     query = f"--query-gpu={','.join(NVIDIA_SMI_FIELDS)}"
     try:
         completed = subprocess.run(
-            [binary, query, "--format=csv,noheader"],
+            [binary, query, "--format=csv,noheader", *([f"--id={GPU_SELECTOR}"] if GPU_SELECTOR else [])],
             capture_output=True,
             text=True,
             timeout=30,
@@ -89,7 +93,12 @@ def gpu_memory_used_mib() -> int | None:
         return None
     try:
         completed = subprocess.run(
-            [binary, "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+            [
+                binary,
+                "--query-gpu=memory.used",
+                "--format=csv,noheader,nounits",
+                *([f"--id={GPU_SELECTOR}"] if GPU_SELECTOR else []),
+            ],
             capture_output=True,
             text=True,
             timeout=30,

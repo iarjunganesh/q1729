@@ -22,7 +22,7 @@ amplitude; sampled utilization cannot establish a causal bottleneck.
 Install both requirements files in a separate Linux/WSL2 environment per
 [setup](../docs/setup.md). Read the source archive's configuration first.
 The commands below specify the archived shot count but do not repair missing
-provenance or guarantee identical stochastic outcomes.
+missing provenance into an old record or guarantee identical stochastic outcomes.
 
 ```bash
 # Explicit unique name; the writer also enforces no-overwrite protection.
@@ -32,12 +32,13 @@ test ! -e "$run_path" && python -m benchmarks.harness --power-profile turbo --sh
 python -m benchmarks.plot "$run_path" --out-dir "benchmarks/plots/${run_id}"
 ```
 
-The writer validates schema-2 records and exclusively creates the output file;
+The writer validates schema-3 records and exclusively creates the output file;
 existing files are rejected, including competing-writer collisions. `make
 benchmark` generates a date-plus-UUID name and defaults to 2000 shots. `make
 plot` defaults to a run-specific subdirectory; both theme paths must be unused.
 Use a new directory/stem to render again. See [schema and legacy rules](../docs/run-file.md).
-Complete provenance and per-repeat outcomes remain P1-R2 work.
+Schema 3 captures source hashes, installed distributions, selected device, target/precision
+and every timed outcome/count distribution. New findings need a [human review record](../docs/findings-review.md).
 
 Preserve disagreements and analyze uncertainty under a declared protocol;
 one recorded standard deviation is not a significance threshold.
@@ -45,6 +46,7 @@ one recorded standard deviation is not a significance threshold.
 
 For another device, record the actual hardware and backend configuration.
 Use the [benchmark submission template](../.github/ISSUE_TEMPLATE/benchmark_submission.yml).
-The current schema has provenance gaps; a hardware label alone is insufficient
-to establish comparable controls. An AMD GPU vs CPU quantum fallback is not
+The hardware label defaults to the selected GPU UUID. Only one CUDA device may
+be visible for the current measured protocol; choose visibility before starting
+Python. A hardware label alone does not establish comparable controls. An AMD GPU vs CPU quantum fallback is not
 a same-GPU comparison.

@@ -17,7 +17,7 @@ pytest tests/unit
 
 Use the existing environment if already installed. `main.py` is a status check,
 not the benchmark. Optional CUDA-Q/CuPy imports must degrade gracefully.
-The audit's no-key full-suite result is 219 passed, 29 skipped, 97.87% coverage.
+The audit's no-key full-suite result is 269 passed, 29 skipped, 99.68% coverage.
 GPU/CUDA-Q runtime paths were not verified on native Windows.
 
 ## WSL2/Linux GPU workflow
@@ -50,8 +50,8 @@ on this machine. Do not reinstall/delete a distribution as a documentation step.
 ## Benchmark
 
 Follow [archive-safe invocation guidance](../benchmarks/README.md#reproducing).
-The writer now enforces validation and exclusive creation. Complete provenance
-is still missing; new
+The writer enforces validation and exclusive creation. Schema 3 captures source,
+software/device metadata and per-repeat outcomes; new
 publication-quality measurements depend on the roadmap's Phase 1 repair gates.
 
 ## Optional NIM narrator

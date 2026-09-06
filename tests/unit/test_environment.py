@@ -11,7 +11,10 @@ import pytest
 
 from benchmarks import environment
 
-SMI_LINE = "NVIDIA GeForce RTX 5070 Laptop GPU, 8151 MiB, 610.88, 2835 MHz, 3090 MHz, 65, 46.97 W, [N/A], 99 %, 40 %\n"
+SMI_LINE = (
+    "NVIDIA GeForce RTX 5070 Laptop GPU, GPU-test, 0000:01:00.0, 8151 MiB, 610.88, "
+    "2835 MHz, 3090 MHz, 65, 46.97 W, [N/A], 99 %, 40 %\n"
+)
 
 
 def _fake_smi(monkeypatch, stdout=SMI_LINE, found=True, raises=None):

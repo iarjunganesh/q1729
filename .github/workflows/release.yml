@@ -5,35 +5,40 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  contents: read
+
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Verify tag, version, notes and main ancestry
+        run: python -m scripts.release_check "$GITHUB_REF_NAME"
+
+  quality:
+    needs: preflight
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: [preflight, quality]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-
-      - name: Extract this version's notes from CHANGELOG.md
-        id: notes
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          # Deliberately regex-free: `$0 ~ "^## \\["` is escaped differently by
-          # gawk and mawk, and getting it wrong ships a release with an empty
-          # body rather than failing loudly. substr/index behave identically
-          # everywhere.
-          awk -v ver="[$VERSION]" '
-            substr($0, 1, 4) == "## [" { if (found) exit; if (index($0, ver)) { found=1; next } }
-            found { print }
-          ' CHANGELOG.md > release_notes.md
-          echo "Extracted notes for $VERSION:"
-          cat release_notes.md
-          # An empty body is almost always a mismatched CHANGELOG heading.
-          if [ ! -s release_notes.md ]; then
-            echo "::error::No CHANGELOG.md section found for [$VERSION] — check the heading matches the tag."
-            exit 1
-          fi
-
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Recheck metadata and extract notes
+        run: python -m scripts.release_check "$GITHUB_REF_NAME"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:

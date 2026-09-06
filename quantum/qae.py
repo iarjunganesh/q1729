@@ -30,21 +30,7 @@ host with no CUDA-Q at all (ADR 002).
 """
 
 import math
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:  # pragma: no cover
-    # CUDA-Q injects its gate vocabulary into kernel scope at JIT time; the
-    # names have no Python binding at runtime. Declaring them once here tells
-    # both ruff and mypy the truth — they are real inside a kernel — instead of
-    # scattering a suppression comment over every gate call, which would also
-    # suppress genuine typos. Assignment, not bare annotation: ruff only counts
-    # the former as a binding.
-    #
-    # This is needed here and not in quantum/backend.py because CUDA-Q requires
-    # annotations on kernel parameters, and an annotated function is one mypy
-    # actually type-checks the body of.
-    _Gate = Any
-    h = x = z = ry = r1 = mz = _Gate
+from typing import Any
 
 #: The amplitude ``A`` is built to encode. ``4 * a == pi`` by construction.
 TARGET_AMPLITUDE = math.pi / 4
@@ -60,8 +46,8 @@ PHI_SCALE = 0.5
 #:
 #: This number has a sharp consequence for the benchmark. 0.3466827... lies
 #: within 3.0e-6 of 355/1024, a *10-bit* dyadic rational. Canonical QAE reads
-#: out the most likely outcome, so from m = 10 upward the additional counting
-#: qubits correctly return zeros and the estimate stops improving, while the
+#: out the most likely outcome. The ideal nearest-grid result is unchanged
+#: from m = 10 through m = 17; this is a finite plateau, while the
 #: circuit cost keeps doubling with every added bit. The resulting error floor
 #: (~3.1e-5 in pi) is a property of this particular amplitude, not a defect and
 #: not a general statement about QAE — :func:`estimate` reports the phase
@@ -149,32 +135,32 @@ def _build_circuit() -> Any:
         # A: uniform superposition over the domain, then a rotation on the
         # objective qubit whose angle is linear in the domain bits.
         for i in range(domain.size()):
-            h(domain[i])
-        ry(2.0 * theta0, obj)
+            h(domain[i])  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
+        ry(2.0 * theta0, obj)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
         for i in range(domain.size()):
-            ry.ctrl(2.0 * phi, domain[i], obj)
+            ry.ctrl(2.0 * phi, domain[i], obj)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
 
     @cudaq.kernel
     def unprepare(domain: cudaq.qview, obj: cudaq.qubit, theta0: float, phi: float):  # pragma: no cover
         # A^dagger: exact reverse of prepare, with negated angles.
         for i in range(domain.size()):
-            ry.ctrl(-2.0 * phi, domain[i], obj)
-        ry(-2.0 * theta0, obj)
+            ry.ctrl(-2.0 * phi, domain[i], obj)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
+        ry(-2.0 * theta0, obj)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
         for i in range(domain.size()):
-            h(domain[i])
+            h(domain[i])  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
 
     @cudaq.kernel
     def grover(domain: cudaq.qview, obj: cudaq.qubit, theta0: float, phi: float):  # pragma: no cover
         # Q = A S_0 A^dag S_chi, applied left-to-right as S_chi, A^dag, S_0, A.
-        z(obj)  # S_chi: phase-flip the good state |1>
+        z(obj)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
         unprepare(domain, obj, theta0, phi)
         for i in range(domain.size()):  # S_0: phase-flip |0...0>
-            x(domain[i])
-        x(obj)
-        z.ctrl(domain, obj)
-        x(obj)
+            x(domain[i])  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
+        x(obj)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
+        z.ctrl(domain, obj)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
+        x(obj)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
         for i in range(domain.size()):
-            x(domain[i])
+            x(domain[i])  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
         prepare(domain, obj, theta0, phi)
 
     @cudaq.kernel
@@ -183,7 +169,7 @@ def _build_circuit() -> Any:
         domain = cudaq.qvector(n)
         obj = cudaq.qubit()
 
-        h(counting)
+        h(counting)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
         prepare(domain, obj, theta0, phi)
 
         for j in range(m):
@@ -196,7 +182,7 @@ def _build_circuit() -> Any:
                 # every estimate by exactly half the counting range. This z
                 # cancels it. Verified: without it the estimator converges to
                 # a_hat + 1/2, not a_hat.
-                z(counting[j])
+                z(counting[j])  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
 
         # Inverse QFT: the exact reverse of the forward QFT, with negated
         # angles and no bit-reversal swap layer — CUDA-Q's measurement bit
@@ -205,15 +191,17 @@ def _build_circuit() -> Any:
         # representable phases before this was committed).
         for i in range(m - 1, -1, -1):
             for k in range(m - 1, i, -1):
-                r1.ctrl(-math.pi / (2.0 ** (k - i)), counting[k], counting[i])
-            h(counting[i])
+                r1.ctrl(-math.pi / (2.0 ** (k - i)), counting[k], counting[i])  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
+            h(counting[i])  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
 
-        mz(counting)
+        mz(counting)  # type: ignore[name-defined]  # noqa: F821 - CUDA-Q JIT gate
 
     return circuit
 
 
-def estimate(counting_qubits: int, domain_qubits: int = 2, shots: int = 2000) -> dict[str, Any]:
+def estimate(
+    counting_qubits: int, domain_qubits: int = 2, shots: int = 2000, seed: int | None = None
+) -> dict[str, Any]:
     """Run QAE and return the estimate together with its full provenance.
 
     The returned dict is what the benchmark harness writes into a run file, so
@@ -227,12 +215,23 @@ def estimate(counting_qubits: int, domain_qubits: int = 2, shots: int = 2000) ->
 
     import cudaq
 
+    target = cudaq.get_target()
+    precision = str(target.get_precision()).split(".")[-1].lower()
+    if precision not in ("fp32", "fp64"):
+        raise ValueError("unsupported reported simulator precision")
+    if seed is not None:
+        if type(seed) is not int or not 0 < seed < 2**32:
+            raise ValueError("seed must be a positive 32-bit integer")
+        if target.name == "tensornet":
+            raise ValueError("seeded tensornet sampling is not supported by this validated protocol")
+        cudaq.set_random_seed(seed)
     theta0, phi = state_prep_angles(domain_qubits)
     circuit = _build_circuit()
     result = cudaq.sample(circuit, counting_qubits, domain_qubits, theta0, phi, shots_count=shots)
     counts = {bits: result.count(bits) for bits in result}
 
-    best = max(counts, key=lambda bits: counts[bits])
+    # Resolve equal-count outcomes deterministically by their bitstring.
+    best = min(counts, key=lambda bits: (-counts[bits], bits))
     y = int(best, 2)
     amplitude = amplitude_from_outcome(y, counting_qubits)
     pi_estimate = 4.0 * amplitude
@@ -242,7 +241,14 @@ def estimate(counting_qubits: int, domain_qubits: int = 2, shots: int = 2000) ->
         "domain_qubits": domain_qubits,
         "total_qubits": total_qubits(counting_qubits, domain_qubits),
         "grover_applications": grover_applications(counting_qubits),
-        "statevector_bytes": statevector_bytes(counting_qubits, domain_qubits),
+        "statevector_bytes": statevector_bytes(counting_qubits, domain_qubits, 8 if precision == "fp32" else 16),
+        "statevector_storage_kind": "analytical equivalent, not measured allocation",
+        "target": target.name,
+        "precision": precision,
+        "counts": counts,
+        "seed": seed,
+        "seed_policy": "cudaq.set_random_seed before sample" if seed is not None else "unseeded; stochastic outcomes",
+        "reproducibility_limit": "Seeds do not guarantee identical outcomes across targets, versions or hardware.",
         "shots": shots,
         "outcome": y,
         "peak_probability": counts[best] / shots,
