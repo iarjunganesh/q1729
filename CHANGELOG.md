@@ -20,6 +20,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **Integration test assumed fp32 unconditionally.** `statevector_bytes` became precision-aware in P1-R2, but `test_reported_circuit_shape_matches_the_analytic_prediction` still asserted `8 * 2**10`. That passes on the RTX 5070 (`nvidia`, fp32) and fails on CI (`qpp-cpu`, fp64, 16 bytes per amplitude), so neither the Windows host (skips integration) nor the GPU host caught it — only CI did. The expected size now derives from the target's reported precision.
 - **P1-R1 evidence protection:** shared semantic validation at harness, plotter, narrator and CI boundaries; current writers emit schema 2 while the valid schema-1 archive and labeled synthetic narrator example remain readable unchanged. Exclusive JSON/SVG creation protects existing and competing outputs, with cleanup of newly created files on write/render exceptions. Run/figure paths are unique by default. Added malformed-record and overwrite tests; full Linux/CI verification remains pending because WSL2 cannot attach its configured disk.
 - Added ADR 008 and `docs/run-file.md`. Windows no-key suite: 219 passed, 29 skipped; new/changed evidence modules reach 100% statement coverage. Full local coverage is 97.87%, below the unchanged 100% gate due to unavailable CUDA-Q runtime paths. No new tag or GPU measurement.
 

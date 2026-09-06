@@ -52,7 +52,14 @@ def test_reported_circuit_shape_matches_the_analytic_prediction():
     result = qae.estimate(6, domain_qubits=3, shots=500)
     assert result["total_qubits"] == 10
     assert result["grover_applications"] == 63
-    assert result["statevector_bytes"] == 8 * 2**10
+    # statevector_bytes follows the target's *actual* reported precision since
+    # P1-R2 (ADR 009); it is no longer a hardcoded fp32 assumption. A complex
+    # amplitude is 8 bytes at fp32 and 16 at fp64, so the expected size depends
+    # on which target this host selected: the RTX 5070 runs `nvidia` (fp32),
+    # while CI runs `qpp-cpu` (fp64). Asserting 8 unconditionally passed on the
+    # GPU host and failed only on CI.
+    bytes_per_amplitude = 8 if result["precision"] == "fp32" else 16
+    assert result["statevector_bytes"] == bytes_per_amplitude * 2**10
 
 
 @pytest.mark.parametrize("domain_qubits", [1, 2, 3])

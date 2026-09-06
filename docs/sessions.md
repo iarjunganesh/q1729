@@ -660,3 +660,30 @@ wrote no archive, so it is a diagnostic and not evidence. The quantum arm was
 not profiled at all, so no per-gate dispatch claim is licensed anywhere. No run
 file, tag or push was produced by this entry. Next is P1-R4, the first archived
 run under the committed protocol with a declared power profile.
+
+## 2026-09-06 — First CI run on the unreleased work, and the bug it caught
+
+Pushed the four unreleased commits to `main`; this was the first time CI had
+seen any of the P1-R1/R2/R3 work. Lint, mypy and docs passed, coverage reached
+100.00% on CI as well — and one integration test failed:
+`test_reported_circuit_shape_matches_the_analytic_prediction`,
+`assert 16384 == (8 * (2 ** 10))`.
+
+A genuine bug, not a flake. P1-R2 made `quantum.qae.statevector_bytes`
+precision-aware, so a complex amplitude is 8 bytes on an fp32 target and 16 on
+fp64. The integration test still hardcoded the fp32 factor. It therefore passed
+on the RTX 5070, which selects `nvidia` (fp32), and failed on CI, which runs
+`qpp-cpu` (fp64). The Windows host skips integration tests entirely, so no local
+host could have caught it — the three-way split in ADR 005 is exactly what
+surfaced it, and pushing before tagging is what made that split useful.
+
+Fixed by deriving the expected size from the result's own reported precision
+rather than assuming a target. Verified both paths on the GPU host by forcing
+`CUDAQ_DEFAULT_SIMULATOR`: `nvidia` and `qpp-cpu` each pass. Full suite on the
+GPU host remains 344 passed, 1 skipped, 100.00%.
+
+Sequencing note: the P1-R4 archived run was deliberately held until CI is green,
+so the run's recorded source revision is a verified commit rather than one later
+amended. The owner switched the laptop to the Turbo power profile for that run
+(verified: scheme GUID 6fecc5ae, GPU idle at 57 C on AC), matching the
+2026-08-05 archive so the two are comparable.
