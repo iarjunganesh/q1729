@@ -602,3 +602,61 @@ so a tag would fail its own preflight; CI has never run on this work; and P1-R3'
 exit criteria require fresh integration evidence that does not exist. The
 sequence is push main, let CI verify, finish P1-R3/R4, then tag v0.3.0 with the
 version and CHANGELOG bump in one commit.
+
+## 2026-09-06 — Rebuild the WSL2 runtime and close P1-R3 with real profiling
+
+The owner asked me to fix the WSL2 blocker before pushing. Diagnosed it
+properly first rather than reinstalling blind: both `Ubuntu` and `Ubuntu-22.04`
+registrations pointed into `%LOCALAPPDATA%\wsl\`, which was empty, and no
+`ext4.vhdx` existed anywhere on C: for either. The other three distros
+(docker-desktop, podman, NVIDIA-Workbench) were intact elsewhere, and WSL
+2.7.12.0 itself booted fine. So this was data loss, not a detached disk, and
+the `~/q1729-cudaq` venv was gone. No restart was needed.
+
+My first proposal was wrong and the owner corrected it: I suggested installing
+a differently-named `Ubuntu-24.04` alongside the dead registration, because the
+auto-mode classifier blocked `wsl --unregister`. He said "dont create multiple
+distros - lets fix it correctly." He is right — a parallel distro would leave a
+phantom entry and split the documented workflow. Recorded as a durable
+preference. He then ran the unregister and reinstall himself.
+
+`wsl --install -d Ubuntu` now yields **Ubuntu 26.04 "resolute" with Python
+3.14**, which cudaq cannot use. Re-verified against PyPI rather than trusting
+the docs: `cuda-quantum-cu13` 0.15.1 still publishes cp311/cp312/cp313 only, no
+cp314. Ubuntu 26.04 packages no python3.12 or python3.13 at all, so the venv is
+a uv-managed CPython 3.13.15 (`apt install pipx`, `pipx install uv`, `uv python
+install 3.13`, `uv venv --python 3.13 ~/q1729-cudaq`). Note `uv venv` seeds no
+pip, so installs go through `uv pip install --python ~/q1729-cudaq/bin/python`.
+
+Second cudaq-imposed cap discovered and documented: `cuda-quantum-cu13` requires
+`cupy-cuda13x~=13.6.0`. cupy-cuda13x 14.2.0 exists and installs cleanly on its
+own, so a future session following the tech-currency rule would try to bump it
+and break cudaq. AGENTS.md now records this alongside the Python cap.
+
+Verified on the restored host: cudaq 0.15.1 selects the `nvidia` target, cupy
+13.6.0 binds PCI 0000:01:00.0, CUDA runtime 13000 / driver 13040, NVIDIA driver
+616.56, RTX 5070 Laptop GPU 7.93 GiB, compute capability 12.0. Full suite:
+**344 passed, 1 skipped, 100.00% coverage** — every module at 100%. This is the
+first time the 100% gate has actually been met; Windows structurally cannot.
+The single skip is the live NIM test with no API key.
+
+With the GPU available I closed P1-R3's last two boxes by actually profiling
+rather than deferring. `time_phases` on the classical arm, reproduced twice at 7
+repeats, in milliseconds: n=2 end-to-end 4.05 of which kernel_handle 3.08 and
+device execute 0.030; n=64 3.58 / 3.09 / 0.087; n=1024 6.53 / 3.39 / 2.50;
+n=16384 69.96 / 3.62 / 65.85. kernel_handle is per-call RawModule construction
+and is constant at ~3.1-3.9 ms regardless of n, so it is ~92% of the two-term
+measurement and ~1% is arithmetic.
+
+That settles the audit's disagreement in both directions instead of picking a
+side: the device really is sub-millisecond at small n (~30 microseconds) and
+the archived 2.714 ms end-to-end really is milliseconds — they were measuring
+different things, which is precisely the failure the committed protocol exists
+to prevent. Below roughly n = 1024 the classical arm's wall time measures
+Python, not the GPU, and the crossover figure must be read that way.
+
+Limits held deliberately: the profiling ran at an unrecorded power profile and
+wrote no archive, so it is a diagnostic and not evidence. The quantum arm was
+not profiled at all, so no per-gate dispatch claim is licensed anywhere. No run
+file, tag or push was produced by this entry. Next is P1-R4, the first archived
+run under the committed protocol with a declared power profile.

@@ -49,11 +49,30 @@ comparability with the existing archive, so `time_phases` measures the same
 sequence of operations rather than replacing it. A phase-attributed sweep is
 therefore a **separate** measurement, not a reinterpretation of the old one.
 
-One consequence is already visible in the source and should be measured before
-it is asserted: `_load_kernel()` constructs a `RawModule` on every call, inside
-the timed region. cupy caches compiled modules by source, so this is wrapper
-cost rather than recompilation — but "wrapper cost" is a hypothesis about the
-2.714 ms until `time_phases` runs on real hardware. **It has not run.**
+One consequence was visible in the source and has now been measured.
+`_load_kernel()` constructs a `RawModule` on every call, inside the timed
+region. cupy caches compiled modules by source, so this is wrapper cost rather
+than recompilation — and on the restored GPU host, `time_phases` confirms it
+dominates at small term counts (2026-09-06, reproduced twice, 7 repeats each,
+milliseconds):
+
+| n_terms | end-to-end | kernel_handle | execute (device) | share that is device |
+| ---: | ---: | ---: | ---: | ---: |
+| 2 | 4.05 | 3.08 | 0.030 | ~1% |
+| 64 | 3.58 | 3.09 | 0.087 | ~2% |
+| 1024 | 6.53 | 3.39 | 2.50 | ~38% |
+| 16384 | 69.96 | 3.62 | 65.85 | ~94% |
+
+`kernel_handle` is constant at ~3.1-3.9 ms regardless of `n`; only `execute`
+scales. The archived 2.714 ms two-term figure was therefore ~92% Python wrapper
+cost and ~1% arithmetic.
+
+This resolves the audit's disagreement in **both** directions rather than
+picking a side. The device genuinely is sub-millisecond at small n (~30
+microseconds), and the archived end-to-end number genuinely is milliseconds.
+They were measurements of different things, which is exactly the failure this
+page exists to prevent. Below roughly n = 1024 the classical arm's wall time is
+a measurement of Python, not of the GPU.
 
 ## Warm-up, exclusions, stopping
 
@@ -117,10 +136,16 @@ one runs, dispatch-bottleneck language stays out of the findings.
 
 ## Status
 
-Committed and unit-tested on CPU. **No phase-attributed measurement has been
-collected**: `time_phases` needs a real GPU, and the WSL2 runtime is
-unavailable (its registered distro points at a deleted `ext4.vhdx`). The
-protocol is the gate; the run behind it is [P1-R4](roadmap.md#p1-r4--repeat-and-review).
+Committed, unit-tested, and exercised on real hardware. The WSL2 runtime was
+rebuilt on 2026-09-06 (its distro had pointed at a deleted `ext4.vhdx`), and
+`time_phases` has now run on the RTX 5070 — the phase table above is measured,
+not projected.
+
+What is still outstanding: that profiling ran at an **unrecorded power
+profile** and wrote **no archive**, so it is a diagnostic, not evidence. The
+**quantum** arm has not been profiled at all, so no per-gate dispatch claim is
+licensed. The archived run under a declared power profile is
+[P1-R4](roadmap.md#p1-r4--repeat-and-review).
 
 See also [run-file.md](run-file.md) for the schema and
 [research-standards.md](handbook/research-standards.md) for the nine-field

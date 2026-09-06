@@ -39,7 +39,10 @@ it is a simulator case study, not an independent π algorithm or quantum advanta
 floating-point spectral checks are numerical verification, not an exact proof.
 No parity-check implementation, decoder, qLDPC experiment or second run exists.
 
-**Next:** P1-R4 — collect the first run under the committed protocol, then
+**Next:** P1-R4 — collect the first archived run under the committed protocol.
+P1-R3 is now complete: profiling ran on real hardware and measured that
+`kernel_handle` (per-call `RawModule` construction) is ~92% of small-n classical
+wall time while device `execute` is ~1%. Then
 profiling and a bounded repeat. Phase 2 proceeds through a specified classical
 code/reference decoder and controlled GPU study before a feasible qLDPC study.
 Literature/protocol design may proceed alongside evidence repairs. Publication
@@ -48,9 +51,11 @@ H100 remains optional and unmeasured, with runtime/evidence/budget gates beyond
 access cost. See `docs/roadmap.md` and ADR 007; README's three stages remain
 the research thread.
 
-Windows no-key audit: 316 passed, 29 skipped, 99.73% coverage. Historical WSL2
-186 passed / 100% was not reproduced: the configured virtual disk could not
-be attached. Public CI on a released commit does not verify newer unreleased changes.
+Windows no-key audit: 316 passed, 29 skipped, 99.73% coverage. **WSL2 was
+rebuilt on 2026-09-06** after its virtual disk was found deleted, and now runs
+**344 passed, 1 skipped, 100.00% coverage** on the RTX 5070 — the first time the
+100% gate has actually been met. The single skip is the live NIM test (no key).
+Public CI on a released commit does not verify newer unreleased changes.
 
 P1-R3 is implemented and locally tested: the measurement protocol is committed
 in `benchmarks/protocol.py` and hashed into schema-4 run files, timing phases
@@ -92,10 +97,16 @@ defaults to a run-specific directory. JSON/SVG writes reject existing paths.
   tests, lint. The complete native-Windows CUDA-Q/CuPy runtime path is unverified —
   `quantum/backend.py`, `quantum/qae.py` and `classical/cuda_kernel.py` must
   all degrade gracefully. No-key audit: **316 passed, 29 skipped**; live NIM is a separate optional check.
-- **WSL2 Ubuntu** (Python 3.12, venv at `~/q1729-cudaq`): everything CUDA-Q
-  and everything CUDA. Run tests there with
+- **WSL2 Ubuntu 26.04 "resolute"** (venv at `~/q1729-cudaq` on **Python
+  3.13.15**): everything CUDA-Q and everything CUDA. Run tests there with
   `wsl -e bash -c "cd /mnt/c/ws/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
-  Historical result: **186 passed**; current WSL2 disk availability blocks a fresh run.
+  Verified 2026-09-06: **344 passed, 1 skipped, 100.00% coverage**; cudaq 0.15.1
+  selects the `nvidia` target; cupy binds PCI `0000:01:00.0`; CUDA runtime 13000,
+  driver 13040, NVIDIA driver 616.56. **The distro's system Python is 3.14, which
+  cudaq has no wheel for** — the venv is a separate uv-managed 3.13.15
+  (`pipx install uv`, `uv python install 3.13`, `uv venv --python 3.13`), because
+  Ubuntu 26.04 packages no 3.12 or 3.13. Use `uv pip install --python
+  ~/q1729-cudaq/bin/python ...`; `uv venv` seeds no pip.
 - CI (ubuntu, Python 3.13) installs cudaq and runs the CUDA-Q integration
   suite on the `qpp-cpu` target — real simulator, no GPU. The CUDA-kernel
   integration tests skip there (no GPU); that split is ADR 005, not a gap.
@@ -147,7 +158,11 @@ Actions only; never chase a version bump into a paid tier or license.
 actually-published wheels, not by caution. Verified 2026-08-05: `cudaq`
 0.15.1 resolves to `cuda-quantum-cu13` wheels built for **cp311, cp312,
 cp313 only** — there is no 3.14 wheel. CI therefore runs 3.13 (the newest
-supported) and `requires-python` floors at 3.12. Before bumping either,
+supported) and `requires-python` floors at 3.12. Re-verified 2026-09-06:
+still cp311/cp312/cp313, still no cp314. **A second cudaq-imposed cap:
+`cuda-quantum-cu13` 0.15.1 requires `cupy-cuda13x~=13.6.0`**, so although
+cupy-cuda13x 14.2.0 exists and installs, it is forbidden by cudaq — do not
+"bump" it. Before bumping either,
 check the real wheel tags; don't assume. Bumping the **WSL2 venv** (still
 3.12) additionally means installing a new Python interpreter on the owner's
 actual machine — a system-level change, not a repo-file change, so confirm

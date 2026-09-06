@@ -43,8 +43,10 @@ Real JIT circuit integration remains separate and was skipped on Windows.
 The full 100% command exits nonzero because CUDA-Q's backend diagnostic cannot
 run here; the threshold is unchanged. Coverage now includes release scripts.
 
-Historical WSL2 evidence recorded 186 passed / 100% on 2026-08-05; this audit
-could not reproduce it because the configured virtual disk could not attach.
+WSL2 was rebuilt on 2026-09-06 after its virtual disk was found deleted, and
+now records **344 passed, 1 skipped, 100.00% coverage** on the RTX 5070 — every
+module at 100%, the gate met for the first time. That, not the Windows table
+above, is the authoritative coverage measurement.
 CI runs real CUDA-Q integration on `qpp-cpu`; CUDA-kernel GPU tests skip there.
 Released-commit CI does not validate the unreleased graph/evidence changes automatically.
 

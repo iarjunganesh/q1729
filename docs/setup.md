@@ -25,19 +25,39 @@ GPU/CUDA-Q runtime paths were not verified on native Windows.
 Use a separate Linux environment; never replace the Windows `.venv` in a shared
 checkout. From WSL2 with the checkout at `/mnt/c/ws/q1729`:
 
+Ubuntu 26.04 ships Python 3.14 and packages no 3.12/3.13, but cudaq publishes
+no 3.14 wheel — so the venv uses a uv-managed 3.13. Verified 2026-09-06:
+
 ```bash
 nvidia-smi
-python3.12 -m venv ~/q1729-cudaq
-source ~/q1729-cudaq/bin/activate
+sudo apt-get install -y pipx
+pipx install uv
+uv python install 3.13
+uv venv --python 3.13 ~/q1729-cudaq
 cd /mnt/c/ws/q1729
-pip install -r requirements.txt
-pip install -r requirements-gpu.txt
-python -m quantum.backend
-python -m classical.cuda_kernel
-pytest tests --cov --cov-report=term-missing --cov-fail-under=100
+uv pip install --python ~/q1729-cudaq/bin/python -r requirements.txt -r requirements-gpu.txt
+~/q1729-cudaq/bin/python -m quantum.backend
+~/q1729-cudaq/bin/python -m classical.cuda_kernel
+~/q1729-cudaq/bin/python -m pytest tests --cov --cov-report=term-missing --cov-fail-under=100
 ```
 
-These are the intended commands, not a fresh successful GPU transcript.
+`uv venv` does not seed pip, so install through `uv pip --python <venv python>`
+rather than `python -m pip`. Output on 2026-09-06:
+
+```
+cudaq_available: True
+target: nvidia
+cuda_available: True
+gpu: NVIDIA GeForce RTX 5070 Laptop GPU
+vram_gb: 7.93
+compute_capability: 12.0
+cuda_runtime: 13000
+cupy: 13.6.0
+344 passed, 1 skipped
+Required test coverage of 100% reached. Total coverage: 100.00%
+```
+
+The one skip is the live NIM test, which needs `NVIDIA_API_KEY`.
 Use a Python version supported by published CUDA-Q wheels; CI uses 3.13.
 The repository's target order is `nvidia-mgpu` → `nvidia` → `tensornet` →
 `qpp-cpu`, guarded by visible GPU count. A single GPU normally selects `nvidia`;

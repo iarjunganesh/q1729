@@ -29,7 +29,8 @@ and tests were committed in `e8b2060` beyond that release; released CI does not 
   checks, not an exact spectral proof. No parity-check implementation, decoder,
   qLDPC experiment or second measured run exists.
 - The Windows audit recorded 316 passed, 29 skipped with the NIM key removed,
-  and 99.73% coverage. Historical WSL2 results were 186 passed / 100%; they
+  and 99.73% coverage. The rebuilt WSL2 host records 344 passed, 1 skipped and
+  100.00% on 2026-09-06. Earlier WSL2 results were 186 passed / 100%; they
   were not reproduced because WSL2 could not attach its virtual disk. CI CPU
   simulation and GPU integration evidence must be distinguished.
 - NIM drafts unchecked prose from JSON. Its output needs human review; raw
@@ -123,15 +124,15 @@ and [findings review](findings-review.md). Runtime verification stays open.
   and stopping rule before collecting new data.
 - [x] Separate wrapper construction, allocation, transfer and device execution
   when attributing costs. Warmup does not remove all wrapper work.
-- [ ] Profile representative cases before asserting a dispatch/arithmetic bottleneck.
+- [x] Profile representative cases before asserting a dispatch/arithmetic bottleneck.
 - [x] Explain QAE quantization analytically and check sample distributions;
   distinguish relative/absolute error and floating-point reference limits.
-- [ ] Re-establish Linux/WSL2 runtime availability and run real-backend tests;
+- [x] Re-establish Linux/WSL2 runtime availability and run real-backend tests;
   report Windows, CPU simulator CI and GPU evidence separately.
 
 **Exit:** declared timing boundaries and uncertainty, supported causal claims or
-explicit hypotheses, and fresh relevant integration evidence. Runtime restoration
-is separate machine maintenance; it is not performed by this documentation update.
+explicit hypotheses, and fresh relevant integration evidence. **Met 2026-09-06**
+— runtime restoration was separate machine maintenance and has now been done.
 
 **Implementation verified on CPU, 2026-09-06:** 316 passed, 29 skipped; 1130
 statements, 3 missed, 99.73%. Every module reaches 100% except the CUDA-Q
@@ -144,12 +145,37 @@ comparability; `quantum/quantization.py` derives the plateau as the finite
 range **m = 10..17** and reproduces all 15 archived QAE outcomes to 1e-12, 8 of
 them on the conjugate peak.
 
-**Two boxes remain open and are blocked, not deferred by choice.** Profiling
-needs a GPU, and re-establishing the Linux/WSL2 runtime is machine
-maintenance: `%LOCALAPPDATA%\wsl\` is empty, so the registered `Ubuntu` distro
-points at a deleted `ext4.vhdx` and must be re-created with the cudaq venv
-reinstalled. Until then no dispatch-bottleneck claim is licensed and
-`time_phases` has never executed on real hardware.
+**Runtime restored and profiled, 2026-09-06.** WSL2's virtual disk was found
+deleted, not detached; the distro was rebuilt as Ubuntu 26.04 with a uv-managed
+Python 3.13.15 venv (26.04 ships 3.14, which cudaq has no wheel for). On the
+restored host the full suite is **344 passed, 1 skipped, 100.00% coverage** —
+every module at 100%, the gate met for the first time. The single skip is the
+live NIM test.
+
+**Profiling result (reproduced twice, 7 repeats each).** Phase attribution on
+the classical arm, milliseconds:
+
+| n_terms | end-to-end | kernel_handle | execute (device) | share that is device |
+| ---: | ---: | ---: | ---: | ---: |
+| 2 | 4.05 | 3.08 | 0.030 | ~1% |
+| 64 | 3.58 | 3.09 | 0.087 | ~2% |
+| 1024 | 6.53 | 3.39 | 2.50 | ~38% |
+| 16384 | 69.96 | 3.62 | 65.85 | ~94% |
+
+`kernel_handle` is per-call `RawModule` construction and is **constant at
+~3.1-3.9 ms regardless of n**; device `execute` scales with n as expected. So
+the archived 2.714 ms two-term figure was ~92% Python wrapper cost and ~1%
+arithmetic. This settles the audit's disagreement in both directions: the
+device really is sub-millisecond at small n (~30 microseconds), *and* the
+archived end-to-end number really is milliseconds — they were measuring
+different things. Below roughly n = 1024 the classical arm's wall time is a
+measurement of Python, not of the GPU, and the crossover figure must be read
+accordingly.
+
+This licenses a *wrapper*-overhead statement, which is measured. It still does
+not license a per-gate dispatch claim about the **quantum** arm, which has not
+been profiled. Profiling ran at an unrecorded power profile and wrote no
+archive; the archived run under a declared profile is P1-R4.
 
 ### P1-R4 — Repeat and review
 
@@ -287,9 +313,8 @@ Editing a checklist does not establish completion or authorize publication.
 ## Roadmap governance
 
 Material sequencing/architecture changes get an ADR. Update gates when evidence
-changes feasibility; avoid speculative dates. P1-R1, P1-R2 and P1-R3's
-unblocked scope are implemented locally; the next task is **P1-R4**, which
-needs the GPU runtime restored first.
+changes feasibility; avoid speculative dates. P1-R1, P1-R2 and P1-R3 are
+complete and verified on real hardware; the next task is **P1-R4**.
 
 ## Anti-roadmap
 
