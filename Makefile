@@ -28,11 +28,11 @@ RUN ?=
 benchmark:
 	@test -n "$(POWER_PROFILE)" || (echo "set POWER_PROFILE=<turbo|performance|silent|...> — it is a recorded control"; exit 1)
 	python -m benchmarks.harness --power-profile $(POWER_PROFILE) \
-		--out benchmarks/runs/$(shell date +%Y-%m-%d)-run.json
+		--out benchmarks/runs/$(shell date +%Y-%m-%d)-$(shell python -c "import uuid; print(uuid.uuid4().hex)").json
 
 plot:
 	@test -n "$(RUN)" || (echo "set RUN=benchmarks/runs/<file>.json"; exit 1)
-	python -m benchmarks.plot $(RUN) --out-dir benchmarks/plots
+	python -m benchmarks.plot $(RUN)
 
 test:
 	pytest tests -v

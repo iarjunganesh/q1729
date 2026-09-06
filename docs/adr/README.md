@@ -24,6 +24,7 @@ live in the [handbook](../handbook/principles.md):
 | [005](./005-cuda-kernel-via-nvrtc.md) | CUDA kernel compiled via NVRTC, not nvcc | Accepted | The `.cu` file is compiled at runtime by cupy/NVRTC — whole GPU toolchain is pip-installable, no CUDA Toolkit and no build step |
 | [006](./006-rocm-as-phase-4-second-backend.md) | ROCm/MI300 is the Phase 4 second backend | Accepted | Classical source stays within a portable subset; runtime port unverified; the quantum arm cannot cross vendors inside CUDA-Q, so an AMD run is a portability result, not a crossover point |
 | [007](./007-evidence-first-phase-gates.md) | Evidence-first phase gates and publication path | Accepted | Repair evidence, validate classical decoding then feasible qLDPC, extract shared code after reuse; publication conditional |
+| [008](./008-versioned-evidence-validation-and-exclusive-archives.md) | Versioned evidence validation and exclusive archives | Accepted | Shared semantic checks, legacy readers and no-overwrite JSON/SVG creation |
 
 ---
 

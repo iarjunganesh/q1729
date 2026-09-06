@@ -7,19 +7,12 @@ from analysis import narrator
 
 
 @pytest.fixture
-def run_file(tmp_path):
+def run_file(tmp_path, measured_run):
     path = tmp_path / "run.json"
-    path.write_text(
-        json.dumps(
-            {
-                "schema": "q1729/run-file/1",
-                "synthetic": False,
-                "hardware_id": "rtx-5070-laptop-8gb",
-                "runs": [{"method": "classical-cuda", "n_terms": 1000, "mean_s": 0.004}],
-            }
-        ),
-        encoding="utf-8",
-    )
+    measured_run["runs"][0]["n_terms"] = 1000
+    for row in measured_run["runs"]:
+        row.update(samples_s=[0.004], repeats=1, mean_s=0.004, min_s=0.004, stdev_s=0.0)
+    path.write_text(json.dumps(measured_run), encoding="utf-8")
     return path
 
 
@@ -51,7 +44,7 @@ def test_load_run_accepts_sample_file():
 def test_load_run_rejects_missing_keys(tmp_path):
     bad = tmp_path / "bad.json"
     bad.write_text('{"runs": []}', encoding="utf-8")
-    with pytest.raises(ValueError, match="missing required keys"):
+    with pytest.raises(ValueError, match="synthetic"):
         narrator.load_run(bad)
 
 

@@ -87,7 +87,7 @@ def test_measure_quantum_records_circuit_shape_and_warms_up(monkeypatch, no_gpu_
 def test_build_run_file_satisfies_the_research_standards_contract():
     payload = harness.build_run_file(
         classical_rows=[{"method": "classical-cuda"}],
-        quantum_rows=[{"method": "qae-cudaq"}],
+        quantum_rows=[{"method": "qae-cudaq", "target": "nvidia"}],
         power_profile="turbo",
         shots=4000,
         domain_qubits=2,
@@ -111,7 +111,7 @@ def test_build_run_file_marks_measured_data_as_not_synthetic():
     """The flag plot.py keys off — a real run must never be mistakable for the sample."""
     payload = harness.build_run_file([], [], "turbo", 1, 2, "id", {})
     assert payload["synthetic"] is False
-    assert payload["schema"] == "q1729/run-file/1"
+    assert payload["schema"] == "q1729/run-file/2"
 
 
 def test_limitations_name_the_accuracy_plateau_and_the_dispatch_bound():
@@ -134,17 +134,20 @@ def test_parse_args_defaults_are_the_documented_ones():
     assert args.domain_qubits == harness.DOMAIN_QUBITS
 
 
-def test_main_writes_a_run_file_and_caps_the_quantum_sweep(monkeypatch, tmp_path, no_gpu_sampling):
+def test_main_writes_a_run_file_and_caps_the_quantum_sweep(monkeypatch, tmp_path, no_gpu_sampling, measured_run):
     from quantum import backend
 
     monkeypatch.setattr(backend, "select_target", lambda: "qpp-cpu")
-    monkeypatch.setattr(harness, "measure_classical", lambda counts, repeats: [{"method": "classical-cuda"}])
+    monkeypatch.setattr(environment, "collect", lambda profile: measured_run["environment"])
+    monkeypatch.setattr(harness, "measure_classical", lambda counts, repeats: [measured_run["runs"][0]])
 
     captured = {}
 
     def fake_measure_quantum(counting, domain_qubits, shots, repeats, target):
         captured["counting"] = counting
-        return [{"method": "qae-cudaq"}]
+        row = measured_run["runs"][12]
+        row.update(target=target, shots=shots)
+        return [row]
 
     monkeypatch.setattr(harness, "measure_quantum", fake_measure_quantum)
 

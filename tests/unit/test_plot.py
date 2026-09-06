@@ -5,35 +5,14 @@ mechanism that stops a demo file from ever being presented as a result.
 """
 
 import json
+from pathlib import Path
 
 import pytest
 
 from benchmarks import plot
 
-MEASURED = {
-    "schema": "q1729/run-file/1",
-    "synthetic": False,
-    "controls": {"power_profile": "turbo"},
-    "environment": {"gpu": {"name": "NVIDIA GeForce RTX 5070 Laptop GPU"}},
-    "runs": [
-        {"method": "classical-cuda", "n_terms": 2, "mean_s": 0.0026, "correct_digits": 15.85},
-        {"method": "classical-cuda", "n_terms": 4096, "mean_s": 0.0137, "correct_digits": 16.0},
-        {
-            "method": "qae-cudaq",
-            "counting_qubits": 8,
-            "grover_applications": 255,
-            "mean_s": 0.37,
-            "correct_digits": 2.5,
-        },
-        {
-            "method": "qae-cudaq",
-            "counting_qubits": 16,
-            "grover_applications": 65535,
-            "mean_s": 9.29,
-            "correct_digits": 5.0,
-        },
-    ],
-}
+MEASURED = json.loads(Path("benchmarks/runs/2026-08-05-rtx5070-turbo.json").read_text(encoding="utf-8"))
+MEASURED["runs"] = MEASURED["runs"][:2] + MEASURED["runs"][12:14]
 
 
 def _write(tmp_path, payload, name="run.json"):
@@ -90,10 +69,11 @@ def test_render_themes_actually_differ(tmp_path):
     assert "0d1117" in dark.read_text(encoding="utf-8")
 
 
-def test_render_survives_a_run_file_without_gpu_metadata(tmp_path):
-    """A CPU-only run is still plottable; the title just says so."""
-    payload = {**MEASURED, "environment": {"gpu": None}}
-    assert len(plot.render(payload, tmp_path)) == 2
+def test_render_rejects_classical_cuda_evidence_without_gpu_metadata(tmp_path):
+    """The CUDA arm cannot substantiate its hardware without device metadata."""
+    payload = {**MEASURED, "environment": {**MEASURED["environment"], "gpu": None}}
+    with pytest.raises(ValueError, match="GPU metadata"):
+        plot.render(payload, tmp_path)
 
 
 def test_render_honours_a_custom_stem(tmp_path):
@@ -108,8 +88,6 @@ def test_main_renders_from_the_command_line(tmp_path, capsys):
 
 
 def test_parse_args_defaults_to_the_benchmarks_plots_directory():
-    from pathlib import Path
-
     args = plot.parse_args(["some/run.json"])
-    assert args.out_dir == Path("benchmarks/plots")
+    assert args.out_dir is None
     assert args.stem == "crossover"

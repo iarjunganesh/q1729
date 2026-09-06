@@ -25,18 +25,19 @@ The commands below specify the archived shot count but do not repair missing
 provenance or guarantee identical stochastic outcomes.
 
 ```bash
-# Unique output avoids the current Makefile's same-day filename collision.
+# Explicit unique name; the writer also enforces no-overwrite protection.
 run_id=$(python -c 'import uuid; print(uuid.uuid4().hex)')
 run_path="benchmarks/runs/${run_id}.json"
 test ! -e "$run_path" && python -m benchmarks.harness --power-profile turbo --shots 4000 --out "$run_path"
 python -m benchmarks.plot "$run_path" --out-dir "benchmarks/plots/${run_id}"
 ```
 
-The shell precheck is not atomic overwrite protection. The harness currently
-overwrites an existing `--out`; `make benchmark` uses `<date>-run.json` and
-defaults to 2000 shots. `make plot` reuses fixed figure names. Enforced archive
-protection and semantic validation are open [P1-R1](../docs/roadmap.md#p1-r1--protect-and-validate-evidence)
-tasks. Never overwrite an existing measured run or hand-edit its numbers.
+The writer validates schema-2 records and exclusively creates the output file;
+existing files are rejected, including competing-writer collisions. `make
+benchmark` generates a date-plus-UUID name and defaults to 2000 shots. `make
+plot` defaults to a run-specific subdirectory; both theme paths must be unused.
+Use a new directory/stem to render again. See [schema and legacy rules](../docs/run-file.md).
+Complete provenance and per-repeat outcomes remain P1-R2 work.
 
 Preserve disagreements and analyze uncertainty under a declared protocol;
 one recorded standard deviation is not a significance threshold.

@@ -14,6 +14,8 @@ from pathlib import Path
 
 import httpx
 
+from benchmarks import run_file
+
 DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1"
 # NIM retires model ids over time, and /v1/models lists entries that 404 on
 # invoke — probe with `make narrate` before trusting a new default.
@@ -35,23 +37,9 @@ def nim_configured() -> bool:
     return bool(os.getenv("NVIDIA_API_KEY"))
 
 
-#: Keys every run file carries, synthetic or measured. Kept in step with the
-#: schema `benchmarks/harness.py` emits and with `data/sample_run.json`.
-REQUIRED_RUN_KEYS = ("schema", "synthetic", "hardware_id", "runs")
-
-
 def load_run(path: str | Path) -> dict:
-    """Load and minimally validate a benchmark run file.
-
-    Validation is deliberately shallow — the narrator's contract is that it
-    passes numbers through untouched, so it has no business reshaping data it
-    does not understand. It checks only that the file is a run file at all.
-    """
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
-    missing = [key for key in REQUIRED_RUN_KEYS if key not in data]
-    if missing:
-        raise ValueError(f"run file {path} is missing required keys: {missing}")
-    return data
+    """Validate measured records or the explicitly labeled legacy demo."""
+    return run_file.load(path, allow_synthetic=True)
 
 
 def build_prompt(run: dict, question: str | None = None) -> str:

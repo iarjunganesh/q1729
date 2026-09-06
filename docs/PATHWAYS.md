@@ -24,6 +24,8 @@ work, fair controls, reproducible evidence and critical review. Novelty and
 arXiv acceptance remain unverified. If the study reproduces known behavior,
 publish an honest technical report and refine the question.
 
-The next code milestone is **[P1-R1](roadmap.md#p1-r1--protect-and-validate-evidence)**.
+The next code milestone is **[P1-R2](roadmap.md#p1-r2--make-each-claim-traceable)**.
+P1-R1 validation/archive protection is implemented and locally tested; full
+Linux/CI verification remains pending.
 Literature review and Phase 2 protocol design can proceed alongside repairs.
 Cloud hardware, ROCm and a website remain conditional later work.

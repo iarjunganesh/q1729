@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from benchmarks import environment
+from benchmarks import archive, environment, run_file
 
 #: Term counts swept on the classical arm. Deliberately spans past the point
 #: where double precision saturates, so the saturation shows up as measured
@@ -185,7 +185,7 @@ def build_run_file(
 ) -> dict[str, Any]:
     """Assemble the complete, contract-conforming run file."""
     return {
-        "schema": "q1729/run-file/1",
+        "schema": run_file.CURRENT_SCHEMA,
         "synthetic": False,
         "series": "ramanujan-1914",
         "recorded_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -201,6 +201,7 @@ def build_run_file(
             "shots": shots,
             "power_profile": power_profile,
             "threads_per_block": 256,
+            "quantum_target": quantum_rows[0]["target"] if quantum_rows else None,
             "precision": "classical: fp64 in-kernel; quantum: cuStateVec target default (fp32)",
         },
         "statistical_treatment": STATISTICAL_TREATMENT,
@@ -238,6 +239,16 @@ def main(argv: list[str] | None = None) -> int:
     """Run both arms and write the run file. Returns a process exit code."""
     args = parse_args(argv)
 
+    # Fail before GPU initialization/work; exclusive creation also protects
+    # against a competing writer appearing after this early check.
+    if args.out.exists():
+        raise FileExistsError(args.out)
+    for key in ("repeats", "shots", "domain_qubits"):
+        run_file.integer(getattr(args, key), key)
+    run_file.integer(args.max_counting_qubits, "max_counting_qubits", 2)
+    run_file.text(args.power_profile, "power_profile")
+    run_file.text(args.hardware_id, "hardware_id")
+
     from quantum import backend
 
     target = backend.select_target()
@@ -252,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"quantum arm: {len(counting)} configurations")
     quantum_rows = measure_quantum(counting, args.domain_qubits, args.shots, args.repeats, target)
 
-    run_file = build_run_file(
+    payload = build_run_file(
         classical_rows,
         quantum_rows,
         power_profile=args.power_profile,
@@ -262,9 +273,11 @@ def main(argv: list[str] | None = None) -> int:
         env=env,
     )
 
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(run_file, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {args.out} ({len(run_file['runs'])} rows)")
+    run_file.validate(payload, allow_legacy=False)
+    encoded = (json.dumps(payload, indent=2, allow_nan=False) + "\n").encode("utf-8")
+    with archive.create_outputs([args.out]) as streams:
+        streams[0].write(encoded)
+    print(f"wrote {args.out} ({len(payload['runs'])} rows)")
     return 0
 
 

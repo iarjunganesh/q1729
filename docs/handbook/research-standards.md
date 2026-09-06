@@ -2,8 +2,8 @@
 
 The contract every new q1729 experiment must satisfy, adopted in
 [Phase 0](../roadmap.md#phase-0--constitution-lightweight). These are requirements,
-not a claim of complete enforcement. The 2026-09-06 audit found key-presence
-checks, incomplete provenance and final-outcome-only rows. Phase 1 tracks repairs.
+not a claim of complete enforcement. The 2026-09-06 audit found incomplete provenance and final-outcome-only rows. P1-R1 replaced shallow
+key checks with [shared semantic validation](../run-file.md); P1-R2 tracks the remaining gaps.
 
 ## Nine required fields
 
@@ -62,8 +62,8 @@ claims before publishing findings. Never use narration to fill missing data.
 ## Reproduction
 
 Follow [benchmark instructions](../../benchmarks/README.md#reproducing), preserving
-unique run/figure paths. The current writer can overwrite an existing path;
-enforcement is open P1-R1 work. Reproduce configuration and resolved environment,
+unique run/figure paths. Exclusive creation now protects JSON and paired figures;
+use a new output path for every run or revised rendering. Reproduce configuration and resolved environment,
 then analyze differences with a declared uncertainty method. Statistics are
 required now; Phase 5 only adds reusable cross-run tooling.
 

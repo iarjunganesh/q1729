@@ -34,12 +34,12 @@ GPU archive, CUDA kernel, known-amplitude QAE circuit and harness. Its
 evidence/reproducibility repair gates are open. QAE encodes `math.pi / 4`;
 it is a simulator case study, not an independent π algorithm or quantum advantage.
 
-**Phase 2 has started:** `classical/ramanujan_graph.py` and its tests are staged
-work beyond released `f88a926`. The modular construction is exact; dense
+**Phase 2 has started:** `classical/ramanujan_graph.py` and its tests were committed in
+`e8b2060`, beyond released `f88a926`. The modular construction is exact; dense
 floating-point spectral checks are numerical verification, not an exact proof.
 No parity-check implementation, decoder, qLDPC experiment or second run exists.
 
-**Next:** P1-R1 archive protection and semantic validation, then provenance,
+**Next:** P1-R2 provenance and outcome retention, then
 profiling and a bounded repeat. Phase 2 proceeds through a specified classical
 code/reference decoder and controlled GPU study before a feasible qLDPC study.
 Literature/protocol design may proceed alongside evidence repairs. Publication
@@ -48,9 +48,9 @@ H100 remains optional and unmeasured, with runtime/evidence/budget gates beyond
 access cost. See `docs/roadmap.md` and ADR 007; README's three stages remain
 the research thread.
 
-Windows no-key audit: 157 passed, 29 skipped, 97.19% coverage. Historical WSL2
+Windows no-key audit: 219 passed, 29 skipped, 97.87% coverage. Historical WSL2
 186 passed / 100% was not reproduced: the configured virtual disk could not
-be attached. Public CI on a released commit does not verify staged changes.
+be attached. Public CI on a released commit does not verify newer unreleased changes.
 
 ## Key commands
 
@@ -71,16 +71,15 @@ make coverage     # pytest tests --cov --cov-report=term-missing --cov-fail-unde
 ```
 
 No `make` on the Windows host: run the underlying commands directly (they're
-one-liners). `make benchmark` currently reuses a date-only output path and
-`make plot` reuses figure names. Use unique paths from `benchmarks/README.md`
-until P1-R1 enforces archive protection.
+one-liners). `make benchmark` uses a date-plus-UUID filename; `make plot`
+defaults to a run-specific directory. JSON/SVG writes reject existing paths.
 
 ## Two-host workflow (ADR 002)
 
 - **Windows host** (Python 3.14, `.venv/`): editing, classical math, unit
   tests, lint. The complete native-Windows CUDA-Q/CuPy runtime path is unverified —
   `quantum/backend.py`, `quantum/qae.py` and `classical/cuda_kernel.py` must
-  all degrade gracefully. No-key audit: **157 passed, 29 skipped**; live NIM is a separate optional check.
+  all degrade gracefully. No-key audit: **219 passed, 29 skipped**; live NIM is a separate optional check.
 - **WSL2 Ubuntu** (Python 3.12, venv at `~/q1729-cudaq`): everything CUDA-Q
   and everything CUDA. Run tests there with
   `wsl -e bash -c "cd /mnt/c/ws/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
@@ -210,8 +209,8 @@ A measured claim in this repo is only worth what its provenance is worth.
 - **Every run file must satisfy the nine-field contract** in
   `docs/handbook/research-standards.md`: question, hypothesis, variables,
   controls, hardware, software versions, statistical treatment, raw data,
-  limitations. `benchmarks/harness.py` emits the current fields, but semantic validation and
-  complete provenance are open Phase 1 work. Add schema fields in the writer,
+  limitations. `benchmarks/harness.py` emits the current fields, with shared semantic validation in
+  `benchmarks/run_file.py`. Complete provenance remains P1-R2 work. Add schema fields in the writer,
   not by hand-editing measured JSON.
 - **The hypothesis is committed before the run.** It currently lives as a module
   constant in `benchmarks/harness.py`, which makes changes visible but does not
@@ -226,8 +225,8 @@ A measured claim in this repo is only worth what its provenance is worth.
   say so. A run file is a record of something that happened.
 - **Don't delete or overwrite an existing measured run file** to make a
   newer one look like the only result. Add alongside; the archive is the
-  point. The current writer can overwrite an existing path; enforced protection
-  is P1-R1. Use a unique run path and run-specific figure directory meanwhile.
+  point. `benchmarks/archive.py` enforces exclusive JSON and paired-SVG
+  creation. Use a new run path or figure directory for each output.
 
 ## Style / conventions
 
@@ -255,7 +254,7 @@ A measured claim in this repo is only worth what its provenance is worth.
   JIT-compiled CUDA-Q kernel body (`# pragma: no cover` — coverage can't
   trace it), and each one must be exercised by a `tests/integration/` test
   instead. Measure where cudaq exists (WSL2/CI); Windows-local runs
-  under-count `quantum/` and showed 97.19% in the no-key audit — that's expected, not a
+  under-count `quantum/` and showed 97.87% in the no-key audit — that's expected, not a
   gate failure (CI is what's authoritative).
 - **A `# pragma: no cover` that isn't a CUDA-Q kernel body is a bug.** Don't
   reach for it to close a coverage gap; write the test.

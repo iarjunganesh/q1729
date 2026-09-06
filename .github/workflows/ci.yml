@@ -160,20 +160,4 @@ jobs:
       # Every measured run file must satisfy the research-standards contract.
       - name: Measured run files must satisfy the research-standards contract
         run: |
-          python - <<'PY'
-          import glob, json, sys
-          required = ["question", "hypothesis", "variables", "controls",
-                      "statistical_treatment", "limitations", "environment", "runs"]
-          failed = False
-          for path in glob.glob("benchmarks/runs/*.json"):
-              data = json.load(open(path))
-              if data.get("synthetic", True):
-                  print(f"{path}: marked synthetic but lives in benchmarks/runs/")
-                  failed = True
-                  continue
-              missing = [k for k in required if k not in data]
-              if missing:
-                  print(f"{path}: missing contract fields {missing}")
-                  failed = True
-          sys.exit(1 if failed else 0)
-          PY
+          python -m benchmarks.run_file benchmarks/runs/*.json

@@ -131,11 +131,11 @@ could not repeat it because WSL2 could not attach its virtual disk.
   at 1e-15 relative tolerance. Host reduction avoids atomic accumulation order;
   this does not guarantee bitwise identity across hardware/toolchains.
 - Synthetic sample data is labeled and rejected by the plotter.
-- CI requires 100% coverage. Windows audit: 157 passed, 29 skipped, 97.19%
+- CI requires 100% coverage. Windows audit: 219 passed, 29 skipped, 97.87%
   with no NIM key. CUDA-Q CPU integration runs in CI; GPU integration requires
   a GPU. Historical WSL2 counts are not current CI counts.
 - The [research contract](docs/handbook/research-standards.md) is a requirement;
-  semantic validation, provenance and archive protection have open
+  semantic validation and archive protection are implemented; provenance has open
   [Phase 1 repair gates](docs/roadmap.md#phase-1--the-first-real-result).
 - [ADRs](docs/adr/README.md) record decisions, including ROCm as a conditional
   Phase 4 backend and the evidence-first sequence in ADR 007.
@@ -148,7 +148,7 @@ could not repeat it because WSL2 could not attach its virtual disk.
 - `classical/ramanujan_graph.py` — LPS Ramanujan expander graphs, spectrally verified against the `2√(k−1)` bound (ground truth for the Stage 3 / Phase 2 qLDPC experiment; CPU-only, never timed)
 - `quantum/qae.py` — canonical Quantum Amplitude Estimation of π/4, with the resource-cost caveats stated in the module
 - `quantum/backend.py` — CUDA-Q target selection (`nvidia-mgpu` → `nvidia` → `tensornet` → `qpp-cpu`) + environment diagnostic
-- `benchmarks/harness.py` — runs both arms and emits run JSON; semantic validation is an open repair gate
+- `benchmarks/harness.py` — runs both arms and emits schema-2 run JSON with semantic validation and exclusive output creation
 - `benchmarks/environment.py` — captures hardware, versions, and GPU load during a run
 - `benchmarks/plot.py` — theme-aware crossover plots; refuses synthetic input
 - `benchmarks/runs/`, `benchmarks/plots/` — measured run files, narrated writeups, and figures
@@ -192,10 +192,12 @@ python -m classical.cuda_kernel  # diagnostic: which GPU the kernel will use
 pytest tests                     # now includes the real-hardware integration tests
 ```
 
-Reproduction and unique output-path instructions are in
-[benchmarks/README.md](benchmarks/README.md). `make benchmark` currently writes
-`<date>-run.json` and can overwrite a same-day run; its default 2000 shots
-also differs from the archive's 4000. Archive-safe enforcement remains P1-R1.
+Reproduction instructions are in [benchmarks/README.md](benchmarks/README.md).
+`make benchmark` now uses a unique date-plus-UUID filename; the writer refuses
+existing paths. Plot defaults are run-specific and both themes are protected.
+The default 2000 shots still differs from the archive's 4000; use an explicit
+shot count when reproducing it. [Schema validation](docs/run-file.md) accepts
+legacy archives unchanged; provenance remains P1-R2 work.
 
 `make install` / `make test` / `make lint` / `make coverage` wrap the commands
 in the [Makefile](Makefile). Use separate Windows and Linux virtual environments;

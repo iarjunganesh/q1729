@@ -17,7 +17,7 @@ pytest tests/unit
 
 Use the existing environment if already installed. `main.py` is a status check,
 not the benchmark. Optional CUDA-Q/CuPy imports must degrade gracefully.
-The audit's no-key full-suite result is 157 passed, 29 skipped, 97.19% coverage.
+The audit's no-key full-suite result is 219 passed, 29 skipped, 97.87% coverage.
 GPU/CUDA-Q runtime paths were not verified on native Windows.
 
 ## WSL2/Linux GPU workflow
@@ -50,7 +50,8 @@ on this machine. Do not reinstall/delete a distribution as a documentation step.
 ## Benchmark
 
 Follow [archive-safe invocation guidance](../benchmarks/README.md#reproducing).
-The current writer lacks overwrite protection and complete provenance; new
+The writer now enforces validation and exclusive creation. Complete provenance
+is still missing; new
 publication-quality measurements depend on the roadmap's Phase 1 repair gates.
 
 ## Optional NIM narrator
@@ -74,7 +75,7 @@ in this audit. Configure the variable separately in WSL2 or preserve existing
 CI has lint, typecheck, tests and docs jobs. CPU CUDA-Q integration uses
 `qpp-cpu`; CUDA-kernel GPU integration skips without a GPU. The 100% coverage
 gate remains mandatory and is distinct from real-device numerical verification.
-Public CI on the released commit does not verify the staged graph changes.
+Public CI on the released commit does not verify the unreleased graph/evidence changes.
 
 Cloud follows the same two requirements files and backend diagnostics, with
 an explicitly recorded device and environment. H100/multi-GPU execution is

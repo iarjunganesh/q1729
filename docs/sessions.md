@@ -430,3 +430,34 @@ configured disk with HCS/ERROR_PATH_NOT_FOUND, so no fresh GPU evidence. Local
 document links/anchors, fenced blocks, CI documentation checks, whitespace,
 preserved bytes and unchanged staged diff checked before handoff. No code fixes,
 package changes, live NIM calls, cloud spending, runtime repair, commit or push.
+
+## 2026-09-06 ? Commit research checkpoint and implement P1-R1
+
+The owner authorized committing current changes on main and beginning roadmap
+work in order. Committed the complete graph/documentation checkpoint locally as
+`e8b2060` (31 files), preserving measured data and attribution to the human owner.
+No tag: v0.2.0 remains the latest release, and new work stays Unreleased.
+
+Implemented P1-R1: standard-library schema-2 validation shared by writer,
+plotter, narrator and CI; legacy measured and labeled synthetic inputs retain
+explicit read behavior. Validate finite numbers, required values, sample/count
+and summary consistency, experiment arms and target/control consistency.
+Exclusive creation prevents overwrites and late competing-writer collisions;
+paired figures reserve both paths and clean up owned outputs on exceptions.
+Makefile runs use UUID names and plot defaults are run-specific. Figure backend
+labels now use recorded targets. ADR 008 records compatibility and crash limits.
+
+Verification: 219 passed, 29 skipped with no NIM key; 703 statements / 15 missed,
+97.87% coverage. All new/changed evidence modules have 100% statement coverage.
+Full --cov-fail-under=100 remains nonzero on Windows; threshold unchanged. Ruff
+lint/format and mypy (15 source modules) pass after formatting correction. The
+required WSL2 retry fails with HCS/ERROR_PATH_NOT_FOUND attaching its configured
+disk. No fresh GPU run, live NIM request or runtime repair. Official Action
+release checks return checkout v7.0.1, setup-python v7.0.0, codecov-action v7.0.0,
+action-gh-release v3.0.3; existing floating majors remain current.
+
+P1-R1 implementation is locally verified; full Linux/CI verification and release
+readiness remain open. Next implementation is P1-R2 provenance/outcome retention.
+No push or release was performed. Historical JSON, figures, prior session/ADR
+bodies and release notes remain unchanged; updated live docs distinguish the
+current implementation from the earlier dated audit findings.

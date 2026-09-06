@@ -13,9 +13,10 @@ that the left panel is a shadow of.
 """
 
 import argparse
-import json
 from pathlib import Path
 from typing import Any
+
+from benchmarks import archive, run_file
 
 #: Light and dark render settings. Only colors differ — identical geometry, so
 #: the two files stay comparable side by side.
@@ -48,17 +49,14 @@ CLASSICAL_COLOR = "#76b900"
 QUANTUM_COLOR = "#a371f7"
 
 
-def load_runs(run_file: Path) -> dict[str, Any]:
+def load_runs(run_file_path: Path) -> dict[str, Any]:
     """Read a run file, refusing synthetic data.
 
     ``data/sample_run.json`` exists to demonstrate the schema and is labeled
     synthetic; plotting it would produce a figure indistinguishable from a
     real result, which is precisely the failure this project is built to avoid.
     """
-    payload: dict[str, Any] = json.loads(run_file.read_text(encoding="utf-8"))
-    if payload.get("synthetic", True):
-        raise ValueError(f"{run_file} is synthetic demo data — crossover plots are for measured runs only")
-    return payload
+    return run_file.load(run_file_path)
 
 
 def split_arms(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -70,6 +68,9 @@ def split_arms(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict
 
 def render(payload: dict[str, Any], out_dir: Path, stem: str = "crossover") -> list[Path]:
     """Render both themes; returns the paths written."""
+    run_file.validate(payload)
+    if not stem or Path(stem).name != stem or stem in (".", ".."):
+        raise ValueError("stem must be a filename, not a path")
     import matplotlib
 
     matplotlib.use("Agg")
@@ -80,54 +81,55 @@ def render(payload: dict[str, Any], out_dir: Path, stem: str = "crossover") -> l
     profile = payload.get("controls", {}).get("power_profile", "unknown")
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    written: list[Path] = []
+    written = [out_dir / f"{stem}-{theme}.svg" for theme in THEMES]
 
-    for theme, style in THEMES.items():
-        # rc_context is typed with a Literal key union covering every rcParam;
-        # a plain dict[str, str] cannot satisfy it without enumerating them.
-        with plt.rc_context(style):  # type: ignore[arg-type]
-            fig, (left, right) = plt.subplots(1, 2, figsize=(12, 5))
+    with archive.create_outputs(written) as streams:
+        for (_theme, style), stream in zip(THEMES.items(), streams, strict=True):
+            # rc_context is typed with a Literal key union covering every rcParam;
+            # a plain dict[str, str] cannot satisfy it without enumerating them.
+            with plt.rc_context(style):  # type: ignore[arg-type]
+                fig, (left, right) = plt.subplots(1, 2, figsize=(12, 5))
 
-            left.plot(
-                [row["correct_digits"] for row in classical],
-                [row["mean_s"] for row in classical],
-                "o-",
-                color=CLASSICAL_COLOR,
-                label="classical — hand-written CUDA kernel",
-            )
-            left.plot(
-                [row["correct_digits"] for row in quantum],
-                [row["mean_s"] for row in quantum],
-                "s-",
-                color=QUANTUM_COLOR,
-                label="quantum — QAE on cuStateVec",
-            )
-            left.set_yscale("log")
-            left.set_xlabel("correct digits of $\\pi$")
-            left.set_ylabel("wall time (s, log scale)")
-            left.set_title("Cost of a digit")
-            left.grid(True, alpha=0.4)
-            left.legend(loc="best", framealpha=0.0)
+                left.plot(
+                    [row["correct_digits"] for row in classical],
+                    [row["mean_s"] for row in classical],
+                    "o-",
+                    color=CLASSICAL_COLOR,
+                    label="classical — hand-written CUDA kernel",
+                )
+                left.plot(
+                    [row["correct_digits"] for row in quantum],
+                    [row["mean_s"] for row in quantum],
+                    "s-",
+                    color=QUANTUM_COLOR,
+                    label="quantum — QAE on cuStateVec",
+                )
+                left.set_yscale("log")
+                left.set_xlabel("correct digits of $\\pi$")
+                left.set_ylabel("wall time (s, log scale)")
+                left.set_title("Cost of a digit")
+                left.grid(True, alpha=0.4)
+                left.legend(loc="best", framealpha=0.0)
 
-            right.plot(
-                [row["counting_qubits"] for row in quantum],
-                [row["grover_applications"] for row in quantum],
-                "s-",
-                color=QUANTUM_COLOR,
-            )
-            right.set_yscale("log")
-            right.set_xlabel("counting qubits $m$ (precision bits)")
-            right.set_ylabel("Grover operators applied (log scale)")
-            right.set_title("Why: $2^m - 1$ per estimate")
-            right.grid(True, alpha=0.4)
+                right.plot(
+                    [row["counting_qubits"] for row in quantum],
+                    [row["grover_applications"] for row in quantum],
+                    "s-",
+                    color=QUANTUM_COLOR,
+                )
+                right.set_yscale("log")
+                right.set_xlabel("counting qubits $m$ (precision bits)")
+                right.set_ylabel("Grover operators applied (log scale)")
+                right.set_title("Why: $2^m - 1$ per estimate")
+                right.grid(True, alpha=0.4)
 
-            fig.suptitle(f"Ramanujan 1/$\\pi$ crossover — {gpu} (power profile: {profile})")
-            fig.tight_layout()
+                fig.suptitle(f"Ramanujan 1/$\\pi$ crossover — {gpu} (power profile: {profile})")
+                fig.tight_layout()
 
-            path = out_dir / f"{stem}-{theme}.svg"
-            fig.savefig(path, format="svg")
-            plt.close(fig)
-            written.append(path)
+                try:
+                    fig.savefig(stream, format="svg")
+                finally:
+                    plt.close(fig)
 
     return written
 
@@ -136,7 +138,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Command-line interface for the plotter."""
     parser = argparse.ArgumentParser(description="Render the crossover plot from a measured run file")
     parser.add_argument("run_file", type=Path, help="measured run file emitted by benchmarks.harness")
-    parser.add_argument("--out-dir", type=Path, default=Path("benchmarks/plots"))
+    parser.add_argument("--out-dir", type=Path, default=None)
     parser.add_argument("--stem", default="crossover", help="output filename stem")
     return parser.parse_args(argv)
 
@@ -144,7 +146,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     """Render both themes for the given run file. Returns a process exit code."""
     args = parse_args(argv)
-    for path in render(load_runs(args.run_file), args.out_dir, args.stem):
+    out_dir = args.out_dir or Path("benchmarks/plots") / args.run_file.stem
+    for path in render(load_runs(args.run_file), out_dir, args.stem):
         print(f"wrote {path}")
     return 0
 

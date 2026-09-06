@@ -5,6 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **P1-R1 evidence protection:** shared semantic validation at harness, plotter, narrator and CI boundaries; current writers emit schema 2 while the valid schema-1 archive and labeled synthetic narrator example remain readable unchanged. Exclusive JSON/SVG creation protects existing and competing outputs, with cleanup of newly created files on write/render exceptions. Run/figure paths are unique by default. Added malformed-record and overwrite tests; full Linux/CI verification remains pending because WSL2 cannot attach its configured disk.
+- Added ADR 008 and `docs/run-file.md`. Windows no-key suite: 219 passed, 29 skipped; new/changed evidence modules reach 100% statement coverage. Full local coverage is 97.87%, below the unchanged 100% gate due to unavailable CUDA-Q runtime paths. No new tag or GPU measurement.
+
 ### Documentation
 
 - Audited all 26 authored Markdown files (3379 original lines); reconciled live status/setup, added evidence-first phase gates and ADR 007, and separated reviewed findings from the preserved narrator draft. Historical ADR/session/release records and measured JSON remain intact. Code repair gates remain open; see `docs/markdown-audit-2026-09-06.md`.

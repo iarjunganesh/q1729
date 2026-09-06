@@ -14,7 +14,8 @@ Those files can contain environment or other user-supplied information.
 - The narrator sends the full JSON object, including system/environment metadata,
   not just performance numbers or GPU names. Review the payload before sending.
 - Narration is unchecked model output. It is not trusted executable input or
-  validated scientific evidence. Semantic input validation remains a Phase 1 task.
+  validated scientific evidence. Shared semantic validation now rejects malformed
+  run inputs; narration itself remains unchecked.
 
 ## Build and CI
 

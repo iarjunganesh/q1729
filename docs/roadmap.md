@@ -13,11 +13,12 @@ another plan. [ADR 007](adr/007-evidence-first-phase-gates.md) records this revi
 
 ## Where the repo actually is (v0.2.0)
 
-Audit date: **2026-09-06**, working tree based on `f88a926`. The graph module
-and tests are staged work beyond that release; released CI does not verify them.
+Audit date: **2026-09-06**, release baseline `f88a926`; graph/audit checkpoint `e8b2060`. The graph module
+and tests were committed in `e8b2060` beyond that release; released CI does not verify them.
 
 - Phase 0 standards are adopted, but enforcement is incomplete. JSON key
-  presence does not validate the nine-field research contract.
+  presence alone did not validate the contract; P1-R1 now supplies semantic validation.
+  Full provenance remains P1-R2 work.
 - Phase 1 delivered a CUDA kernel, known-amplitude QAE circuit, harness, figures
   and the 2026-08-05 RTX 5070 Laptop GPU archive. Interpretation and
   reproducibility repair gates are open. There is no H100 result.
@@ -27,8 +28,8 @@ and tests are staged work beyond that release; released CI does not verify them.
 - Phase 2 has exact modular LPS graph construction and floating-point spectral
   checks, not an exact spectral proof. No parity-check implementation, decoder,
   qLDPC experiment or second measured run exists.
-- The Windows audit recorded 157 passed, 29 skipped with the NIM key removed,
-  and 97.19% coverage. Historical WSL2 results were 186 passed / 100%; they
+- The Windows audit recorded 219 passed, 29 skipped with the NIM key removed,
+  and 97.87% coverage. Historical WSL2 results were 186 passed / 100%; they
   were not reproduced because WSL2 could not attach its virtual disk. CI CPU
   simulation and GPU integration evidence must be distinguished.
 - NIM drafts unchecked prose from JSON. Its output needs human review; raw
@@ -80,14 +81,20 @@ Preserve the old archive and read its
 
 ### P1-R1 — Protect and validate evidence
 
-- [ ] Refuse to overwrite measured JSON; preserve figures under run-specific paths.
-- [ ] Introduce versioned semantic validation: nonempty required values, types,
+- [x] Refuse to overwrite measured JSON; preserve figures under run-specific paths.
+- [x] Introduce versioned semantic validation: nonempty required values, types,
   finite numbers, repeat counts, backend identity and measured/synthetic status.
-- [ ] Apply validation at writer, plotter, narrator and CI boundaries, with
+- [x] Apply validation at writer, plotter, narrator and CI boundaries, with
   explicit legacy handling and meaningful malformed-input/overwrite tests.
 
 **Exit:** conflicting outputs and invalid records are rejected without altering
 archives; valid old data stays readable under its legacy schema.
+
+**Implementation verified on CPU, 2026-09-06:** shared validation and exclusive
+outputs pass boundary tests; new validator/archive modules have 100% statement
+coverage. Schema and legacy behavior are in [run-file.md](run-file.md) and ADR 008.
+Fresh Linux/CI full-gate verification remains unavailable; WSL2 cannot attach
+its disk. Do not treat local completion as release readiness.
 
 ### P1-R2 — Make each claim traceable
 
@@ -256,7 +263,7 @@ Editing a checklist does not establish completion or authorize publication.
 ## Roadmap governance
 
 Material sequencing/architecture changes get an ADR. Update gates when evidence
-changes feasibility; avoid speculative dates. The next code task is **P1-R1**.
+changes feasibility; avoid speculative dates. P1-R1 implementation is complete locally; the next code task is **P1-R2**.
 
 ## Anti-roadmap
 

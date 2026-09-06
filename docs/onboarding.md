@@ -3,17 +3,17 @@
 q1729 is a research repository growing toward a reusable platform. Read the
 [README](../README.md) for the research thread, [PATHWAYS](PATHWAYS.md) for
 orientation and [roadmap](roadmap.md) for phase gates. The next code milestone
-is P1-R1 archive protection and semantic validation.
+is P1-R2 provenance/outcome retention; P1-R1 is implemented and locally tested.
 
 ## What you can run today
 
 | Component | Implemented | Verification boundary |
 | --- | --- | --- |
 | Exact Ramanujan series | Yes, SymPy CPU reference | CPU tests |
-| LPS graph construction | Yes, staged graph module and tests | Exact modular construction; numerical spectrum |
+| LPS graph construction | Yes, graph module and tests committed in e8b2060 | Exact modular construction; numerical spectrum |
 | CUDA series kernel | Yes | Real GPU tests require available Linux/WSL2 runtime |
 | Canonical QAE | Yes, known amplitude π/4 | CPU simulator CI and historical GPU evidence |
-| Harness and plots | Yes; one measured archive | Evidence/overwrite/provenance repairs open |
+| Harness and plots | Yes; one measured archive | Validation/overwrite protection implemented; provenance work open |
 | NIM narrator | Yes, optional external service | Generated prose needs human review |
 | Classical decoder / qLDPC study | No | Phase 2 work |
 | Shared research engine / ROCm | No | Later phases, conditional on evidence |
