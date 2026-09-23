@@ -5,6 +5,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Updated core dependency floors to PyPI's latest stable releases checked on
+  2026-09-23. CUDA-Q moves to 0.16.0.post1, NVRTC to 13.4.92 and CuPy follows
+  CUDA-Q's Python-version-specific constraint. CI moves to Python 3.14 because
+  CUDA-Q now publishes cp314 Linux wheels; action major tags remain current.
+- Reconciled current status across the README, roadmap and setup guides: two
+  RTX archives exist, the CUDA kernel is hand-written C++, and follow-up
+  evidence defects remain. Clarified the limits of protocol digests and the
+  historical phase diagnostic. Added explicit H100 rental gates.
+- Removed three duplicate or obsolete guides and cleared ignored audit scratch
+  files. Historical run files, figures, ADRs and session entries remain intact.
+
+### Verification
+
+- Windows no-key suite after the core dependency upgrade: 319 passed, 29
+  skipped, 1131/1134 statements covered (99.74%); Ruff, mypy and `pip check`
+  passed. Both measured run files and the review sidecar validated. GPU
+  verification was unavailable: WSL2 could not attach its virtual disk on
+  2026-09-23. CUDA-Q 0.16 and CuPy were not executed on a GPU.
+
 ## [0.3.0] — 2026-09-06 — Phase 1 evidence repairs: protected, traceable, protocol-backed
 
 Closes Phase 1's four repair gates. A measured claim in this repo is now

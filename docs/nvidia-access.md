@@ -1,17 +1,17 @@
 # NVIDIA runtime and access
 
-Status reviewed 2026-09-06. Local Windows reports an RTX 5070 Laptop GPU,
-8151 MiB and driver 616.56. The archived 2026-08-05 run records driver 610.88.
+Status reviewed 2026-09-23. `nvidia-smi` reports an RTX 5070 Laptop GPU,
+8151 MiB and driver 616.92. The archived 2026-08-05 run records driver 610.88.
 The driver-supported CUDA version is not proof of an installed toolkit version.
-WSL2 currently cannot attach its configured virtual disk; no fresh CUDA/QAE
-runtime verification or NIM API request was completed in this audit.
+WSL2 could not attach its configured virtual disk in the 2026-09-23 audit;
+no fresh CUDA/QAE runtime verification or NIM API request was completed.
 
 ## Local GPU first
 
 Use the separate environment in [setup](setup.md). A working Linux/WSL2
-runtime, real-backend tests, evidence repairs and profiling precede new
-performance claims. A newer Windows CuPy wheel does not establish that this
-repository's complete native-Windows GPU path has been tested.
+runtime, real-backend tests, evidence repairs and declared-profile profiling
+precede new performance claims. A newer Windows CuPy wheel does not establish
+that this repository's complete native-Windows GPU path has been tested.
 
 ## NIM
 
@@ -28,11 +28,35 @@ this guide makes no continuing free-credit or price guarantee.
 
 ## Optional H100 axis
 
-No H100 or multi-GPU run exists. Before renting anything, specify the research
-question, profiling evidence, controls, expected memory/runtime, maximum cost
-and stop condition. Cost is not the only blocker: the archive and runtime
-repair gates in [Phase 1](roadmap.md#phase-1--the-first-real-result) are still open.
-Cloud access is not required for CPU Phase 2 design or a local decoding study.
+No H100 or multi-GPU run exists. The current π sweep reaches 19 circuit qubits:
+its bare fp32 state is only 4 MiB. An 80 GB H100's capacity does not answer a
+memory question at that size, and sampled utilization cannot predict a speedup.
+Cloud access is unnecessary for P2-A protocol design, a CPU reference decoder
+or the first local GPU decoding controls.
+
+Use these gates before any rental:
+
+1. Restore the local GPU runtime. Pass real CUDA and CUDA-Q tests with the
+   intended dependency set; archive a declared-profile phase study and repair
+   late-failure preservation before an expensive run.
+2. Write one falsifiable H100 question and controls. Examples: a circuit size
+   that exceeds the local GPU's measured safe memory ceiling, or a matched
+   decoder workload whose local profile identifies device compute or memory
+   as the limiter. Keep precision, code revision, instances, shot/repeat counts
+   and timing boundaries fixed or record their differences explicitly.
+3. Estimate bare state size (`8 * 2**qubits` bytes for fp32 complex), simulator
+   workspace, host RAM, runtime and storage. Set a maximum spend and a short
+   smoke-test stop condition. Check the provider's current GPU type, pricing,
+   billing, disk and network charges immediately before provisioning.
+4. Begin with one H100. Verify the actual device/target/precision and run the
+   small correctness control before the full sweep. Archive every outcome,
+   including failures. Stop at the preset budget or failed control. Compare
+   matched accuracy and end-to-end time; keep device-only time separate.
+
+For a preliminary ceiling, multiply the provider's current hourly rate by
+planned provisioned hours, then add storage and transfers. A multi-GPU rental
+requires a separate scaling question and MPI/plugin validation; it is not the
+default next step.
 
 A single H100 follows the single-GPU path. Multi-GPU success has not been
 verified; selection depends on visible devices and a working MPI/plugin setup.

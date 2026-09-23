@@ -18,8 +18,8 @@
 
 <!-- Row 2 — the NVIDIA stack, in the order the Stack section names it.
      Every badge links to that library's official documentation site. -->
-[![CUDA C++](https://img.shields.io/badge/CUDA_C%2B%2B-13.3-76B900?logo=nvidia&logoColor=white)](https://docs.nvidia.com/cuda/cuda-c-programming-guide/)
-[![CUDA-Q](https://img.shields.io/badge/CUDA--Q-0.15.1-76B900?logo=nvidia&logoColor=white)](https://nvidia.github.io/cuda-quantum/latest/index.html)
+[![CUDA C++](https://img.shields.io/badge/CUDA_C%2B%2B-13.4-76B900?logo=nvidia&logoColor=white)](https://docs.nvidia.com/cuda/cuda-c-programming-guide/)
+[![CUDA-Q](https://img.shields.io/badge/CUDA--Q-0.16.0.post1-76B900?logo=nvidia&logoColor=white)](https://nvidia.github.io/cuda-quantum/latest/index.html)
 [![CUDA-QX](https://img.shields.io/badge/CUDA--QX-QEC_%C2%B7_Solvers-76B900?logo=nvidia&logoColor=white)](https://nvidia.github.io/cudaqx/)
 [![cuQuantum](https://img.shields.io/badge/cuQuantum-cuStateVec-76B900?logo=nvidia&logoColor=white)](https://docs.nvidia.com/cuda/cuquantum/latest/)
 [![NIM](https://img.shields.io/badge/NIM-Nemotron-76B900?logo=nvidia&logoColor=white)](https://docs.nvidia.com/nim/)
@@ -29,7 +29,7 @@
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://docs.python.org/3/)
 [![SymPy](https://img.shields.io/badge/SymPy-1.14-3B5526?logo=sympy&logoColor=white)](https://docs.sympy.org/latest/index.html)
 [![NumPy](https://img.shields.io/badge/NumPy-2.5-013243?logo=numpy&logoColor=white)](https://numpy.org/doc/stable/)
-[![CuPy](https://img.shields.io/badge/CuPy-13.6-4B8BBE?logo=python&logoColor=white)](https://docs.cupy.dev/en/stable/)
+[![CuPy](https://img.shields.io/badge/CuPy-14.2_%28Py3.14%29-4B8BBE?logo=python&logoColor=white)](https://docs.cupy.dev/en/stable/)
 [![Ruff](https://img.shields.io/badge/Ruff-lint%20%2B%20format-D7FF64?logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![mypy](https://img.shields.io/badge/mypy-2.3-2A6DB2?logo=python&logoColor=white)](https://mypy.readthedocs.io/en/stable/)
 [![pytest](https://img.shields.io/badge/pytest-9.1-0A9EDC?logo=pytest&logoColor=white)](https://docs.pytest.org/en/stable/)
@@ -40,7 +40,8 @@
 [![WSL2](https://img.shields.io/badge/runtime-WSL2-0078D4?logo=linux&logoColor=white)](docs/adr/002-wsl2-runtime.md)
 
 Version badges describe repository dependency floors or the archived stack,
-not a freshly resolved GPU environment. CUDA-QX is a planned extension.
+not a freshly resolved GPU environment. CUDA-Q 0.16 requires CuPy 13.6.x on
+Python below 3.14 and CuPy 14.x on Python 3.14. CUDA-QX is a planned extension.
 
 ---
 
@@ -65,7 +66,10 @@ not an independent π algorithm or a quantum-advantage experiment.
 
 The [2026-08-05 archive](benchmarks/runs/2026-08-05-rtx5070-turbo.json)
 contains 27 configurations, five timing repeats each and 4000 shots per QAE
-estimate, recorded on an RTX 5070 Laptop GPU in turbo mode.
+estimate, recorded on an RTX 5070 Laptop GPU in turbo mode. A
+[second run](benchmarks/runs/2026-09-06-1286200412954fb4a59cac02c27a06df.json)
+was collected under the committed protocol and has
+[human-reviewed findings](benchmarks/runs/2026-09-06-1286200412954fb4a59cac02c27a06df-findings.md).
 
 | Selected row | Mean wall time | Reported accuracy |
 | --- | --- | --- |
@@ -108,7 +112,7 @@ The three stages below are the research thread. The full evidence-sequenced plan
 
 | Stage | Focus | Status |
 | --- | --- | --- |
-| **1 — π benchmark** | Ramanujan's 1914 1/π series as a hand-written CUDA kernel vs Quantum Amplitude Estimation with CUDA-Q, on the `nvidia` (cuStateVec) backend | **RTX archive delivered; evidence/reproducibility repairs open.** Optional H100 unmeasured |
+| **1 — π benchmark** | Ramanujan's 1914 1/π series as a hand-written CUDA kernel vs Quantum Amplitude Estimation with CUDA-Q, on the `nvidia` (cuStateVec) backend | **Two RTX archives delivered; follow-up evidence repairs open.** Optional H100 unmeasured |
 | **2 — community** | Upstream contributions to CUDA-Q / CUDA-Q Academic; publish results; invite benchmark submissions from other GPUs (the run-file schema is hardware-agnostic) | Ongoing workstream; publication depends on contribution/evidence gates |
 | **3 — Ramanujan graphs → qLDPC** | Ramanujan expander graphs underpin modern quantum LDPC codes. Simulate and decode them with CUDA-Q QEC (CUDA-QX) plus custom CUDA kernels | Started: graph construction only; classical decoder and feasible qLDPC study next |
 
@@ -122,8 +126,9 @@ The three stages below are the research thread. The full evidence-sequenced plan
 - **SymPy** — exact-rational reference implementation; any float drift in the GPU kernel shows up immediately
 
 Runtime: this repository uses **WSL2/Linux** for the CUDA-Q and CUDA path.
-The 2026-08-05 WSL2 GPU verification is historical. The 2026-09-06 audit
-could not repeat it because WSL2 could not attach its virtual disk.
+The latest archived WSL2 GPU verification is from 2026-09-06. WSL2 could not
+attach its virtual disk during the 2026-09-23 audit, so no fresh GPU result was
+produced then.
 
 ## Built to be trusted
 
@@ -131,14 +136,13 @@ could not repeat it because WSL2 could not attach its virtual disk.
   at 1e-15 relative tolerance. Host reduction avoids atomic accumulation order;
   this does not guarantee bitwise identity across hardware/toolchains.
 - Synthetic sample data is labeled and rejected by the plotter.
-- CI requires 100% coverage. Windows audit: 316 passed, 29 skipped, 99.73%
-  with no NIM key. CUDA-Q CPU integration runs in CI; GPU integration requires
-  a GPU. Historical WSL2 counts are not current CI counts.
+- CI requires 100% coverage. The 2026-09-23 Windows no-key audit: 319 passed,
+  29 skipped, 99.74% coverage; the CUDA-Q diagnostic needs its real runtime.
+  CUDA-Q CPU integration runs in CI; GPU integration requires a GPU.
 - The [research contract](docs/handbook/research-standards.md) is a requirement;
   semantic validation, archive protection, schema-4 traceability and a committed
-  measurement protocol are implemented;
-  fresh GPU verification and profiling remain open
-  [Phase 1 repair gates](docs/roadmap.md#phase-1--the-first-real-result).
+  measurement protocol are implemented. Follow-up evidence defects and runtime
+  verification limits are recorded in the [roadmap](docs/roadmap.md#where-the-repo-actually-is-v030).
 - [ADRs](docs/adr/README.md) record decisions, including ROCm as a conditional
   Phase 4 backend and the evidence-first sequence in ADR 007.
 
@@ -171,7 +175,7 @@ could not repeat it because WSL2 could not attach its virtual disk.
 Any host (CPU-safe — classical math, narrator, unit tests, lint):
 
 ```powershell
-py -3.14 -m venv .venv
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python main.py
@@ -214,7 +218,7 @@ see [setup](docs/setup.md).
 | Axis | Evidence |
 | --- | --- |
 | Local archive | RTX 5070 Laptop GPU, 8151 MiB; recorded driver 610.88 on 2026-08-05 |
-| Current Windows audit | Same GPU model; driver 616.56 reported by `nvidia-smi` on 2026-09-06; WSL2/CUDA runtime not reverified |
+| Current Windows audit | Same GPU model; driver 616.92 reported by `nvidia-smi` on 2026-09-23; WSL2/CUDA runtime not reverified |
 | H100 / multi-GPU | Planned only; no measured archive |
 | NIM | Optional external narrator; no live call in this audit |
 

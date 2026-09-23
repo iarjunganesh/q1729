@@ -28,44 +28,42 @@ video, no judging criteria, and no `submission/` directory. Never add
 submission material, devpost-style write-ups, or "built in N hours" framing.
 It is a research repo whose value is measured claims that stay true.
 
-**Current phase (documentation audit, 2026-09-06):** Phase 0 standards are
-adopted; enforcement gaps remain. Phase 1 has a real 2026-08-05 RTX 5070 Laptop
-GPU archive, CUDA kernel, known-amplitude QAE circuit and harness. Its
-evidence/reproducibility repair gates are open. QAE encodes `math.pi / 4`;
-it is a simulator case study, not an independent π algorithm or quantum advantage.
+**Current phase (audit, 2026-09-23):** Phase 0 standards are adopted;
+enforcement gaps remain. Phase 1 has two real RTX 5070 Laptop GPU archives,
+a CUDA C++ kernel, known-amplitude QAE circuit and harness. P1-R1 through
+P1-R4 produced v0.3.0, but later review found additional evidence defects.
+QAE encodes `math.pi / 4`; it is a simulator case study, not an independent
+π algorithm or quantum advantage.
 
 **Phase 2 has started:** `classical/ramanujan_graph.py` and its tests were committed in
-`e8b2060`, beyond released `f88a926`. The modular construction is exact; dense
+`e8b2060` and are included in v0.3.0. The modular construction is exact; dense
 floating-point spectral checks are numerical verification, not an exact proof.
-No parity-check implementation, decoder, qLDPC experiment or second run exists.
+No parity-check implementation, decoder or qLDPC experiment exists.
 
-**Next:** P1-R4 — collect the first archived run under the committed protocol.
-P1-R3 is now complete: profiling ran on real hardware and measured that
-`kernel_handle` (per-call `RawModule` construction) is ~92% of small-n classical
-wall time while device `execute` is ~1%. Then
-profiling and a bounded repeat. Phase 2 proceeds through a specified classical
-code/reference decoder and controlled GPU study before a feasible qLDPC study.
-Literature/protocol design may proceed alongside evidence repairs. Publication
-is conditional on contribution and evidence; shared platform code follows reuse.
-H100 remains optional and unmeasured, with runtime/evidence/budget gates beyond
-access cost. See `docs/roadmap.md` and ADR 007; README's three stages remain
-the research thread.
+**Next:** P2-A — specify the LPS-derived classical code and decoder study,
+including related work and a bounded protocol. In parallel, repair evidence
+loss on late failure, bind comparative reviews to every source archive,
+validate derived QAE fields and restore the local GPU runtime. The historical
+phase diagnostic measured 3.08 ms of `kernel_handle` in a 4.05 ms two-term
+call; it cannot apportion the older archive's 2.714 ms call. Phase 2 proceeds
+through a classical reference decoder and controlled GPU study before a
+feasible qLDPC study. H100 remains optional and unmeasured, with explicit
+question, runtime, evidence and budget gates. See `docs/roadmap.md` and ADR 007.
 
-Windows no-key audit: 316 passed, 29 skipped, 99.73% coverage. **WSL2 was
-rebuilt on 2026-09-06** after its virtual disk was found deleted, and now runs
-**344 passed, 1 skipped, 100.00% coverage** on the RTX 5070 — the first time the
-100% gate has actually been met. The single skip is the live NIM test (no key).
-Public CI on a released commit does not verify newer unreleased changes.
+Windows no-key audit on 2026-09-23: 319 passed, 29 skipped, 99.74% coverage.
+Historical WSL2 verification on 2026-09-06: 347 passed, 1 skipped, 100.00%
+coverage on the RTX 5070. WSL2 could not attach its virtual disk on 2026-09-23;
+no fresh GPU verification was possible. The historical skip was the live NIM
+test (no key). CPU-simulator CI does not verify GPU behavior.
 
 P1-R3 is implemented and locally tested: the measurement protocol is committed
 in `benchmarks/protocol.py` and hashed into schema-4 run files, timing phases
 are separable via `classical.cuda_kernel.time_phases`, and `quantum/quantization.py`
-derives the QAE error floor analytically. Profiling and fresh GPU evidence are
-**not** done — they need a runtime this host does not have.
+derives the QAE error floor analytically. Historical GPU profiling and two
+archives exist; fresh GPU verification needs a working WSL2 runtime.
 P1-R2 remains implemented: schema-3 traceability, all timed
 outcomes, actual target/precision labels, human findings review records and
-release preflight/quality dependencies. Real GPU/seed behavior remains unverified
-until WSL2 is available. The measured harness now requires one visible CUDA
+release preflight/quality dependencies. The measured harness requires one visible CUDA
 device to identify its mapping unambiguously; the general backend diagnostic's
 preference order remains unchanged (ADR 009).
 
@@ -96,18 +94,19 @@ defaults to a run-specific directory. JSON/SVG writes reject existing paths.
 - **Windows host** (Python 3.14, `.venv/`): editing, classical math, unit
   tests, lint. The complete native-Windows CUDA-Q/CuPy runtime path is unverified —
   `quantum/backend.py`, `quantum/qae.py` and `classical/cuda_kernel.py` must
-  all degrade gracefully. No-key audit: **316 passed, 29 skipped**; live NIM is a separate optional check.
+  all degrade gracefully. No-key audit: **319 passed, 29 skipped** on 2026-09-23; live NIM is a separate optional check.
 - **WSL2 Ubuntu 26.04 "resolute"** (venv at `~/q1729-cudaq` on **Python
   3.13.15**): everything CUDA-Q and everything CUDA. Run tests there with
-  `wsl -e bash -c "cd /mnt/c/ws/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
-  Verified 2026-09-06: **344 passed, 1 skipped, 100.00% coverage**; cudaq 0.15.1
+  `wsl -e bash -c "cd /mnt/c/ws/research/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
+  Last verified 2026-09-06: **347 passed, 1 skipped, 100.00% coverage**; cudaq 0.15.1
   selects the `nvidia` target; cupy binds PCI `0000:01:00.0`; CUDA runtime 13000,
-  driver 13040, NVIDIA driver 616.56. **The distro's system Python is 3.14, which
-  cudaq has no wheel for** — the venv is a separate uv-managed 3.13.15
-  (`pipx install uv`, `uv python install 3.13`, `uv venv --python 3.13`), because
-  Ubuntu 26.04 packages no 3.12 or 3.13. Use `uv pip install --python
-  ~/q1729-cudaq/bin/python ...`; `uv venv` seeds no pip.
-- CI (ubuntu, Python 3.13) installs cudaq and runs the CUDA-Q integration
+  driver 13040, NVIDIA driver 616.56. The existing venv was built with
+  uv-managed Python 3.13.15. CUDA-Q 0.16.0.post1 now publishes a cp314 Linux
+  wheel; moving the WSL2 venv to 3.14 awaits a restored runtime and a verified
+  GPU test. Use `uv pip install --python
+  ~/q1729-cudaq/bin/python ...`; `uv venv` seeds no pip. On 2026-09-23 WSL2
+  failed to attach its virtual disk; treat this setup as historical until restored.
+- CI (ubuntu, Python 3.14) installs cudaq and runs the CUDA-Q integration
   suite on the `qpp-cpu` target — real simulator, no GPU. The CUDA-kernel
   integration tests skip there (no GPU); that split is ADR 005, not a gap.
 
@@ -154,19 +153,15 @@ remembered "latest" is frequently stale by the time you use it. "At no
 cost" means free/open-source packages and officially published GitHub
 Actions only; never chase a version bump into a paid tier or license.
 
-**The one deliberate exception:** the Python version is capped by cudaq's
-actually-published wheels, not by caution. Verified 2026-08-05: `cudaq`
-0.15.1 resolves to `cuda-quantum-cu13` wheels built for **cp311, cp312,
-cp313 only** — there is no 3.14 wheel. CI therefore runs 3.13 (the newest
-supported) and `requires-python` floors at 3.12. Re-verified 2026-09-06:
-still cp311/cp312/cp313, still no cp314. **A second cudaq-imposed cap:
-`cuda-quantum-cu13` 0.15.1 requires `cupy-cuda13x~=13.6.0`**, so although
-cupy-cuda13x 14.2.0 exists and installs, it is forbidden by cudaq — do not
-"bump" it. Before bumping either,
-check the real wheel tags; don't assume. Bumping the **WSL2 venv** (still
-3.12) additionally means installing a new Python interpreter on the owner's
-actual machine — a system-level change, not a repo-file change, so confirm
-with the owner before doing it. Every other pin in this repo should move
+**Python and CuPy compatibility:** Check CUDA-Q's actually published wheels and
+dependency metadata before moving either interpreter or GPU pin. Verified
+2026-09-23: `cuda-quantum-cu13` 0.16.0.post1 publishes cp311 through cp314
+Linux wheels. It requires `cupy-cuda13x~=13.6.0` below Python 3.14 and
+`cupy-cuda13x>=14.0.0` on Python 3.14 or later. CI uses 3.14; the package's
+supported floor remains 3.12. The existing WSL2 venv is 3.13.15 and was not
+changed during the 2026-09-23 audit because its virtual disk would not attach.
+Installing or replacing an interpreter on the owner's machine is a system-level
+change; confirm with the owner before doing so. Every other pin should move
 without that extra scrutiny.
 
 ## Non-negotiable constraints
@@ -328,7 +323,6 @@ nit:
   preference order, coverage gate number, test counts, two-host workflow.
   `CLAUDE.md` itself never goes stale because it's just the import — don't
   add facts there that would need separate upkeep.
-- **docs/PATHWAYS.md** — current orientation, subordinate to README and roadmap.
 - **README.md** — badges (including pinned versions in badge text), the
   "first real result" numbers, the "Built to be trusted" coverage and test
   counts, the Project structure list, the Hardware table, the roadmap status
@@ -344,7 +338,7 @@ nit:
   enforcement points in the code; if the enforcement moves, the citation moves.
 - **docs/adr/README.md** — the ADR index table, whenever an ADR is added.
 - **benchmarks/README.md** — describes what is actually in `benchmarks/`.
-- **docs/setup.md, docs/onboarding.md, docs/nvidia-access.md** — these carry
+- **docs/setup.md, docs/nvidia-access.md** — these carry
   literal command output and dated "verified on `<date>`" claims. A new
   verification *replaces* the old date and output, it doesn't get appended
   alongside it.
@@ -410,7 +404,6 @@ nit:
   never a duplicate of what's here.
 - `AGENTS.md` (this file) — canonical instructions and the discipline for
   keeping everything below honest over time.
-- `docs/PATHWAYS.md` — orientation subordinate to README and roadmap.
 - `docs/roadmap.md` — single source of truth for sequencing; see Session
   start above.
 - `docs/handbook/` — Phase 0 constitution: `principles.md` and
@@ -419,7 +412,7 @@ nit:
   merged; amend via a dated addendum, never edit history away.
 - `docs/sessions.md` — dated log of what each work session changed and
   verified it against.
-- `docs/setup.md`, `docs/onboarding.md`, `docs/nvidia-access.md` — operational
+- `docs/setup.md`, `docs/nvidia-access.md` — operational
   how-tos with dated, literal "verified" evidence.
 - `classical/ramanujan_kernel.cu` — the hand-written CUDA C++ kernel.
 - `classical/cuda_kernel.py` — NVRTC compile/launch/timing wrapper (ADR 005).

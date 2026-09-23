@@ -2,48 +2,53 @@
 
 q1729 aims to become a reproducible computational research platform built around
 Ramanujan mathematics, accelerated classical computation and quantum simulation.
-Today it has one archived GPU experiment and an initial graph construction.
+Today it has two archived local GPU runs and an initial graph construction.
 The platform is the destination, earned through validated experiments and reuse.
 
 The [README](../README.md) defines the three-stage research thread: π;
 community/publication; Ramanujan graphs → qLDPC. This document defines execution
 order: Stage 1 maps to Phase 1, Stage 3 to Phase 2, and Stage 2 is a continuing
-workstream. [PATHWAYS](PATHWAYS.md) explains the direction without introducing
-another plan. [ADR 007](adr/007-evidence-first-phase-gates.md) records this revision.
+workstream. [ADR 007](adr/007-evidence-first-phase-gates.md) records this revision.
 
-## Where the repo actually is (v0.2.0)
+## Where the repo actually is (v0.3.0)
 
-Audit date: **2026-09-06**, release baseline `f88a926`; graph/audit checkpoint `e8b2060`. The graph module
-and tests were committed in `e8b2060` beyond that release; released CI does not verify them.
+Audit date: **2026-09-23**, release baseline `8005352`. This checkout has two
+measured RTX 5070 Laptop GPU archives, including a run under the committed
+protocol, and a reviewed findings record. The historical GPU suite recorded
+347 passed, 1 skipped and 100% coverage on 2026-09-06. WSL2 cannot attach its
+virtual disk today, so that GPU result has not been reproduced this session.
 
-- Phase 0 standards are adopted, but enforcement is incomplete. JSON key
-  presence alone did not validate the contract; P1-R1 now supplies semantic validation.
-  P1-R2 now captures source/device metadata and per-repeat outcomes; fresh GPU verification remains pending.
-- Phase 1 delivered a CUDA kernel, known-amplitude QAE circuit, harness, figures
-  and the 2026-08-05 RTX 5070 Laptop GPU archive. Interpretation and
-  reproducibility repair gates are open. There is no H100 result.
+- Phase 0 standards are adopted and semantic run-file validation exists.
+  Enforcement is incomplete: a protocol digest proves internal consistency,
+  not that its operator followed the declared procedure.
+- Phase 1 delivered a hand-written CUDA C++ kernel, known-amplitude QAE
+  circuit, harness, figures and two RTX archives. P1-R1 through P1-R4 were
+  completed for v0.3.0. A later audit found additional evidence defects:
+  late failures discard completed work; the review record hashes only one
+  source in a two-run comparison; derived QAE fields are not validated.
+  These must be repaired before a stronger reproducibility claim. No H100
+  result exists.
 - QAE encodes the already-known amplitude `math.pi / 4`. This is a simulator
   case study, not an independent π algorithm or quantum-advantage result.
   No crossing was observed within the tested sweep.
 - Phase 2 has exact modular LPS graph construction and floating-point spectral
-  checks, not an exact spectral proof. No parity-check implementation, decoder,
-  qLDPC experiment or second measured run exists.
-- The Windows audit recorded 316 passed, 29 skipped with the NIM key removed,
-  and 99.73% coverage. The rebuilt WSL2 host records 344 passed, 1 skipped and
-  100.00% on 2026-09-06. Earlier WSL2 results were 186 passed / 100%; they
-  were not reproduced because WSL2 could not attach its virtual disk. CI CPU
-  simulation and GPU integration evidence must be distinguished.
+  checks, not an exact spectral proof. No parity-check implementation, decoder
+  or qLDPC experiment exists.
+- This session's Windows no-key suite passed 319 tests, skipped 29 and covered
+  1131/1134 statements (99.74%). The three uncovered statements are in the
+  real CUDA-Q diagnostic. CI CPU simulation and GPU integration remain
+  separate evidence.
 - NIM drafts unchecked prose from JSON. Its output needs human review; raw
   measured JSON is never corrected by rewriting its numbers.
 
-See the [Markdown audit](markdown-audit-2026-09-06.md) for the complete file
-inventory and the distinction between documentation corrections and open code work.
+The next work is the Phase 2 question/protocol (P2-A), alongside repairs to
+the evidence path above and restoration of the local GPU runtime.
 
 ## Sequence at a glance
 
 ```mermaid
 flowchart LR
-    A[Now: one archive + LPS graphs] --> B[Phase 1: repair evidence and repeat]
+    A[Now: two archives + LPS graphs] --> B[Repair evidence path and restore GPU runtime]
     B --> C[Phase 2: classical decoding study]
     C --> D[Phase 2: feasible qLDPC study]
     C --> P[Focused paper if contribution survives review]
@@ -55,7 +60,7 @@ flowchart LR
 | Phase | Deliverable | Status |
 | --- | --- | --- |
 | 0 — constitution | Evidence standards and decision records | Adopted; enforcement gaps remain |
-| 1 — first real result | Reproducible, correctly scoped π case study | Archive delivered; repair/repeat gates open |
+| 1 — first real result | Scoped π simulator case study | Two archives delivered; additional evidence defects open |
 | 2 — second experiment | Classical decoding controls, then feasible qLDPC | Graph construction only |
 | 3 — shared engine | Reuse extracted from two validated experiments | Deferred until repeated needs exist |
 | 4 — backend independence | Controlled portability study; ROCm per ADR 006 | Conditional; no verified port or AMD run |
@@ -147,10 +152,10 @@ them on the conjugate peak.
 
 **Runtime restored and profiled, 2026-09-06.** WSL2's virtual disk was found
 deleted, not detached; the distro was rebuilt as Ubuntu 26.04 with a uv-managed
-Python 3.13.15 venv (26.04 ships 3.14, which cudaq has no wheel for). On the
-restored host the full suite is **344 passed, 1 skipped, 100.00% coverage** —
-every module at 100%, the gate met for the first time. The single skip is the
-live NIM test.
+Python 3.13.15 venv (CUDA-Q 0.15.1 had no cp314 wheel at that time). On the
+restored host the initial full suite was **344 passed, 1 skipped, 100.00%
+coverage**. The v0.3.0 release later recorded 347 passed, 1 skipped and 100%
+coverage. The single skip was the live NIM test.
 
 **Profiling result (reproduced twice, 7 repeats each).** Phase attribution on
 the classical arm, milliseconds:
@@ -162,15 +167,11 @@ the classical arm, milliseconds:
 | 1024 | 6.53 | 3.39 | 2.50 | ~38% |
 | 16384 | 69.96 | 3.62 | 65.85 | ~94% |
 
-`kernel_handle` is per-call `RawModule` construction and is **constant at
-~3.1-3.9 ms regardless of n**; device `execute` scales with n as expected. So
-the archived 2.714 ms two-term figure was ~92% Python wrapper cost and ~1%
-arithmetic. This settles the audit's disagreement in both directions: the
-device really is sub-millisecond at small n (~30 microseconds), *and* the
-archived end-to-end number really is milliseconds — they were measuring
-different things. Below roughly n = 1024 the classical arm's wall time is a
-measurement of Python, not of the GPU, and the crossover figure must be read
-accordingly.
+`kernel_handle` is per-call `RawModule` construction and is roughly constant
+in this diagnostic; device `execute` scales with n. The diagnostic's two-term
+handle share was 3.08/4.05 ms, about 76%. It used a different timing path and
+an unrecorded power profile, so it cannot apportion the archived 2.714 ms
+two-term timing. The archived figure remains an end-to-end wall time.
 
 This licenses a *wrapper*-overhead statement, which is measured. It still does
 not license a per-gate dispatch claim about the **quantum** arm, which has not
@@ -225,11 +226,12 @@ followed, the end-to-end caveat cites this file's own
 the timing reversal offers no explanation at all. 39 machine checks over the
 draft's numeric claims pass with no mismatch.
 
-**P1-R4 is complete.** Phase 1's repair gates are closed.
+**P1-R4 was completed for v0.3.0.** Additional evidence defects identified
+after release are listed in the current-state section above.
 
 **Exit:** a new auditable run and reproducible analysis including limitations.
-H100 is optional: proceed only with a specific question after local profiling
-and an explicit resource budget. Cost is not the only current blocker.
+H100 is optional: proceed only with a specific question, a working runtime,
+validated archives and an explicit resource budget.
 
 ## Phase 2 — The second experiment
 
@@ -356,9 +358,10 @@ Editing a checklist does not establish completion or authorize publication.
 ## Roadmap governance
 
 Material sequencing/architecture changes get an ADR. Update gates when evidence
-changes feasibility; avoid speculative dates. P1-R1 through P1-R4 are complete
-and verified on real hardware; Phase 1's repair gates are closed. The next work
-is **Phase 2**, starting at P2-A.
+changes feasibility; avoid speculative dates. P1-R1 through P1-R4 produced
+the v0.3.0 release and historical real-hardware evidence. The next research
+work is **Phase 2**, starting at P2-A, alongside the evidence repairs in the
+current-state section.
 
 ## Anti-roadmap
 

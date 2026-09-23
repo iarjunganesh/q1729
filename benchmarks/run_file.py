@@ -287,8 +287,9 @@ def validate_protocol(payload: dict[str, Any]) -> None:
     The digest is recomputed from the declaration the file itself carries, not
     from the current :mod:`benchmarks.protocol`. An archived run must stay
     valid after the protocol changes — what the check establishes is that the
-    declaration and its digest were not altered independently of each other,
-    so a run cannot claim a protocol it did not follow.
+    declaration and its digest are internally consistent. It does not prove
+    that the operator followed the declaration or that a concrete run plan
+    was committed before measurement.
     """
     from benchmarks import protocol
 

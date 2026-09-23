@@ -3,17 +3,17 @@
 # Floors track the latest stable release; see AGENTS.md "Tech stack currency".
 
 # Math (classical reference implementation)
-sympy>=1.14
-numpy>=2.5
+sympy>=1.14.0
+numpy>=2.5.3
 
 # NIM findings narrator (analysis/narrator.py, ADR 003)
-httpx>=0.28
+httpx>=0.28.1
 
 # Benchmark plotting (benchmarks/plot.py) — CPU-only, no GPU dependency
-matplotlib>=3.11
+matplotlib>=3.11.2
 
 # Dev / test
-pytest>=9.1
-pytest-cov>=7.1
-ruff>=0.16
-mypy>=2.3
+pytest>=9.1.1
+pytest-cov>=7.1.0
+ruff>=0.16.8
+mypy>=2.3.1

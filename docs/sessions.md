@@ -816,3 +816,52 @@ on the qpp-cpu target, because cost scales as 2^(2m+3) — 8191 Grover
 applications over a 16-qubit statevector. Measured m=10 to m=13 is 58.7x
 against a predicted 64x. The remainder is CI's slower runner. This is expected
 and is the ADR 005 split working as designed, not a regression.
+
+## 2026-09-23 — Repository audit, documentation cleanup and dependency refresh
+
+The owner requested a full audit, cleanup of unwanted docs and ignored `.tmp`,
+ground truth on the CUDA implementation, and an H100 decision plan. The
+tracked kernel is already hand-written CUDA C++ in `classical/ramanujan_kernel.cu`;
+`classical/cuda_kernel.py` compiles and launches it through NVRTC and includes
+host transfer/reduction and timing. The measured small-n end-to-end time
+therefore cannot be read as device execution time. The separate phase
+diagnostic measured 3.08/4.05 ms (about 76%) in kernel-handle acquisition for
+its two-term case; it does not apportion the older archived 2.714 ms call.
+
+Removed all 45 files from ignored `.tmp`, then removed ignored mypy, Ruff and
+pytest caches. Removed redundant `docs/PATHWAYS.md` and `docs/onboarding.md`
+and the obsolete `docs/markdown-audit-2026-09-06.md`, which referenced deleted
+scratch and described already-completed gates as open. Preserved both measured
+JSON archives, their figures, the reviewed findings, ADRs and session history.
+Updated the live README, roadmap, benchmark/setup/access guides and AGENTS.md
+to distinguish the historical v0.3.0 release from later evidence defects.
+Windows Quickstart now uses `python -m venv`: this session's `py -0p` found no
+registered interpreter while `python --version` returned 3.14.7.
+
+The audit confirmed open enforcement gaps in the current source: the harness
+writes only after both complete arms, so a late failure loses completed work;
+the protocol's budget/abort rule has no enforcement; comparative review hashes
+only one source archive; schema-4 validation does not recompute quantization
+fields; and a digest recomputed from a run file's own declaration does not
+prove protocol compliance. These are follow-up implementation tasks, not
+observed corruption of either archived measured file. Phase 2 remains at
+graph construction; P2-A's question and protocol are next. H100 remains
+conditional on local runtime, evidence, workload and cost gates.
+
+Checked PyPI's public package metadata on 2026-09-23. CUDA-Q 0.16.0.post1
+publishes Linux cp314 wheels and requires CuPy 13.6.x below Python 3.14 or
+CuPy 14.x on Python 3.14. Updated all direct dependency floors to current
+stable versions, moved CI to Python 3.14, and checked GitHub Action major tags
+and the Mermaid CLI/Node toolchain. The Windows `.venv` was upgraded for the
+CPU-safe dependencies. The existing WSL2 venv was not changed: the distro
+failed to attach its virtual disk with `HCS/ERROR_PATH_NOT_FOUND`, including
+an elevated retry. No fresh CUDA-Q/CuPy integration run or H100 experiment
+was possible. Windows `nvidia-smi` did report the RTX 5070 Laptop GPU,
+8151 MiB, driver 616.92.
+
+Verification after the core upgrade: no-key Windows suite 319 passed, 29
+skipped, 1131/1134 statements covered (99.74%); Ruff lint, mypy (21 source
+files), `pip check`, both measured-run validators and findings-review archive
+check passed. Windows coverage misses three real CUDA-Q diagnostic statements;
+the 100% CI gate is unchanged. CI on Python 3.14 and real GPU compatibility
+remain unverified until a CI run and the WSL2 runtime are available.

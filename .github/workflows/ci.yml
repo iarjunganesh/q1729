@@ -15,10 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Capped by cudaq's published wheels: cuda-quantum-cu13 0.15.1 ships
-  # cp311/cp312/cp313 only (verified 2026-08-05). The Windows dev host runs
-  # 3.14, the WSL2 CUDA-Q venv runs 3.12 — see AGENTS.md "Tech stack currency".
-  PYTHON_VERSION: "3.13"
+  # cuda-quantum-cu13 0.16.0.post1 publishes cp314 Linux wheels; verify on
+  # each future CUDA-Q bump (AGENTS.md "Tech stack currency").
+  PYTHON_VERSION: "3.14"
   COVERAGE_FLOOR: "100"
 
 jobs:
@@ -85,7 +84,7 @@ jobs:
       # a CUDA driver, so the CUDA-kernel integration tests skip here by design
       # (docs/adr/005-cuda-kernel-via-nvrtc.md).
       - name: Install CUDA-Q (CPU target)
-        run: pip install "cudaq>=0.15.1"
+        run: pip install "cudaq>=0.16.0.post1"
 
       - name: Tests + coverage
         run: |
