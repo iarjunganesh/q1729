@@ -816,3 +816,94 @@ on the qpp-cpu target, because cost scales as 2^(2m+3) — 8191 Grover
 applications over a 16-qubit statevector. Measured m=10 to m=13 is 58.7x
 against a predicted 64x. The remainder is CI's slower runner. This is expected
 and is the ADR 005 split working as designed, not a regression.
+
+## 2026-09-23 — Repository audit, documentation cleanup and dependency refresh
+
+The owner requested a full audit, cleanup of unwanted docs and ignored `.tmp`,
+ground truth on the CUDA implementation, and an H100 decision plan. The
+tracked kernel is already hand-written CUDA C++ in `classical/ramanujan_kernel.cu`;
+`classical/cuda_kernel.py` compiles and launches it through NVRTC and includes
+host transfer/reduction and timing. The measured small-n end-to-end time
+therefore cannot be read as device execution time. The separate phase
+diagnostic measured 3.08/4.05 ms (about 76%) in kernel-handle acquisition for
+its two-term case; it does not apportion the older archived 2.714 ms call.
+
+Removed all 45 files from ignored `.tmp`, then removed ignored mypy, Ruff and
+pytest caches. Removed redundant `docs/PATHWAYS.md` and `docs/onboarding.md`
+and the obsolete `docs/markdown-audit-2026-09-06.md`, which referenced deleted
+scratch and described already-completed gates as open. Preserved both measured
+JSON archives, their figures, the reviewed findings, ADRs and session history.
+Updated the live README, roadmap, benchmark/setup/access guides and AGENTS.md
+to distinguish the historical v0.3.0 release from later evidence defects.
+Windows Quickstart now uses `python -m venv`: this session's `py -0p` found no
+registered interpreter while `python --version` returned 3.14.7.
+
+The audit confirmed open enforcement gaps in the current source: the harness
+writes only after both complete arms, so a late failure loses completed work;
+the protocol's budget/abort rule has no enforcement; comparative review hashes
+only one source archive; schema-4 validation does not recompute quantization
+fields; and a digest recomputed from a run file's own declaration does not
+prove protocol compliance. These are follow-up implementation tasks, not
+observed corruption of either archived measured file. Phase 2 remains at
+graph construction; P2-A's question and protocol are next. H100 remains
+conditional on local runtime, evidence, workload and cost gates.
+
+Checked PyPI's public package metadata on 2026-09-23. CUDA-Q 0.16.0.post1
+publishes Linux cp314 wheels and requires CuPy 13.6.x below Python 3.14 or
+CuPy 14.x on Python 3.14. Updated all direct dependency floors to current
+stable versions, moved CI to Python 3.14, and checked GitHub Action major tags
+and the Mermaid CLI/Node toolchain. The Windows `.venv` was upgraded for the
+CPU-safe dependencies. The existing WSL2 venv was not changed: the distro
+failed to attach its virtual disk with `HCS/ERROR_PATH_NOT_FOUND`, including
+an elevated retry. No fresh CUDA-Q/CuPy integration run or H100 experiment
+was possible. Windows `nvidia-smi` did report the RTX 5070 Laptop GPU,
+8151 MiB, driver 616.92.
+
+Verification after the core upgrade: no-key Windows suite 319 passed, 29
+skipped, 1131/1134 statements covered (99.74%); Ruff lint, mypy (21 source
+files), `pip check`, both measured-run validators and findings-review archive
+check passed. Windows coverage misses three real CUDA-Q diagnostic statements;
+the 100% CI gate is unchanged. CI on Python 3.14 and real GPU compatibility
+remain unverified until a CI run and the WSL2 runtime are available.
+
+## 2026-09-23 — CI verified, WSL2 GPU runtime restored, Python 3.14 everywhere
+
+Step 1 of the owner's evidence-first plan: the audit changes reached `main`
+by fast-forward through PR #7 (no merge commit); after the post-v0.3.0
+history was folded they share one commit with this session's work. The owner directed that work land directly on `main` from now
+on. Reviewed its diff: `benchmarks/runs/`, `benchmarks/plots/` and `data/` are
+byte-identical to the v0.3.0 commit; every dependency floor matches PyPI's
+latest release (checked with `pip index versions`/PyPI JSON) and every action
+tag matches its latest release (`gh api`). Main CI run 35916592000 passed all
+four jobs: 330 passed, 18 skipped, 100.00% coverage on Python 3.14 `qpp-cpu`.
+
+Step 2: WSL2 was never broken. The distro rebuilt on 2026-09-06 is registered
+as `Ubuntu` (26.04 "resolute"); the WSL default is a stale `Ubuntu-22.04`
+registration whose `ext4.vhdx` is gone, and the documented `wsl -e` command
+hit that default. Read-only diagnosis via `wsl -l -v` and the `Lxss` registry
+keys; nothing was unregistered and the default was not changed. The existing
+3.13.15 venv passed first (347 passed, 1 skipped, 100.00%).
+
+The owner then decided on a single Python line for the whole repo, 3.12 or
+3.14, whichever everything supports. 3.14 wins: PyPI shows cp314 Linux
+wheels for cuda-quantum-cu13 0.16.0.post1, cupy-cuda13x 14.2.0, numpy 2.5.3
+and matplotlib 3.11.2, with nvidia-cuda-nvrtc pure-`py3`; Windows and CI
+already ran 3.14, and 3.12 would have forced the older CuPy 13.6 line.
+Installed uv-managed CPython 3.14.7 in WSL2, moved the old venv to
+`~/q1729-cudaq-py313-old` (rollback; not deleted) and rebuilt `~/q1729-cudaq`
+from both requirement files; `uv pip check` is clean. `requires-python` is now
+`>=3.14`, Ruff/mypy target 3.14, the CuPy pin is a single `>=14.2.0`, and Ruff
+reformatted two `except` clauses to PEP 758 form. Windows `.venv` remains
+3.14.6 (same line; not reinstalled).
+
+Verification on this change: WSL2 (`wsl -d Ubuntu`, Python 3.14.7, cudaq
+0.16.0.post1 selecting `nvidia`, CuPy 14.2.0 bound to PCI 0000:01:00.0, CUDA
+runtime 13020, driver API 13040, NVIDIA driver 616.92): 347 passed, 1 skipped
+(live NIM, no key), 100.00% coverage; `tests/integration/test_cuda_kernel.py`
+17 passed including the rel=1e-15 SymPy reference; Ruff, format and mypy
+clean. Windows (3.14.6, no key): 319 passed, 29 skipped, 1131/1134 (99.74%),
+Ruff/format/mypy clean. Fixed AGENTS.md's stale 99.73% Windows figure. Updated
+AGENTS.md, README, setup, access plan, roadmap, CONTRIBUTING, CHANGELOG
+(Unreleased) and an ADR 002 amendment. No measured run was collected; both
+archives are untouched. Next: Step 3, the failed-run record and runtime budget
+in the benchmark writer.

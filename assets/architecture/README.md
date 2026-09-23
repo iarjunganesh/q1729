@@ -1,6 +1,7 @@
 # Architecture assets — source of truth
 
-Theme-aware renders of the pipeline diagram used at the top of `README.md`.
+Theme-aware renders of a legacy conceptual pipeline diagram. The current
+`README.md` uses an inline Mermaid diagram instead.
 
 ## Files
 
@@ -39,12 +40,12 @@ here, not a second color palette.
 
 ## Regenerate the renders
 
-Requires Node.js (any recent version). From this directory, using the free
+Requires Node.js 24 LTS (24.21.0 checked 2026-09-23). From this directory, using the free
 and open-source Mermaid CLI — no paid design or image-generation service:
 
 ```bash
-npx --yes -p @mermaid-js/mermaid-cli mmdc -i pipeline.mmd -o pipeline-light.svg -b "#ffffff" -c pipeline-light.config.json --scale 3
-npx --yes -p @mermaid-js/mermaid-cli mmdc -i pipeline.mmd -o pipeline-dark.svg -b "#0d1117" -c pipeline-dark.config.json --scale 3
+npx --yes -p @mermaid-js/mermaid-cli@11.17.0 mmdc -i pipeline.mmd -o pipeline-light.svg -b "#ffffff" -c pipeline-light.config.json --scale 3
+npx --yes -p @mermaid-js/mermaid-cli@11.17.0 mmdc -i pipeline.mmd -o pipeline-dark.svg -b "#0d1117" -c pipeline-dark.config.json --scale 3
 ```
 
 Regenerate both together whenever `pipeline.mmd` changes, even if a change
@@ -54,8 +55,8 @@ one.
 
 ## Where this is used
 
-- [Project README](../../README.md) — the Architecture section, embedded via
-  a `<picture>` element that switches on `prefers-color-scheme`.
+The renders are not embedded in the current README. Keep them as historical
+design assets until the source is corrected or they are intentionally retired.
 
 ## 2026-09-06 audit status
 

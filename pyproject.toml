@@ -2,14 +2,15 @@
 name = "q1729"
 version = "0.3.0"
 description = "Ramanujan's mathematics meets GPU quantum simulation — a hand-written CUDA kernel vs CUDA-Q amplitude estimation, measured on the same silicon"
-# Floor is the WSL2/CI interpreter (CUDA-Q side); the Windows host venv runs 3.14
-requires-python = ">=3.12"
+# One interpreter line everywhere (Windows, WSL2, CI): 3.14 is the newest Python
+# that CUDA-Q publishes Linux wheels for (cuda-quantum-cu13 0.16.0.post1).
+requires-python = ">=3.14"
 license = { file = "LICENSE" }
 authors = [{ name = "Arjun Ganesh", email = "iarjunganesh@gmail.com" }]
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "B"]
@@ -18,7 +19,7 @@ select = ["E", "F", "I", "W", "B"]
 known-first-party = ["analysis", "classical", "quantum", "tests"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

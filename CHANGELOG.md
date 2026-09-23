@@ -5,6 +5,38 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Updated core dependency floors to PyPI's latest stable releases checked on
+  2026-09-23. CUDA-Q moves to 0.16.0.post1, NVRTC to 13.4.92 and CuPy to
+  14.2.0. CI moves to Python 3.14 because CUDA-Q now publishes cp314 Linux
+  wheels; action major tags remain current.
+- Python 3.14 is now the only supported interpreter on every host:
+  `requires-python = ">=3.14"`, Ruff and mypy target 3.14, and the CuPy pin no
+  longer branches on Python version. Ruff's 3.14 formatting adopts PEP 758
+  unparenthesized `except` clauses in `benchmarks/environment.py`. The WSL2
+  venv was rebuilt on Python 3.14.7 (ADR 002 amendment).
+- WSL2 commands now name the distro (`wsl -d Ubuntu`). The 2026-09-23
+  "virtual disk" failure came from the stale default registration
+  `Ubuntu-22.04`, not from the repository's distro.
+- Reconciled current status across the README, roadmap and setup guides: two
+  RTX archives exist, the CUDA kernel is hand-written C++, and follow-up
+  evidence defects remain. Clarified the limits of protocol digests and the
+  historical phase diagnostic. Added explicit H100 rental gates.
+- Removed three duplicate or obsolete guides and cleared ignored audit scratch
+  files. Historical run files, figures, ADRs and session entries remain intact.
+
+### Verification
+
+- Windows no-key suite after the core dependency upgrade: 319 passed, 29
+  skipped, 1131/1134 statements covered (99.74%); Ruff, mypy and `pip check`
+  passed. Both measured run files and the review sidecar validated.
+- CI on Python 3.14 (run 35916592000): 330 passed, 18 skipped, 100.00%
+  coverage on `qpp-cpu`.
+- WSL2 GPU suite on Python 3.14.7, CUDA-Q 0.16.0.post1 (`nvidia` target),
+  CuPy 14.2.0 and NVIDIA driver 616.92: 347 passed, 1 skipped (live NIM),
+  100.00% coverage, including the CUDA kernel's 1e-15 SymPy reference checks.
+
 ## [0.3.0] — 2026-09-06 — Phase 1 evidence repairs: protected, traceable, protocol-backed
 
 Closes Phase 1's four repair gates. A measured claim in this repo is now

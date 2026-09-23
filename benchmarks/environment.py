@@ -75,7 +75,7 @@ def nvidia_smi() -> dict[str, str] | None:
             timeout=30,
             check=True,
         )
-    except (subprocess.SubprocessError, OSError):
+    except subprocess.SubprocessError, OSError:
         return None
     first_gpu = completed.stdout.strip().splitlines()[0]
     values = [value.strip() for value in first_gpu.split(",")]
@@ -104,7 +104,7 @@ def gpu_memory_used_mib() -> int | None:
             timeout=30,
             check=True,
         )
-    except (subprocess.SubprocessError, OSError):
+    except subprocess.SubprocessError, OSError:
         return None
     return int(completed.stdout.strip().splitlines()[0])
 

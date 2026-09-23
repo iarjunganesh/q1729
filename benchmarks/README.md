@@ -1,9 +1,11 @@
 # benchmarks/
 
-The π case-study harness, environment capture and plotter exist, with one
-[measured RTX 5070 Laptop GPU archive](runs/2026-08-05-rtx5070-turbo.json).
-Read the [reviewed interpretation](runs/2026-08-05-rtx5070-turbo-reviewed.md)
-instead of relying on the preserved narrator draft. No H100 or decoding run exists.
+The π case-study harness, environment capture and plotter exist, with two
+measured RTX 5070 Laptop GPU archives:
+[August](runs/2026-08-05-rtx5070-turbo.json) and
+[September](runs/2026-09-06-1286200412954fb4a59cac02c27a06df.json).
+Read their reviewed interpretations rather than relying on narrator drafts.
+No H100 or decoding run exists.
 
 | Path | Role |
 | --- | --- |
@@ -13,16 +15,16 @@ instead of relying on the preserved narrator draft. No H100 or decoding run exis
 | `runs/` | Measured archives and reviewed/historical findings |
 | `plots/` | Generated figures; change source code, not SVGs |
 
-The archive has five repeats per configuration, 4000 QAE shots and turbo power
-profile. No crossing was observed within its sweep. QAE estimates a known
+Both archives have five repeats per configuration, 4000 QAE shots and turbo power
+profile. No crossing was observed within the tested sweep. QAE estimates a known
 amplitude; sampled utilization cannot establish a causal bottleneck.
 
 ## Reproducing
 
 Install both requirements files in a separate Linux/WSL2 environment per
 [setup](../docs/setup.md). Read the source archive's configuration first.
-The commands below specify the archived shot count but do not repair missing
-missing provenance into an old record or guarantee identical stochastic outcomes.
+The commands below specify the archived shot count but do not add provenance
+to an old record or guarantee identical stochastic outcomes.
 
 ```bash
 # Explicit unique name; the writer also enforces no-overwrite protection.
@@ -37,8 +39,9 @@ existing files are rejected, including competing-writer collisions. `make
 benchmark` generates a date-plus-UUID name and defaults to 2000 shots. `make
 plot` defaults to a run-specific subdirectory; both theme paths must be unused.
 Use a new directory/stem to render again. See [schema and legacy rules](../docs/run-file.md).
-Schema 3 captures source hashes, installed distributions, selected device, target/precision
-and every timed outcome/count distribution. New findings need a [human review record](../docs/findings-review.md).
+Schema 4 captures source hashes, installed distributions, selected device,
+target/precision, the protocol declaration and every timed outcome/count
+distribution. New findings need a [human review record](../docs/findings-review.md).
 
 Preserve disagreements and analyze uncertainty under a declared protocol;
 one recorded standard deviation is not a significance threshold.

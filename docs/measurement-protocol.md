@@ -11,7 +11,7 @@ run file hashes does not. This page explains the reasoning.
 
 ## Why it exists
 
-The [2026-09-06 audit](markdown-audit-2026-09-06.md) found published findings
+The 2026-09-06 documentation audit found published findings
 that disagreed with the data they described — a "sub-millisecond" classical
 claim against an archived two-term mean of **2.714 ms**, and a causal claim
 about dispatch overhead that sampled GPU utilization cannot support.
@@ -44,10 +44,10 @@ with `time.perf_counter` on the host. Their sum is slightly below the
 enclosing end-to-end figure, and the difference is reported as
 `unattributed_s` rather than absorbed by scaling the parts up to the whole.
 
-`partial_sum` itself is deliberately unchanged. Altering it would break
-comparability with the existing archive, so `time_phases` measures the same
-sequence of operations rather than replacing it. A phase-attributed sweep is
-therefore a **separate** measurement, not a reinterpretation of the old one.
+`partial_sum` itself is unchanged. `time_phases` is separate instrumentation:
+it changes allocation/handle order and adds synchronization and CUDA events.
+Its figures cannot be treated as a decomposition of an archived `partial_sum`
+call.
 
 One consequence was visible in the source and has now been measured.
 `_load_kernel()` constructs a `RawModule` on every call, inside the timed
@@ -63,16 +63,15 @@ milliseconds):
 | 1024 | 6.53 | 3.39 | 2.50 | ~38% |
 | 16384 | 69.96 | 3.62 | 65.85 | ~94% |
 
-`kernel_handle` is constant at ~3.1-3.9 ms regardless of `n`; only `execute`
-scales. The archived 2.714 ms two-term figure was therefore ~92% Python wrapper
-cost and ~1% arithmetic.
+`kernel_handle` was roughly constant at ~3.1-3.9 ms over this diagnostic;
+`execute` increased with `n`. The two-term diagnostic measured 3.08/4.05 ms,
+about 76%, in `kernel_handle`. It cannot assign a phase share to the separate
+archived 2.714 ms call.
 
-This resolves the audit's disagreement in **both** directions rather than
-picking a side. The device genuinely is sub-millisecond at small n (~30
-microseconds), and the archived end-to-end number genuinely is milliseconds.
-They were measurements of different things, which is exactly the failure this
-page exists to prevent. Below roughly n = 1024 the classical arm's wall time is
-a measurement of Python, not of the GPU.
+The diagnostic's small-n device execution was about 30 microseconds; the
+archive recorded end-to-end milliseconds. These are different timing
+boundaries. A new declared-profile phase archive is needed to quantify the
+wrapper share under the benchmark's actual conditions.
 
 ## Warm-up, exclusions, stopping
 
@@ -81,13 +80,15 @@ a measurement of Python, not of the GPU.
   per-call wrapper work, which is why that work is now measured rather than
   assumed negligible.
 - **Exclusions** — none. No outlier rejection, trimming or winsorizing. Every
-  timed repeat enters the summary and is retained raw. A configuration that
-  raised is recorded as failed, never partially summarized.
+  successful timed repeat enters the summary and is retained raw. The current
+  harness does not archive a configuration that raises; that is an open defect.
 - **Stopping rule** — the sweep and repeat count are fixed before the run and
   are not extended, truncated or re-run based on the values observed. A
-  configuration exceeding its wall-clock budget aborts the run with the abort
-  recorded. Re-running after a change writes a **new** archive alongside the
-  old one; results are never selected across runs.
+  configuration exceeding its wall-clock budget should abort the run with the
+  abort recorded. The current harness has no enforced budget or partial-run
+  archive; this protocol requirement remains open. Re-running after a change
+  writes a **new** archive alongside the old one; results are never selected
+  across runs.
 
 The stopping rule is the anti-p-hacking clause. It is the one most easily
 violated by accident — "that run looked odd, let me try again" is exactly the
@@ -117,8 +118,10 @@ Every run file carries the full declaration and its SHA-256:
 Validation recomputes the digest from the declaration **the file itself
 carries**, never from the current `protocol.py`. An archived run must stay
 valid after the protocol changes; what the check establishes is that the
-declaration and its digest were not altered independently of one another, so a
-run cannot claim a protocol it did not follow.
+declaration and its digest are internally consistent. It does not prove the
+operator followed the declaration, or that the declaration was committed
+before a particular run. The concrete sweep, repeats and shots live elsewhere
+in the run file and are not part of this digest.
 
 **Two runs whose protocol digests differ were not measured the same way and
 must not be pooled.**
@@ -144,8 +147,9 @@ not projected.
 What is still outstanding: that profiling ran at an **unrecorded power
 profile** and wrote **no archive**, so it is a diagnostic, not evidence. The
 **quantum** arm has not been profiled at all, so no per-gate dispatch claim is
-licensed. The archived run under a declared power profile is
-[P1-R4](roadmap.md#p1-r4--repeat-and-review).
+licensed. The run under a declared power profile was archived for
+[P1-R4](roadmap.md#p1-r4--repeat-and-review); the phase diagnostic itself
+remains unarchived.
 
 See also [run-file.md](run-file.md) for the schema and
 [research-standards.md](handbook/research-standards.md) for the nine-field

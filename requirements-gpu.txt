@@ -5,10 +5,12 @@
 # cupy is what compiles classical/ramanujan_kernel.cu at runtime via NVRTC
 # (docs/adr/005-cuda-kernel-via-nvrtc.md) — it is the CUDA C++ toolchain here,
 # not an optional accelerator.
-cudaq>=0.15.1
-cupy-cuda13x>=13.6
+cudaq>=0.16.0.post1
+# CUDA-Q 0.16 requires the CuPy 14 series on Python 3.14, the only interpreter
+# this repo supports.
+cupy-cuda13x>=14.2.0
 
 # NVRTC itself — cupy-cuda13x does not bundle it, and without it every
 # RawModule compile fails with "failed to load libnvrtc.so.13". Only the
 # driver comes from WSL2; the whole compiler toolchain is pip-installed.
-nvidia-cuda-nvrtc>=13.3
+nvidia-cuda-nvrtc>=13.4.92
