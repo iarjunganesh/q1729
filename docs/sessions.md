@@ -907,3 +907,49 @@ AGENTS.md, README, setup, access plan, roadmap, CONTRIBUTING, CHANGELOG
 (Unreleased) and an ADR 002 amendment. No measured run was collected; both
 archives are untouched. Next: Step 3, the failed-run record and runtime budget
 in the benchmark writer.
+
+## 2026-09-23 — Step 3: aborted runs are archived under a declared time budget
+
+Implemented the protocol's already-declared but unenforced stop rule (ADR 011).
+`benchmarks/harness.py` now requires `--time-budget-s` (a control, like the
+power profile), checks it before every warm-up and timed call, and appends each
+row to the caller's list as it completes. Any stop after measurement begins
+(`BudgetExceeded`, an arm's exception, Ctrl-C) becomes `ConfigurationAborted`
+carrying the unfinished configuration's raw samples and outcomes. `main` then
+writes a schema-5 record with `status.state = "aborted"`, exits 3 for the
+budget, and re-raises errors/interrupts after archiving. A failed abort write
+is raised with the original stop as its cause. The classical loop moved from
+`cuda_kernel.time_partial_sum` into the harness, same timing boundary, so the
+budget can be checked between repeats.
+
+`benchmarks/run_file.py`: schema 5 is current and schema 4 read-only.
+`validate_status` checks prefix-of-plan, classical-before-quantum, the stopped
+configuration is the next planned one, unsummarized partial samples, budget
+aborts after the budget, and complete runs covering the plan. `load` refuses
+aborted records unless `allow_incomplete=True`; only the writer and the CI
+archive check pass it, so the plotter, narrator and review refuse them.
+Protocol version 2 rewords the stopping and exclusion rules to the enforced
+mechanism.
+
+Real-hardware finding: CUDA-Q installs its own C-level SIGINT handler at
+import. A real SIGINT printed "CTRL-C caught in cudaq runtime." and hung the
+harness with no archive; a standalone probe exited 1. Restoring Python's
+raising handler instead hung when the signal landed during JIT compilation
+("compilation interrupted by Python signal"). The harness therefore installs
+`Budget.request_stop` after target selection: the first Ctrl-C only sets a
+flag honored at the next call boundary, and a second one raises immediately.
+The previous handler is restored afterwards. I started and then killed (SIGTERM)
+the two hung diagnostic processes. Scratch outputs are in `~/q1729-scratch`
+inside WSL2, not in the repository.
+
+Verification on the RTX 5070 (WSL2, Python 3.14.7, cudaq 0.16.0.post1):
+386 passed, 1 skipped, 100.00% coverage; Ruff, format and mypy clean. With a
+20 s budget the harness archived 12 classical and 12 quantum configurations,
+stopping before m=14 at 20.92 s. With a 3 s budget it exited 3. A real SIGINT
+at 25 s was honored before m=13 repeat 1 and archived 23 configurations plus
+one partial sample. Every scratch record validated as an aborted audit record,
+and `run_file.load` refused it. Reusing an existing output path failed without
+writing. Both measured archives validate. `analysis.review --archive` passes,
+and `benchmarks/runs`, `benchmarks/plots` and `data/` are unchanged. Windows:
+358 passed, 29 skipped, 1282/1285 (99.77%). Next: Step 4, binding comparative
+reviews to every cited archive and validating derived QAE fields.

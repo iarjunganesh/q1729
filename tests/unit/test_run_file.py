@@ -117,6 +117,9 @@ def test_top_level_duplicate_and_missing_arm_rejected(measured_run):
 
 def test_current_target_and_synthetic_rules(measured_run):
     measured_run["schema"] = run_file.CURRENT_SCHEMA
+    with pytest.raises(ValueError, match="status block required"):
+        run_file.validate(measured_run)
+    measured_run["schema"] = run_file.PROTOCOL_SCHEMA
     with pytest.raises(ValueError, match="quantum_target"):
         run_file.validate(measured_run)
     measured_run["synthetic"] = True
@@ -140,14 +143,24 @@ def test_existing_json_is_rejected_before_gpu_work(tmp_path, monkeypatch):
 
     monkeypatch.setattr(backend, "select_target", lambda: pytest.fail("GPU initialized before collision check"))
     with pytest.raises(FileExistsError):
-        harness.main(["--out", str(out), "--power-profile", "turbo"])
+        harness.main(["--out", str(out), "--power-profile", "turbo", "--time-budget-s", "60"])
     assert out.read_bytes() == b"original evidence"
 
 
-@pytest.mark.parametrize("flag,value", [("--repeats", "0"), ("--shots", "-1"), ("--max-counting-qubits", "1")])
+@pytest.mark.parametrize(
+    "flag,value",
+    [
+        ("--repeats", "0"),
+        ("--shots", "-1"),
+        ("--max-counting-qubits", "1"),
+        ("--time-budget-s", "0"),
+        ("--time-budget-s", "nan"),
+    ],
+)
 def test_invalid_protocol_rejected_before_work(tmp_path, flag, value):
+    argv = ["--out", str(tmp_path / "x.json"), "--power-profile", "turbo", "--time-budget-s", "60"]
     with pytest.raises(ValueError):
-        harness.main(["--out", str(tmp_path / "x.json"), "--power-profile", "turbo", flag, value])
+        harness.main([*argv, flag, value])
     assert not (tmp_path / "x.json").exists()
 
 
@@ -201,9 +214,10 @@ def test_writer_rejects_invalid_outcomes_and_late_collisions(
     out = tmp_path / "run.json"
     monkeypatch.setattr(backend, "select_target", lambda: "nvidia")
     monkeypatch.setattr(environment, "collect", lambda profile: measured_run["environment"])
-    monkeypatch.setattr(harness, "measure_classical", lambda counts, repeats: measured_run["runs"][:1])
+    monkeypatch.setattr(harness, "measure_classical", lambda *args, **kwargs: measured_run["runs"][:1])
+    monkeypatch.setattr(harness, "CLASSICAL_TERM_COUNTS", (1,))
 
-    def measured_quantum(*args):
+    def measured_quantum(*args, **kwargs):
         if competing_writer:
             out.write_bytes(b"other writer owns this path")
         else:
@@ -212,7 +226,20 @@ def test_writer_rejects_invalid_outcomes_and_late_collisions(
 
     monkeypatch.setattr(harness, "measure_quantum", measured_quantum)
     with pytest.raises(FileExistsError if competing_writer else ValueError):
-        harness.main(["--out", str(out), "--power-profile", "turbo", "--shots", "4000"])
+        harness.main(
+            [
+                "--out",
+                str(out),
+                "--power-profile",
+                "turbo",
+                "--time-budget-s",
+                "60",
+                "--shots",
+                "4000",
+                "--max-counting-qubits",
+                "2",
+            ]
+        )
     if competing_writer:
         assert out.read_bytes() == b"other writer owns this path"
     else:

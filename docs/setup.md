@@ -17,7 +17,7 @@ pytest tests/unit
 
 Use the existing environment if already installed. `main.py` is a status check,
 not the benchmark. Optional CUDA-Q/CuPy imports must degrade gracefully.
-The 2026-09-23 no-key full-suite result is 319 passed, 29 skipped, 99.74% coverage.
+The 2026-09-23 no-key full-suite result is 358 passed, 29 skipped, 99.77% coverage.
 GPU/CUDA-Q runtime paths were not verified on native Windows.
 
 ## WSL2/Linux GPU workflow
@@ -79,7 +79,7 @@ compute_capability: 12.0
 cuda_runtime: 13020
 cupy: 14.2.0
 Required test coverage of 100% reached. Total coverage: 100.00%
-347 passed, 1 skipped
+386 passed, 1 skipped
 ```
 
 The one skip is the live NIM test, which needs `NVIDIA_API_KEY`.

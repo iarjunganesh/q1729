@@ -24,7 +24,9 @@ from typing import Any
 
 #: Bumped whenever any declaration below changes meaning. The digest catches
 #: every edit; this number is the human-readable signal that it was deliberate.
-PROTOCOL_VERSION = 1
+#: Version 2 (ADR 011) made the budget and abort clauses enforceable: a declared
+#: total budget, checked between calls, and an archived aborted record.
+PROTOCOL_VERSION = 2
 
 #: What each timed phase includes and excludes. The archived stage-1 run timed
 #: only ``end_to_end``, which is why its classical figures cannot be read as
@@ -67,19 +69,22 @@ WARMUP_POLICY = (
 #: No outlier rejection. Stated positively so its absence is a decision.
 EXCLUSION_RULE = (
     "No outlier rejection, trimming or winsorizing. Every timed repeat enters "
-    "the summary and is retained raw in the run file. A repeat is discarded "
-    "only if the arm raised, in which case the whole configuration is recorded "
-    "as failed rather than partially summarized."
+    "the summary and is retained raw in the run file. If a configuration stops "
+    "before its last repeat, it is never summarized: its completed samples and "
+    "outcomes are archived raw as the aborted run's incomplete configuration."
 )
 
 #: The anti-p-hacking clause.
 STOPPING_RULE = (
     "The sweep and repeat count are fixed before the run and are not extended, "
-    "truncated or re-run based on the values observed. A configuration that "
-    "exceeds its wall-clock budget aborts the run; the completed configurations "
-    "are archived with the abort recorded, and the sweep is not silently "
-    "shortened. Re-running after a change writes a new archive alongside the "
-    "old one; results are never selected across runs."
+    "truncated or re-run based on the values observed. The run declares one "
+    "total wall-clock budget for both arms, checked before every warm-up and "
+    "timed call; a call already running is not interrupted, so elapsed time "
+    "can exceed the budget by at most one call. Exhausting the budget, an arm "
+    "raising or an operator interrupt aborts the run: the completed "
+    "configurations are archived with the abort and its reason recorded, and "
+    "the sweep is not silently shortened. Re-running after a change writes a "
+    "new archive alongside the old one; results are never selected across runs."
 )
 
 UNCERTAINTY_METHOD = (

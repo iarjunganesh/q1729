@@ -80,15 +80,20 @@ wrapper share under the benchmark's actual conditions.
   per-call wrapper work, which is why that work is now measured rather than
   assumed negligible.
 - **Exclusions** — none. No outlier rejection, trimming or winsorizing. Every
-  successful timed repeat enters the summary and is retained raw. The current
-  harness does not archive a configuration that raises; that is an open defect.
+  successful timed repeat enters the summary and is retained raw. A
+  configuration that stops before its last repeat is never summarized; its raw
+  samples and outcomes are archived as the aborted run's incomplete
+  configuration.
 - **Stopping rule** — the sweep and repeat count are fixed before the run and
-  are not extended, truncated or re-run based on the values observed. A
-  configuration exceeding its wall-clock budget should abort the run with the
-  abort recorded. The current harness has no enforced budget or partial-run
-  archive; this protocol requirement remains open. Re-running after a change
-  writes a **new** archive alongside the old one; results are never selected
-  across runs.
+  are not extended, truncated or re-run based on the values observed. The run
+  declares one total wall-clock budget (`--time-budget-s`), checked before
+  every warm-up and timed call; a call in flight is not interrupted, so elapsed
+  time can overrun by at most one call. Exhausting the budget, an arm raising
+  or an operator interrupt aborts the run, and the completed configurations are
+  archived with the abort and its reason recorded (protocol version 2,
+  [ADR 011](adr/011-aborted-runs-and-declared-budget.md)). Re-running after a
+  change writes a **new** archive alongside the old one; results are never
+  selected across runs.
 
 The stopping rule is the anti-p-hacking clause. It is the one most easily
 violated by accident — "that run looked odd, let me try again" is exactly the

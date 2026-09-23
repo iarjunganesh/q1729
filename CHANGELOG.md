@@ -5,7 +5,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Aborted runs are archived (ADR 011). The harness requires a declared
+  `--time-budget-s`, checks it before every warm-up and timed call, and on
+  budget exhaustion, an arm's exception or Ctrl-C writes a schema-5
+  (`q1729/run-file/5`) record with `status.state = "aborted"`, the completed
+  configurations and the unfinished one's raw samples and counts. A budget stop
+  exits 3; errors and interrupts are re-raised after archiving. Aborted records
+  validate in CI but are refused by the plotter, narrator and findings review.
+- The harness replaces CUDA-Q's SIGINT handler during measurement with one that
+  defers Ctrl-C to the next call boundary. CUDA-Q's own handler ended the
+  process with no archive, and a raising handler hung it when a signal landed
+  during JIT compilation (both reproduced on the RTX 5070).
+
 ### Changed
+
+- Measurement protocol version 2: the stopping and exclusion rules describe
+  the enforced budget and abort record. Protocol 1 and 2 runs must not be
+  pooled. Schemas 1–4 are read-only; both measured archives are unchanged.
+- `make benchmark` requires `TIME_BUDGET_S` as well as `POWER_PROFILE`. The
+  classical timed loop runs in the harness (same boundary: one discarded
+  warm-up, then `perf_counter` around each `partial_sum` call) so the budget is
+  checked between repeats.
 
 - Updated core dependency floors to PyPI's latest stable releases checked on
   2026-09-23. CUDA-Q moves to 0.16.0.post1, NVRTC to 13.4.92 and CuPy to
@@ -36,6 +58,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - WSL2 GPU suite on Python 3.14.7, CUDA-Q 0.16.0.post1 (`nvidia` target),
   CuPy 14.2.0 and NVIDIA driver 616.92: 347 passed, 1 skipped (live NIM),
   100.00% coverage, including the CUDA kernel's 1e-15 SymPy reference checks.
+- After the aborted-run work: WSL2 GPU 386 passed, 1 skipped, 100.00%; Windows
+  358 passed, 29 skipped, 1282/1285 (99.77%). On the RTX 5070, a 20 s budget
+  archived 24 completed configurations and exited 3; a real SIGINT archived 23
+  plus the unfinished configuration's sample. Both archives still validate.
 
 ## [0.3.0] — 2026-09-06 — Phase 1 evidence repairs: protected, traceable, protocol-backed
 

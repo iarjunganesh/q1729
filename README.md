@@ -127,7 +127,7 @@ The three stages below are the research thread. The full evidence-sequenced plan
 
 Runtime: this repository uses **WSL2/Linux** for the CUDA-Q and CUDA path.
 The GPU test suite was re-verified in WSL2 on 2026-09-23 with Python 3.14.7,
-CUDA-Q 0.16.0.post1 and CuPy 14.2.0: 347 passed, 1 skipped, 100.00% coverage.
+CUDA-Q 0.16.0.post1 and CuPy 14.2.0: 386 passed, 1 skipped, 100.00% coverage.
 No new measured run was collected.
 
 ## Built to be trusted
@@ -136,12 +136,13 @@ No new measured run was collected.
   at 1e-15 relative tolerance. Host reduction avoids atomic accumulation order;
   this does not guarantee bitwise identity across hardware/toolchains.
 - Synthetic sample data is labeled and rejected by the plotter.
-- CI requires 100% coverage. The 2026-09-23 Windows no-key audit: 319 passed,
-  29 skipped, 99.74% coverage; the CUDA-Q diagnostic needs its real runtime.
+- CI requires 100% coverage. The 2026-09-23 Windows no-key suite: 358 passed,
+  29 skipped, 99.77% coverage; the CUDA-Q diagnostic needs its real runtime.
   CUDA-Q CPU integration runs in CI; GPU integration requires a GPU.
 - The [research contract](docs/handbook/research-standards.md) is a requirement;
-  semantic validation, archive protection, schema-4 traceability and a committed
-  measurement protocol are implemented. Follow-up evidence defects and runtime
+  semantic validation, archive protection, schema-4 traceability, a committed
+  measurement protocol and archived aborted runs under a declared time budget
+  (schema 5) are implemented. Follow-up evidence defects and runtime
   verification limits are recorded in the [roadmap](docs/roadmap.md#where-the-repo-actually-is-v030).
 - [ADRs](docs/adr/README.md) record decisions, including ROCm as a conditional
   Phase 4 backend and the evidence-first sequence in ADR 007.
@@ -154,7 +155,7 @@ No new measured run was collected.
 - `classical/ramanujan_graph.py` — LPS Ramanujan expander graphs, spectrally verified against the `2√(k−1)` bound (ground truth for the Stage 3 / Phase 2 qLDPC experiment; CPU-only, never timed)
 - `quantum/qae.py` — canonical Quantum Amplitude Estimation of π/4, with the resource-cost caveats stated in the module
 - `quantum/backend.py` — CUDA-Q target selection (`nvidia-mgpu` → `nvidia` → `tensornet` → `qpp-cpu`) + environment diagnostic
-- `benchmarks/harness.py` — runs both arms and emits schema-4 run JSON with semantic validation and exclusive output creation
+- `benchmarks/harness.py` — runs both arms under a declared time budget and emits schema-5 run JSON (complete or aborted) with semantic validation and exclusive output creation
 - `benchmarks/protocol.py` — the measurement protocol, committed before data and hashed into every run file
 - `quantum/quantization.py` — closed-form QAE reference (error floor, plateau, outcome distribution); CPU-only
 - `benchmarks/environment.py` — captures hardware, versions, and GPU load during a run
@@ -201,8 +202,9 @@ pytest tests                     # now includes the real-hardware integration te
 ```
 
 Reproduction instructions are in [benchmarks/README.md](benchmarks/README.md).
-`make benchmark` now uses a unique date-plus-UUID filename; the writer refuses
-existing paths. Plot defaults are run-specific and both themes are protected.
+`make benchmark` requires `POWER_PROFILE` and `TIME_BUDGET_S` and uses a unique
+date-plus-UUID filename; the writer refuses existing paths, and a run that stops
+early is archived as an aborted audit record rather than lost. Plot defaults are run-specific and both themes are protected.
 The default 2000 shots still differs from the archive's 4000; use an explicit
 shot count when reproducing it. [Schema validation](docs/run-file.md) accepts
 legacy archives unchanged. Schema 3 retains every timed outcome, count distribution,

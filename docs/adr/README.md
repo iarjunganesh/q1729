@@ -27,6 +27,7 @@ live in the [handbook](../handbook/principles.md):
 | [008](./008-versioned-evidence-validation-and-exclusive-archives.md) | Versioned evidence validation and exclusive archives | Accepted | Shared semantic checks, legacy readers and no-overwrite JSON/SVG creation |
 | [009](./009-traceable-outcomes-and-reviewed-releases.md) | Traceable outcomes and reviewed releases | Accepted | Source/device provenance, all timed outcomes, human review sidecars and release quality dependencies |
 | [010](./010-committed-measurement-protocol.md) | A committed measurement protocol and an analytic QAE reference | Accepted | Protocol hashed into schema-4 runs, separable timing phases, closed-form QAE floor |
+| [011](./011-aborted-runs-and-declared-budget.md) | Aborted runs are archived; the time budget is a declared control | Accepted | Schema 5 status block, enforced budget, completed work and raw partial samples survive any stop |
 
 ---
 

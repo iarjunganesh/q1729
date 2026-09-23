@@ -15,7 +15,7 @@ outside JIT kernel bodies. Real integration evidence is distinct from line cover
 
 ## Measured Windows coverage
 
-2026-09-23, Python 3.14.6, NIM key removed: 319 passed, 29 skipped.
+2026-09-23, Python 3.14.6, NIM key removed: 358 passed, 29 skipped.
 Recorded with `pytest tests -q --cov --cov-report=term-missing`:
 
 | Module | Statements | Missed | Windows coverage |
@@ -24,11 +24,11 @@ Recorded with `pytest tests -q --cov --cov-report=term-missing`:
 | `analysis/review.py` | 57 | 0 | 100.00% |
 | `benchmarks/archive.py` | 20 | 0 | 100.00% |
 | `benchmarks/environment.py` | 78 | 0 | 100.00% |
-| `benchmarks/harness.py` | 115 | 0 | 100.00% |
+| `benchmarks/harness.py` | 205 | 0 | 100.00% |
 | `benchmarks/plot.py` | 65 | 0 | 100.00% |
 | `benchmarks/protocol.py` | 37 | 0 | 100.00% |
 | `benchmarks/provenance.py` | 30 | 0 | 100.00% |
-| `benchmarks/run_file.py` | 255 | 0 | 100.00% |
+| `benchmarks/run_file.py` | 316 | 0 | 100.00% |
 | `classical/cuda_kernel.py` | 114 | 0 | 100.00% |
 | `classical/ramanujan_graph.py` | 110 | 0 | 100.00% |
 | `classical/ramanujan_series.py` | 21 | 0 | 100.00% |
@@ -37,14 +37,14 @@ Recorded with `pytest tests -q --cov --cov-report=term-missing`:
 | `quantum/quantization.py` | 76 | 0 | 100.00% |
 | `scripts/release_check.py` | 34 | 0 | 100.00% |
 
-Total: **99.74%**, 1134 statements, 3 missed. New/changed modules reach 100%
+Total: **99.77%**, 1285 statements, 3 missed. New/changed modules reach 100%
 statement coverage, including CUDA-Q wrapper paths tested with a fake backend.
 Real JIT circuit integration remains separate and was skipped on Windows.
 The full 100% command exits nonzero because CUDA-Q's backend diagnostic cannot
 run here; the threshold is unchanged. Coverage now includes release scripts.
 
 WSL2 (distro `Ubuntu`, Python 3.14.7, CUDA-Q 0.16.0.post1, CuPy 14.2.0)
-recorded **347 passed, 1 skipped, 100.00% coverage** on the RTX 5070 on
+recorded **386 passed, 1 skipped, 100.00% coverage** on the RTX 5070 on
 2026-09-23. CI's 100% gate and the Windows table are separate.
 CI runs real CUDA-Q integration on `qpp-cpu`; CUDA-kernel GPU tests skip there.
 Released-commit CI does not validate newer unreleased changes automatically.

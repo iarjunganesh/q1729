@@ -4,7 +4,7 @@ Status reviewed 2026-09-23. `nvidia-smi` reports an RTX 5070 Laptop GPU,
 8151 MiB and driver 616.92. The archived 2026-08-05 run records driver 610.88.
 The driver-supported CUDA version is not proof of an installed toolkit version.
 WSL2 GPU verification passed on 2026-09-23 (distro `Ubuntu`, Python 3.14.7,
-CUDA-Q 0.16.0.post1 on `nvidia`, CuPy 14.2.0, CUDA runtime 13020): 347 passed,
+CUDA-Q 0.16.0.post1 on `nvidia`, CuPy 14.2.0, CUDA runtime 13020): 386 passed,
 1 skipped, 100.00% coverage. No NIM API request was made.
 
 ## Local GPU first

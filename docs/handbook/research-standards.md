@@ -12,11 +12,11 @@ key checks with [shared semantic validation](../run-file.md); P1-R2 adds [schema
 | Question | Narrow enough to answer with this run | `question` |
 | Hypothesis | Reasoned prediction committed before collection | `hypothesis`; constant alone does not prove timing |
 | Variables | Explicit per-arm sweep | `variables` |
-| Controls | Power mode, precision, noise, shots, seeds and timing boundary as applicable | `controls`, `execution`; actual target and precision recorded |
+| Controls | Power mode, time budget, precision, noise, shots, seeds and timing boundary as applicable | `controls` (including `time_budget_s`), `execution`; actual target and precision recorded |
 | Hardware | Actual selected device identity and execution context | `hardware_id`, `environment.gpu`, `execution`; selected UUID/PCI identity |
 | Software | Source revision/dirty state, runtime, resolved dependencies | `environment.packages`, `provenance`, `execution`; source hashes and resolved distributions |
-| Statistical treatment | Repeats, warmup, uncertainty, exclusions, stopping rule | `statistical_treatment`; richer analysis remains needed |
-| Raw data | Every repeat's timing and numerical outcome/counts | `runs[].samples_s`, `runs[].outcomes`; every timed result and QAE count distribution |
+| Statistical treatment | Repeats, warmup, uncertainty, exclusions, stopping rule | `statistical_treatment`, `protocol`; the budget/abort rule is enforced and a stop is recorded in `status` (ADR 011); richer analysis remains needed |
+| Raw data | Every repeat's timing and numerical outcome/counts | `runs[].samples_s`, `runs[].outcomes`; every timed result and QAE count distribution, including an aborted run's unfinished configuration (`status.abort.incomplete_configuration`) |
 | Limitations | Explicit scope, confounds and unverified claims | `limitations` |
 
 Semantic validation must reject absent, empty, mistyped or inconsistent values;

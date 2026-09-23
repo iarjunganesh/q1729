@@ -30,16 +30,23 @@ to an old record or guarantee identical stochastic outcomes.
 # Explicit unique name; the writer also enforces no-overwrite protection.
 run_id=$(python -c 'import uuid; print(uuid.uuid4().hex)')
 run_path="benchmarks/runs/${run_id}.json"
-test ! -e "$run_path" && python -m benchmarks.harness --power-profile turbo --shots 4000 --out "$run_path"
+test ! -e "$run_path" && python -m benchmarks.harness --power-profile turbo --time-budget-s 3600 \
+  --shots 4000 --out "$run_path"
 python -m benchmarks.plot "$run_path" --out-dir "benchmarks/plots/${run_id}"
 ```
 
-The writer validates schema-4 records and exclusively creates the output file;
+The writer validates schema-5 records and exclusively creates the output file;
 existing files are rejected, including competing-writer collisions. `make
 benchmark` generates a date-plus-UUID name and defaults to 2000 shots. `make
 plot` defaults to a run-specific subdirectory; both theme paths must be unused.
 Use a new directory/stem to render again. See [schema and legacy rules](../docs/run-file.md).
-Schema 4 captures source hashes, installed distributions, selected device,
+`--time-budget-s` is a required control: the total wall-clock budget for both
+arms, checked before every timed call. When it is spent, an arm raises or the
+run is interrupted, the writer still archives the completed configurations and
+the unfinished one's raw samples as `status.state = "aborted"`, then exits 3
+(budget) or re-raises the original error. An aborted record validates in CI but
+is refused by the plotter, narrator and findings review; keep it in the archive.
+Schema 5 captures source hashes, installed distributions, selected device,
 target/precision, the protocol declaration and every timed outcome/count
 distribution. New findings need a [human review record](../docs/findings-review.md).
 

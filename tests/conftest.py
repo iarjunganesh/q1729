@@ -68,6 +68,14 @@ def current_run(measured_run):
         r["outcomes"] = [copy.deepcopy(outcome) for _ in range(r["repeats"])]
         # Schema 4 carries the declared uncertainty alongside mean/min/stdev.
         r.update({k: v for k, v in protocol.uncertainty(r["samples_s"]).items() if k != "repeats"})
+    # Schema 5 records the declared budget and how the run ended.
+    p["controls"]["time_budget_s"] = 3600.0
+    p["status"] = {
+        "state": "complete",
+        "planned": {key: list(p["configuration"][key]) for key in ("classical_term_counts", "counting_qubits")},
+        "elapsed_s": 1234.5,
+        "abort": None,
+    }
     return p
 
 

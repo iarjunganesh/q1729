@@ -7,7 +7,8 @@ a future decoding study needs an explicitly specified schema extension.
 | Format | Accepted use |
 | --- | --- |
 | `q1729/run-file/3` | Read-only. Source/device provenance and per-repeat outcomes |
-| `q1729/run-file/4` | Current measured output; adds the committed protocol block, its digest and per-configuration uncertainty |
+| `q1729/run-file/4` | Read-only. Adds the committed protocol block, its digest and per-configuration uncertainty |
+| `q1729/run-file/5` | Current measured output; adds the `status` block and `controls.time_budget_s` — complete or aborted |
 | `q1729/run-file/2` | Legacy read-only input with control/row target consistency |
 | `q1729/run-file/1`, measured | Legacy read-only input; existing archive stays unchanged |
 | `q1729/run-file/1`, synthetic | Explicitly labeled narrator example only |
@@ -44,6 +45,25 @@ consistency. Duplicate configurations and mixed targets are rejected. Versions
   count distribution and derived result. Counts must sum to shots; each result
   must agree with its selected count peak. The top-level row describes the last
   timed outcome; timing summaries still use every repeat.
+
+## Schema 5 status
+
+`status.state` is `complete` or `aborted`. `status.planned` holds the declared
+sweeps; `configuration` holds the completed ones, which must be a prefix of the
+plan, with the classical arm finished before any quantum row. `status.elapsed_s`
+is wall time since measurement began; `controls.time_budget_s` is the declared
+budget, checked before every warm-up and timed call.
+
+An aborted record adds `status.abort`: `reason` (`budget`, `error` or
+`interrupted`), `exception_type`, `detail`, and `incomplete_configuration` —
+the next planned configuration, with every raw sample and outcome recorded
+before the stop and no summary statistics. A budget abort must show elapsed
+time above the budget. A complete record must cover its plan and carry no abort.
+
+Aborted records validate with `python -m benchmarks.run_file` (CI's archive
+check) but `run_file.load` refuses them by default; the plotter, narrator and
+findings review therefore cannot present a partial sweep as a result. See
+[ADR 011](adr/011-aborted-runs-and-declared-budget.md).
 
 Optional `--seed N` uses `N + counting_qubits * repeats + repeat_index`, with
 unseeded warmup. Invalid schedules are rejected; seeded tensornet is excluded

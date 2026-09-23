@@ -1,8 +1,12 @@
 """Versioned validation of the pi experiment's evidence, without rewriting it.
 
-Versions 1 to 3 are read-only legacy formats (including the version-1 demo).
-Version 4 is emitted by current writers and adds the committed measurement
-protocol (roadmap P1-R3) alongside version 3's traceability. Validation
+Versions 1 to 4 are read-only legacy formats (including the version-1 demo).
+Version 4 added the committed measurement protocol (roadmap P1-R3) alongside
+version 3's traceability. Version 5 is emitted by current writers and adds a
+``status`` block: a run that stopped early on its time budget, an error or an
+interrupt is archived as ``aborted`` with the completed configurations and the
+raw samples of the unfinished one (ADR 011). An aborted record is an audit
+record, not a result — :func:`load` refuses it unless asked. Validation
 establishes structural and internal consistency, not that a measurement
 happened or a hypothesis is true.
 """
@@ -15,16 +19,23 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-CURRENT_SCHEMA = "q1729/run-file/4"
+CURRENT_SCHEMA = "q1729/run-file/5"
+PROTOCOL_SCHEMA = "q1729/run-file/4"
 TRACEABLE_SCHEMA = "q1729/run-file/3"
 PREVIOUS_SCHEMA = "q1729/run-file/2"
 LEGACY_SCHEMA = "q1729/run-file/1"
 
 #: Every schema this module will read. Only CURRENT_SCHEMA is ever written.
-READABLE_SCHEMAS = (CURRENT_SCHEMA, TRACEABLE_SCHEMA, PREVIOUS_SCHEMA, LEGACY_SCHEMA)
+READABLE_SCHEMAS = (CURRENT_SCHEMA, PROTOCOL_SCHEMA, TRACEABLE_SCHEMA, PREVIOUS_SCHEMA, LEGACY_SCHEMA)
 
 #: Schemas carrying the version-3 provenance/traceability block.
-PROVENANCE_SCHEMAS = (CURRENT_SCHEMA, TRACEABLE_SCHEMA)
+PROVENANCE_SCHEMAS = (CURRENT_SCHEMA, PROTOCOL_SCHEMA, TRACEABLE_SCHEMA)
+
+#: Schemas carrying the version-4 committed-protocol block.
+PROTOCOL_SCHEMAS = (CURRENT_SCHEMA, PROTOCOL_SCHEMA)
+
+#: Why an aborted run stopped.
+ABORT_REASONS = ("budget", "error", "interrupted")
 
 
 def require(condition: bool, message: str) -> None:
@@ -58,8 +69,15 @@ def finite_tree(value: Any) -> None:
         number(value, "numeric value")
 
 
-def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool = True) -> dict[str, Any]:
-    """Validate and return the original object; never coerce or fill missing data."""
+def validate(
+    payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool = True, allow_incomplete: bool = False
+) -> dict[str, Any]:
+    """Validate and return the original object; never coerce or fill missing data.
+
+    ``allow_incomplete`` admits an ``aborted`` schema-5 record. Only archive
+    integrity checks and the writer pass it; figures, narration and findings
+    review must not treat a partial sweep as a result.
+    """
     require(isinstance(payload, dict), "run file must be an object")
     require(type(payload.get("synthetic")) is bool, "synthetic must be an explicit boolean")
     synthetic = payload["synthetic"]
@@ -68,6 +86,13 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
     require(schema in READABLE_SCHEMAS, "unknown run-file schema")
     require(allow_legacy or schema == CURRENT_SCHEMA, "legacy schema is read-only")
     finite_tree(payload)
+    aborted = False
+    if schema == CURRENT_SCHEMA:
+        status = payload.get("status")
+        require(isinstance(status, dict), "status block required")
+        require(status.get("state") in ("complete", "aborted"), "status.state must be complete or aborted")
+        aborted = status["state"] == "aborted"
+        require(allow_incomplete or not aborted, "aborted run is an audit record, not a result")
     for key in ("hardware_id", "series", "question"):
         text(payload.get(key), key)
     require(payload["series"] == "ramanujan-1914", "unsupported experiment series")
@@ -77,7 +102,8 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
         integer(controls.get(key), f"controls.{key}")
     text(controls.get("power_profile"), "controls.power_profile")
     rows = payload.get("runs")
-    require(isinstance(rows, list) and bool(rows), "runs must be a nonempty array")
+    require(isinstance(rows, list), "runs must be an array")
+    require(bool(rows) or aborted, "runs must be a nonempty array")
     if synthetic:
         require(schema == LEGACY_SCHEMA, "synthetic examples use the legacy demo schema")
         text(payload.get("note"), "synthetic note")
@@ -166,15 +192,17 @@ def validate(payload: Any, *, allow_synthetic: bool = False, allow_legacy: bool 
                 require(row[key] == controls[key], f"{key} disagrees with controls")
             integer(row.get("total_qubits"), "total_qubits")
             require(row["total_qubits"] == m + controls["domain_qubits"] + 1, "total_qubits mismatch")
-    require(methods == {"classical-cuda", "qae-cudaq"}, "both experiment arms are required")
+    require(aborted or methods == {"classical-cuda", "qae-cudaq"}, "both experiment arms are required")
     if not synthetic:
-        require(len(targets) == 1, "mixed quantum targets require separate run files")
-        if schema != LEGACY_SCHEMA:
+        require(len(targets) <= 1, "mixed quantum targets require separate run files")
+        if schema != LEGACY_SCHEMA and targets:
             require(controls.get("quantum_target") in tuple(targets), "controls.quantum_target mismatch")
         if schema in PROVENANCE_SCHEMAS:
             validate_provenance(payload)
-        if schema == CURRENT_SCHEMA:
+        if schema in PROTOCOL_SCHEMAS:
             validate_protocol(payload)
+        if schema == CURRENT_SCHEMA:
+            validate_status(payload)
     return payload
 
 
@@ -282,7 +310,7 @@ def validate_provenance(payload: dict[str, Any]) -> None:
 
 
 def validate_protocol(payload: dict[str, Any]) -> None:
-    """Validate the committed measurement protocol and uncertainty block (v4).
+    """Validate the committed measurement protocol and uncertainty block (v4+).
 
     The digest is recomputed from the declaration the file itself carries, not
     from the current :mod:`benchmarks.protocol`. An archived run must stay
@@ -316,9 +344,75 @@ def validate_protocol(payload: dict[str, Any]) -> None:
         require(row["ci95_low_s"] <= row["mean_s"] <= row["ci95_high_s"], "mean must lie inside its own interval")
 
 
-def load(path: str | Path, *, allow_synthetic: bool = False) -> dict[str, Any]:
+def validate_status(payload: dict[str, Any]) -> None:
+    """Validate how a schema-5 run ended and exactly what it preserved.
+
+    A complete run covers its planned sweep. An aborted run covers a prefix of
+    it — the classical arm finishes before the quantum arm starts — and names
+    the next planned configuration as the one that stopped, with its raw
+    samples and outcomes but no summary: an unfinished configuration is never
+    summarized (protocol exclusion rule).
+    """
+    status = payload["status"]
+    budget = payload["controls"].get("time_budget_s")
+    number(budget, "controls.time_budget_s", 0)
+    require(budget > 0, "controls.time_budget_s must be positive")
+    number(status.get("elapsed_s"), "status.elapsed_s", 0)
+    planned = status.get("planned")
+    require(isinstance(planned, dict), "status.planned must be an object")
+    completed = payload["configuration"]
+    for key in ("classical_term_counts", "counting_qubits"):
+        sweep = planned.get(key)
+        require(isinstance(sweep, list) and bool(sweep), f"status.planned.{key} must be a nonempty array")
+        for value in sweep:
+            integer(value, key)
+        require(len(set(sweep)) == len(sweep), "planned sweep repeats a configuration")
+        require(completed[key] == sweep[: len(completed[key])], "completed sweep must be a prefix of the planned sweep")
+    classical_done = len(completed["classical_term_counts"]) == len(planned["classical_term_counts"])
+    quantum_done = len(completed["counting_qubits"]) == len(planned["counting_qubits"])
+    require(classical_done or not completed["counting_qubits"], "quantum arm started before the classical arm finished")
+    abort = status.get("abort")
+    if status["state"] == "complete":
+        require(abort is None, "a complete run cannot carry an abort")
+        require(quantum_done, "a complete run must cover its planned sweep")
+        return
+
+    require(isinstance(abort, dict), "an aborted run must describe its abort")
+    require(abort.get("reason") in ABORT_REASONS, "unknown abort reason")
+    for key in ("exception_type", "detail"):
+        text(abort.get(key), f"abort.{key}")
+    if abort["reason"] == "budget":
+        require(status["elapsed_s"] > budget, "budget abort recorded before the budget elapsed")
+    require(not quantum_done, "an aborted run cannot cover its whole planned sweep")
+    if classical_done:
+        method, parameter, sweep_key = "qae-cudaq", "counting_qubits", "counting_qubits"
+    else:
+        method, parameter, sweep_key = "classical-cuda", "n_terms", "classical_term_counts"
+    partial = abort.get("incomplete_configuration")
+    require(isinstance(partial, dict), "the stopped configuration must be recorded")
+    require(
+        partial.get("method") == method and partial.get(parameter) == planned[sweep_key][len(completed[sweep_key])],
+        "the stopped configuration must be the next planned one",
+    )
+    samples, outcomes = partial.get("samples_s"), partial.get("outcomes")
+    require(isinstance(samples, list) and isinstance(outcomes, list), "stopped configuration keeps raw samples")
+    require(len(samples) == len(outcomes), "stopped configuration sample/outcome count mismatch")
+    for sample in samples:
+        number(sample, "sample", 0)
+        require(sample > 0, "timing samples must be positive")
+    for outcome in outcomes:
+        require(isinstance(outcome, dict), "outcome must be an object")
+        number(outcome.get("pi_estimate"), "pi_estimate")
+    require("mean_s" not in partial, "a stopped configuration is never summarized")
+
+
+def load(path: str | Path, *, allow_synthetic: bool = False, allow_incomplete: bool = False) -> dict[str, Any]:
     """Load validated measured or explicitly allowed legacy synthetic data."""
-    return validate(json.loads(Path(path).read_text(encoding="utf-8")), allow_synthetic=allow_synthetic)
+    return validate(
+        json.loads(Path(path).read_text(encoding="utf-8")),
+        allow_synthetic=allow_synthetic,
+        allow_incomplete=allow_incomplete,
+    )
 
 
 #: Sidecars that live beside run files, share the ``.json`` suffix, and are
@@ -337,8 +431,9 @@ def main(argv: list[str] | None = None) -> int:
         if path.name.endswith(SIDECAR_SUFFIX):
             print(f"skipped {path} (findings review sidecar; see analysis.review)")
             continue
-        load(path)
-        print(f"validated {path}")
+        payload = load(path, allow_incomplete=True)
+        aborted = payload.get("status", {}).get("state") == "aborted"
+        print(f"validated {path}" + (" (aborted audit record, not a result)" if aborted else ""))
     return 0
 
 

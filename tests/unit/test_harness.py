@@ -66,18 +66,18 @@ def test_summarize_reports_an_interval_bracketing_the_mean():
 def test_measure_classical_keeps_every_raw_sample(monkeypatch, no_gpu_sampling):
     from classical import cuda_kernel
 
-    monkeypatch.setattr(
-        cuda_kernel,
-        "time_partial_sum",
-        lambda n, repeats=5, threads_per_block=256: {"samples_s": [0.1, 0.2], "partial_sums": [1103.0, 1103.0]},
-    )
-    monkeypatch.setattr(cuda_kernel, "pi_approximation", lambda n, t=256: math.pi)
+    calls = []
+    monkeypatch.setattr(cuda_kernel, "partial_sum", lambda n: calls.append(n) or 1103.0)
+    ticks = iter([0.0, 0.1, 1.0, 1.2, 2.0, 2.1, 3.0, 3.2])
+    monkeypatch.setattr(harness.time, "perf_counter", lambda: next(ticks))
 
     rows = harness.measure_classical((1, 4), repeats=2)
 
+    # one discarded warm-up plus two timed repeats, per configuration
+    assert calls == [1, 1, 1, 4, 4, 4]
     assert [row["n_terms"] for row in rows] == [1, 4]
     assert all(row["method"] == "classical-cuda" for row in rows)
-    assert all(row["samples_s"] == [0.1, 0.2] for row in rows)
+    assert [row["samples_s"] for row in rows] == [pytest.approx([0.1, 0.2])] * 2
     assert rows[0]["mean_s"] == pytest.approx(0.15)
 
 
@@ -139,7 +139,7 @@ def test_build_run_file_marks_measured_data_as_not_synthetic():
     """The flag plot.py keys off — a real run must never be mistakable for the sample."""
     payload = harness.build_run_file([], [], "turbo", 1, 2, "id", {})
     assert payload["synthetic"] is False
-    assert payload["schema"] == "q1729/run-file/4"
+    assert payload["schema"] == "q1729/run-file/5"
 
 
 def test_limitations_name_the_accuracy_plateau_and_the_dispatch_bound():
@@ -152,11 +152,17 @@ def test_limitations_name_the_accuracy_plateau_and_the_dispatch_bound():
 def test_parse_args_requires_a_declared_power_profile():
     """Power profile is a control, so the harness refuses to guess it."""
     with pytest.raises(SystemExit):
-        harness.parse_args(["--out", "x.json"])
+        harness.parse_args(["--out", "x.json", "--time-budget-s", "60"])
+
+
+def test_parse_args_requires_a_declared_time_budget():
+    """The budget is a control too: the stopping rule is meaningless without one."""
+    with pytest.raises(SystemExit):
+        harness.parse_args(["--out", "x.json", "--power-profile", "turbo"])
 
 
 def test_parse_args_defaults_are_the_documented_ones():
-    args = harness.parse_args(["--out", "x.json", "--power-profile", "turbo"])
+    args = harness.parse_args(["--out", "x.json", "--power-profile", "turbo", "--time-budget-s", "60"])
     assert args.repeats == 5
     assert args.shots == 2000
     assert args.domain_qubits == harness.DOMAIN_QUBITS
@@ -170,11 +176,11 @@ def test_main_writes_a_run_file_and_caps_the_quantum_sweep(
 
     monkeypatch.setattr(backend, "select_target", lambda: "nvidia")
     monkeypatch.setattr(environment, "collect", lambda profile: measured_run["environment"])
-    monkeypatch.setattr(harness, "measure_classical", lambda counts, repeats: [measured_run["runs"][0]])
+    monkeypatch.setattr(harness, "measure_classical", lambda *args, **kwargs: [measured_run["runs"][0]])
 
     captured = {}
 
-    def fake_measure_quantum(counting, domain_qubits, shots, repeats, target, seed):
+    def fake_measure_quantum(counting, domain_qubits, shots, repeats, target, seed, budget, rows):
         captured["counting"] = counting
         row = measured_run["runs"][12]
         row.update(target=target, shots=shots)
@@ -182,13 +188,15 @@ def test_main_writes_a_run_file_and_caps_the_quantum_sweep(
 
     monkeypatch.setattr(harness, "measure_quantum", fake_measure_quantum)
 
+    monkeypatch.setattr(harness, "CLASSICAL_TERM_COUNTS", (1,))
     out = tmp_path / "nested" / "run.json"
-    assert (
-        harness.main(["--out", str(out), "--power-profile", "turbo", "--max-counting-qubits", "4", "--shots", "4000"])
-        == 0
-    )
+    argv = ["--out", str(out), "--power-profile", "turbo", "--time-budget-s", "60", "--shots", "4000"]
+    assert harness.main([*argv, "--max-counting-qubits", "2"]) == 0
 
-    assert captured["counting"] == (2, 3, 4)
+    assert captured["counting"] == (2,)
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["controls"]["power_profile"] == "turbo"
+    assert payload["controls"]["time_budget_s"] == 60.0
+    assert payload["status"]["state"] == "complete"
+    assert payload["status"]["planned"] == {"classical_term_counts": [1], "counting_qubits": [2]}
     assert len(payload["runs"]) == 2

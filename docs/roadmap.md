@@ -16,7 +16,7 @@ Audit date: **2026-09-23**, release baseline `8005352`. This checkout has two
 measured RTX 5070 Laptop GPU archives, including a run under the committed
 protocol, and a reviewed findings record. The GPU suite was re-verified on
 2026-09-23 in WSL2 on Python 3.14.7 with CUDA-Q 0.16.0.post1 and CuPy 14.2.0:
-347 passed, 1 skipped, 100% coverage. Python 3.14 is now the only supported
+386 passed, 1 skipped, 100% coverage. Python 3.14 is now the only supported
 interpreter on every host.
 
 - Phase 0 standards are adopted and semantic run-file validation exists.
@@ -24,10 +24,12 @@ interpreter on every host.
   not that its operator followed the declared procedure.
 - Phase 1 delivered a hand-written CUDA C++ kernel, known-amplitude QAE
   circuit, harness, figures and two RTX archives. P1-R1 through P1-R4 were
-  completed for v0.3.0. A later audit found additional evidence defects:
-  late failures discard completed work; the review record hashes only one
-  source in a two-run comparison; derived QAE fields are not validated.
-  These must be repaired before a stronger reproducibility claim. No H100
+  completed for v0.3.0. A later audit found additional evidence defects.
+  Late failures discarding completed work and the unenforced time budget were
+  repaired on 2026-09-23 (schema 5, protocol version 2, ADR 011). Still open:
+  the review record hashes only one source in a two-run comparison, and
+  derived QAE fields are not validated. These must be repaired before a
+  stronger reproducibility claim. No H100
   result exists.
 - QAE encodes the already-known amplitude `math.pi / 4`. This is a simulator
   case study, not an independent π algorithm or quantum-advantage result.
@@ -35,8 +37,8 @@ interpreter on every host.
 - Phase 2 has exact modular LPS graph construction and floating-point spectral
   checks, not an exact spectral proof. No parity-check implementation, decoder
   or qLDPC experiment exists.
-- This session's Windows no-key suite passed 319 tests, skipped 29 and covered
-  1131/1134 statements (99.74%). The three uncovered statements are in the
+- This session's Windows no-key suite passed 358 tests, skipped 29 and covered
+  1282/1285 statements (99.77%). The three uncovered statements are in the
   real CUDA-Q diagnostic. CI CPU simulation and GPU integration remain
   separate evidence.
 - NIM drafts unchecked prose from JSON. Its output needs human review; raw

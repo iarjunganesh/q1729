@@ -63,8 +63,8 @@ def test_harness_blocks_inconsistent_provenance_before_archiving(
     else:
         current_run["execution"]["quantum"]["target"] = "qpp-cpu"
     monkeypatch.setattr(environment, "collect", lambda profile: current_run["environment"])
-    monkeypatch.setattr(harness, "measure_classical", lambda *args: current_run["runs"][:1])
-    monkeypatch.setattr(harness, "measure_quantum", lambda *args: current_run["runs"][12:13])
+    monkeypatch.setattr(harness, "measure_classical", lambda *args, **kwargs: current_run["runs"][:1])
+    monkeypatch.setattr(harness, "measure_quantum", lambda *args, **kwargs: current_run["runs"][12:13])
     if failure == "source":
         changed = copy.deepcopy(current_run["provenance"])
         changed["revision"] = "c" * 40
@@ -77,6 +77,8 @@ def test_harness_blocks_inconsistent_provenance_before_archiving(
                 str(out),
                 "--power-profile",
                 "turbo",
+                "--time-budget-s",
+                "60",
                 "--hardware-id",
                 "device",
                 "--seed",
@@ -87,13 +89,12 @@ def test_harness_blocks_inconsistent_provenance_before_archiving(
 
 
 def test_classical_retains_timed_values_without_post_timing_recomputation(monkeypatch):
+    from benchmarks import environment
     from classical import cuda_kernel
 
-    monkeypatch.setattr(
-        cuda_kernel,
-        "time_partial_sum",
-        lambda *args, **kwargs: {"samples_s": [0.1, 0.2], "partial_sums": [1103.0, 1104.0]},
-    )
+    monkeypatch.setattr(environment, "nvidia_smi", lambda: None)
+    values = iter([1102.0, 1103.0, 1104.0])  # warm-up, then two timed repeats
+    monkeypatch.setattr(cuda_kernel, "partial_sum", lambda *args: next(values))
     monkeypatch.setattr(cuda_kernel, "pi_approximation", lambda *args: pytest.fail("extra untimed computation"))
     row = harness.measure_classical((1,), 2)[0]
     assert [o["partial_sum"] for o in row["outcomes"]] == [1103.0, 1104.0]

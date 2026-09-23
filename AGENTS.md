@@ -41,18 +41,19 @@ floating-point spectral checks are numerical verification, not an exact proof.
 No parity-check implementation, decoder or qLDPC experiment exists.
 
 **Next:** P2-A — specify the LPS-derived classical code and decoder study,
-including related work and a bounded protocol. In parallel, repair evidence
-loss on late failure, bind comparative reviews to every source archive,
-and validate derived QAE fields. The historical
+including related work and a bounded protocol. In parallel, bind
+comparative reviews to every source archive and validate derived QAE fields.
+Late-failure archiving and the declared time budget landed on 2026-09-23
+(schema 5, ADR 011). The historical
 phase diagnostic measured 3.08 ms of `kernel_handle` in a 4.05 ms two-term
 call; it cannot apportion the older archive's 2.714 ms call. Phase 2 proceeds
 through a classical reference decoder and controlled GPU study before a
 feasible qLDPC study. H100 remains optional and unmeasured, with explicit
 question, runtime, evidence and budget gates. See `docs/roadmap.md` and ADR 007.
 
-Windows no-key audit on 2026-09-23: 319 passed, 29 skipped, 99.74% coverage.
+Windows no-key suite on 2026-09-23: 358 passed, 29 skipped, 99.77% coverage.
 WSL2 GPU verification on 2026-09-23 (Python 3.14.7, CUDA-Q 0.16.0.post1,
-CuPy 14.2.0): 347 passed, 1 skipped, 100.00% coverage on the RTX 5070. The
+CuPy 14.2.0): 386 passed, 1 skipped, 100.00% coverage on the RTX 5070. The
 skip is the live NIM test (no key). CPU-simulator CI does not verify GPU behavior.
 
 P1-R3 is implemented and locally tested: the measurement protocol is committed
@@ -75,7 +76,7 @@ make run          # python main.py — status check, works with or without cudaq
 make gpu-check    # python -m quantum.backend — CUDA-Q target diagnostic
 make cuda-check   # python -m classical.cuda_kernel — CUDA kernel/GPU diagnostic
 make narrate      # NIM narrator on data/sample_run.json (needs NVIDIA_API_KEY)
-make benchmark POWER_PROFILE=turbo   # stage-1 crossover run -> benchmarks/runs/
+make benchmark POWER_PROFILE=turbo TIME_BUDGET_S=3600   # stage-1 run -> benchmarks/runs/
 make plot RUN=benchmarks/runs/<f>.json  # theme-aware crossover SVGs
 make test         # pytest tests -v (integration skips without cudaq/GPU)
 make lint         # ruff check . && ruff format --check .
@@ -93,14 +94,14 @@ defaults to a run-specific directory. JSON/SVG writes reject existing paths.
 - **Windows host** (Python 3.14, `.venv/`): editing, classical math, unit
   tests, lint. The complete native-Windows CUDA-Q/CuPy runtime path is unverified —
   `quantum/backend.py`, `quantum/qae.py` and `classical/cuda_kernel.py` must
-  all degrade gracefully. No-key audit: **319 passed, 29 skipped** on 2026-09-23; live NIM is a separate optional check.
+  all degrade gracefully. No-key suite: **358 passed, 29 skipped** on 2026-09-23; live NIM is a separate optional check.
 - **WSL2 Ubuntu 26.04 "resolute"**, registered as the distro **`Ubuntu`**
   (venv at `~/q1729-cudaq` on uv-managed **Python 3.14.7**): everything CUDA-Q
   and everything CUDA. **Always name the distro** — the machine's default
   distro is a stale `Ubuntu-22.04` registration whose `ext4.vhdx` no longer
   exists, so a bare `wsl -e` fails with `HCS/ERROR_PATH_NOT_FOUND`. Run tests with
   `wsl -d Ubuntu -e bash -c "cd /mnt/c/ws/research/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
-  Last verified 2026-09-23: **347 passed, 1 skipped, 100.00% coverage**; cudaq
+  Last verified 2026-09-23: **386 passed, 1 skipped, 100.00% coverage**; cudaq
   0.16.0.post1 selects the `nvidia` target; CuPy 14.2.0 binds PCI
   `0000:01:00.0`; CUDA runtime 13020, driver 13040, NVIDIA driver 616.92. The
   previous Python 3.13.15 venv is parked at `~/q1729-cudaq-py313-old` as a
@@ -244,8 +245,14 @@ A measured claim in this repo is only worth what its provenance is worth.
 - **Raw per-repeat samples and outcomes must be retained**, including QAE
   counts and seed limitations. Schema 3 retains every timed
   outcome/count distribution; row summaries identify the final timed repeat.
-- **The power/thermal profile is a required argument, not a default.** On a
-  laptop it changes every timing. `make benchmark` refuses to run without it.
+- **A run that stops early is still archived (ADR 011).** Budget exhaustion,
+  an arm's exception or Ctrl-C writes a schema-5 record with
+  `status.state = "aborted"`, the completed configurations and the unfinished
+  one's raw samples. It is an audit record, not a result: `run_file.load`
+  refuses it unless `allow_incomplete=True`, and it must never be deleted.
+- **The power/thermal profile and the time budget are required arguments, not
+  defaults.** On a laptop the profile changes every timing; the budget decides
+  when the run aborts. `make benchmark` refuses to run without either.
 - **Never hand-edit a run file's numbers.** If a run is wrong, re-run it and
   say so. A run file is a record of something that happened.
 - **Don't delete or overwrite an existing measured run file** to make a
@@ -279,7 +286,7 @@ A measured claim in this repo is only worth what its provenance is worth.
   JIT-compiled CUDA-Q kernel body (`# pragma: no cover` — coverage can't
   trace it), and each one must be exercised by a `tests/integration/` test
   instead. Measure where cudaq exists (WSL2/CI); Windows-local runs
-  under-count `quantum/` and showed 99.74% in the no-key audit — that's expected, not a
+  under-count `quantum/` and showed 99.77% in the no-key suite — that's expected, not a
   gate failure (CI is what's authoritative).
 - **A `# pragma: no cover` that isn't a CUDA-Q kernel body is a bug.** Don't
   reach for it to close a coverage gap; write the test.

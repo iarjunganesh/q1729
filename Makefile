@@ -20,14 +20,17 @@ cuda-check:
 narrate:
 	python -m analysis.narrator data/sample_run.json
 
-# Stage-1 crossover benchmark. POWER_PROFILE is required, not defaulted: the
-# vendor power/thermal mode changes every timing in the output, so it is a
-# declared control (docs/handbook/research-standards.md).
+# Stage-1 crossover benchmark. POWER_PROFILE and TIME_BUDGET_S are required,
+# not defaulted: the vendor power/thermal mode changes every timing in the
+# output, and the budget decides when the run aborts — both are declared
+# controls (docs/handbook/research-standards.md, ADR 011).
 POWER_PROFILE ?=
+TIME_BUDGET_S ?=
 RUN ?=
 benchmark:
 	@test -n "$(POWER_PROFILE)" || (echo "set POWER_PROFILE=<turbo|performance|silent|...> — it is a recorded control"; exit 1)
-	python -m benchmarks.harness --power-profile $(POWER_PROFILE) \
+	@test -n "$(TIME_BUDGET_S)" || (echo "set TIME_BUDGET_S=<seconds> — the run aborts, archived, when it is spent"; exit 1)
+	python -m benchmarks.harness --power-profile $(POWER_PROFILE) --time-budget-s $(TIME_BUDGET_S) \
 		--out benchmarks/runs/$(shell date +%Y-%m-%d)-$(shell python -c "import uuid; print(uuid.uuid4().hex)").json
 
 plot:
