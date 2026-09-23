@@ -110,7 +110,7 @@ The three stages below are the research thread. The full evidence-sequenced plan
 
 | Stage | Focus | Status |
 | --- | --- | --- |
-| **1 — π benchmark** | Ramanujan's 1914 1/π series as a hand-written CUDA kernel vs Quantum Amplitude Estimation with CUDA-Q, on the `nvidia` (cuStateVec) backend | **Two RTX archives delivered; follow-up evidence repairs open.** Optional H100 unmeasured |
+| **1 — π benchmark** | Ramanujan's 1914 1/π series as a hand-written CUDA kernel vs Quantum Amplitude Estimation with CUDA-Q, on the `nvidia` (cuStateVec) backend | **Two RTX archives delivered; post-release evidence repairs done 2026-09-23; declared-profile phase study next.** Optional H100 unmeasured |
 | **2 — community** | Upstream contributions to CUDA-Q / CUDA-Q Academic; publish results; invite benchmark submissions from other GPUs (the run-file schema is hardware-agnostic) | Ongoing workstream; publication depends on contribution/evidence gates |
 | **3 — Ramanujan graphs → qLDPC** | Ramanujan expander graphs underpin modern quantum LDPC codes. Simulate and decode them with CUDA-Q QEC (CUDA-QX) plus custom CUDA kernels | Started: graph construction only; classical decoder and feasible qLDPC study next |
 
@@ -125,7 +125,7 @@ The three stages below are the research thread. The full evidence-sequenced plan
 
 Runtime: this repository uses **WSL2/Linux** for the CUDA-Q and CUDA path.
 The GPU test suite was re-verified in WSL2 on 2026-09-23 with Python 3.14.7,
-CUDA-Q 0.16.0.post1 and CuPy 14.2.0: 386 passed, 1 skipped, 100.00% coverage.
+CUDA-Q 0.16.0.post1 and CuPy 14.2.0: 410 passed, 1 skipped, 100.00% coverage.
 No new measured run was collected.
 
 ## Built to be trusted
@@ -134,14 +134,15 @@ No new measured run was collected.
   at 1e-15 relative tolerance. Host reduction avoids atomic accumulation order;
   this does not guarantee bitwise identity across hardware/toolchains.
 - Synthetic sample data is labeled and rejected by the plotter.
-- CI requires 100% coverage. The 2026-09-23 Windows no-key suite: 358 passed,
+- CI requires 100% coverage. The 2026-09-23 Windows no-key suite: 382 passed,
   29 skipped, 99.77% coverage; the CUDA-Q diagnostic needs its real runtime.
   CUDA-Q CPU integration runs in CI; GPU integration requires a GPU.
 - The [research contract](docs/handbook/research-standards.md) is a requirement;
   semantic validation, archive protection, schema-3 traceability, a committed
   measurement protocol and archived aborted runs under a declared time budget
-  (schema 5) are implemented. Follow-up evidence defects and runtime
-  verification limits are recorded in the [roadmap](docs/roadmap.md#where-the-repo-actually-is-v030).
+  (schema 5) are implemented, as are reviews bound to every cited archive and
+  recomputed QAE diagnostics. Remaining limits are recorded in the
+  [roadmap](docs/roadmap.md#where-the-repo-actually-is-v030).
 - [ADRs](docs/adr/README.md) record decisions, including ROCm as a conditional
   Phase 4 backend and the evidence-first sequence in ADR 007.
 
@@ -163,7 +164,7 @@ No new measured run was collected.
 - `benchmarks/plot.py` — theme-aware crossover plots; refuses synthetic and aborted input
 - `benchmarks/runs/`, `benchmarks/plots/` — measured run files, findings drafts with their human review records, and figures
 - `analysis/narrator.py` — NIM/Nemotron findings narrator (`make narrate`)
-- `analysis/review.py` — human findings-review records, hash-bound to draft and source; agents never approve
+- `analysis/review.py` — human findings-review records, hash-bound to the draft and every cited archive; agents never approve
 - `scripts/release_check.py` — release preflight: tag, version, notes and `main` ancestry
 - `data/sample_run.json` — synthetic sample run file demonstrating the schema; never a measurement
 - `main.py` — status check; runs on any host, with or without cudaq / cupy / a NIM key

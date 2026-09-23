@@ -41,19 +41,20 @@ floating-point spectral checks are numerical verification, not an exact proof.
 No parity-check implementation, decoder or qLDPC experiment exists.
 
 **Next:** P2-A — specify the LPS-derived classical code and decoder study,
-including related work and a bounded protocol. In parallel, bind
-comparative reviews to every source archive and validate derived QAE fields.
-Late-failure archiving and the declared time budget landed on 2026-09-23
-(schema 5, ADR 011). The historical
+including related work and a bounded protocol. In parallel, collect a
+declared-profile phase study on the local GPU. The post-release evidence
+defects were repaired on 2026-09-23: aborted runs are archived under a declared
+time budget (schema 5, ADR 011), reviews bind every cited archive (review
+schema 2) and derived QAE fields are recomputed on validation. The historical
 phase diagnostic measured 3.08 ms of `kernel_handle` in a 4.05 ms two-term
 call; it cannot apportion the older archive's 2.714 ms call. Phase 2 proceeds
 through a classical reference decoder and controlled GPU study before a
 feasible qLDPC study. H100 remains optional and unmeasured, with explicit
 question, runtime, evidence and budget gates. See `docs/roadmap.md` and ADR 007.
 
-Windows no-key suite on 2026-09-23: 358 passed, 29 skipped, 99.77% coverage.
+Windows no-key suite on 2026-09-23: 382 passed, 29 skipped, 99.77% coverage.
 WSL2 GPU verification on 2026-09-23 (Python 3.14.7, CUDA-Q 0.16.0.post1,
-CuPy 14.2.0): 386 passed, 1 skipped, 100.00% coverage on the RTX 5070. The
+CuPy 14.2.0): 410 passed, 1 skipped, 100.00% coverage on the RTX 5070. The
 skip is the live NIM test (no key). CPU-simulator CI does not verify GPU behavior.
 
 P1-R3 is implemented and locally tested: the measurement protocol is committed
@@ -94,14 +95,14 @@ defaults to a run-specific directory. JSON/SVG writes reject existing paths.
 - **Windows host** (Python 3.14, `.venv/`): editing, classical math, unit
   tests, lint. The complete native-Windows CUDA-Q/CuPy runtime path is unverified —
   `quantum/backend.py`, `quantum/qae.py` and `classical/cuda_kernel.py` must
-  all degrade gracefully. No-key suite: **358 passed, 29 skipped** on 2026-09-23; live NIM is a separate optional check.
+  all degrade gracefully. No-key suite: **382 passed, 29 skipped** on 2026-09-23; live NIM is a separate optional check.
 - **WSL2 Ubuntu 26.04 "resolute"**, registered as the distro **`Ubuntu`**
   (venv at `~/q1729-cudaq` on uv-managed **Python 3.14.7**): everything CUDA-Q
   and everything CUDA. **Always name the distro** — the machine's default
   distro is a stale `Ubuntu-22.04` registration whose `ext4.vhdx` no longer
   exists, so a bare `wsl -e` fails with `HCS/ERROR_PATH_NOT_FOUND`. Run tests with
   `wsl -d Ubuntu -e bash -c "cd /mnt/c/ws/research/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
-  Last verified 2026-09-23: **386 passed, 1 skipped, 100.00% coverage**; cudaq
+  Last verified 2026-09-23: **410 passed, 1 skipped, 100.00% coverage**; cudaq
   0.16.0.post1 selects the `nvidia` target; CuPy 14.2.0 binds PCI
   `0000:01:00.0`; CUDA runtime 13020, driver 13040, NVIDIA driver 616.92. The
   previous Python 3.13.15 venv is parked at `~/q1729-cudaq-py313-old` as a
@@ -435,7 +436,7 @@ nit:
 - `benchmarks/provenance.py` — source hashes, installed distributions and actual execution metadata.
 - `benchmarks/run_file.py` — versioned semantic validation (schemas 1–5), CI's archive check.
 - `benchmarks/archive.py` — exclusive output creation; evidence is never overwritten.
-- `analysis/review.py` — human review sidecars; agents never approve on behalf of a reviewer.
+- `analysis/review.py` — human review sidecars bound to the draft and every cited archive; agents never approve on behalf of a reviewer.
 - `scripts/release_check.py` — release tag/version/notes/ancestry preflight.
 - `analysis/narrator.py` — NIM/Nemotron findings narrator (`make narrate`).
 - `benchmarks/` — harness, environment capture, plotter, and the measured

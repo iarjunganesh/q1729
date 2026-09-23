@@ -16,7 +16,7 @@ Audit date: **2026-09-23**, release baseline `8005352`. This checkout has two
 measured RTX 5070 Laptop GPU archives, including a run under the committed
 protocol, and a reviewed findings record. The GPU suite was re-verified on
 2026-09-23 in WSL2 on Python 3.14.7 with CUDA-Q 0.16.0.post1 and CuPy 14.2.0:
-386 passed, 1 skipped, 100% coverage. Python 3.14 is now the only supported
+410 passed, 1 skipped, 100% coverage. Python 3.14 is now the only supported
 interpreter on every host.
 
 - Phase 0 standards are adopted and semantic run-file validation exists.
@@ -24,12 +24,13 @@ interpreter on every host.
   not that its operator followed the declared procedure.
 - Phase 1 delivered a hand-written CUDA C++ kernel, known-amplitude QAE
   circuit, harness, figures and two RTX archives. P1-R1 through P1-R4 were
-  completed for v0.3.0. A later audit found additional evidence defects.
-  Late failures discarding completed work and the unenforced time budget were
-  repaired on 2026-09-23 (schema 5, protocol version 2, ADR 011). Still open:
-  the review record hashes only one source in a two-run comparison, and
-  derived QAE fields are not validated. These must be repaired before a
-  stronger reproducibility claim. No H100
+  completed for v0.3.0. A later audit found additional evidence defects,
+  all repaired on 2026-09-23: late failures now leave an aborted archive under
+  a declared time budget (schema 5, protocol version 2, ADR 011); a findings
+  review binds every archive its draft cites (review schema 2, ADR 009
+  amendment); and derived QAE fields are recomputed on validation, with the
+  conjugate-landing rule corrected (ADR 010 amendment). Next on this path is
+  a declared-profile phase study. No H100
   result exists.
 - QAE encodes the already-known amplitude `math.pi / 4`. This is a simulator
   case study, not an independent π algorithm or quantum-advantage result.
@@ -37,21 +38,21 @@ interpreter on every host.
 - Phase 2 has exact modular LPS graph construction and floating-point spectral
   checks, not an exact spectral proof. No parity-check implementation, decoder
   or qLDPC experiment exists.
-- This session's Windows no-key suite passed 358 tests, skipped 29 and covered
-  1282/1285 statements (99.77%). The three uncovered statements are in the
+- This session's Windows no-key suite passed 382 tests, skipped 29 and covered
+  1330/1333 statements (99.77%). The three uncovered statements are in the
   real CUDA-Q diagnostic. CI CPU simulation and GPU integration remain
   separate evidence.
 - NIM drafts unchecked prose from JSON. Its output needs human review; raw
   measured JSON is never corrected by rewriting its numbers.
 
-The next work is the Phase 2 question/protocol (P2-A), alongside repairs to
-the evidence path above.
+The next work is the Phase 2 question/protocol (P2-A), alongside a
+declared-profile phase study on the local GPU.
 
 ## Sequence at a glance
 
 ```mermaid
 flowchart LR
-    A[Now: two archives + LPS graphs] --> B[Repair evidence path]
+    A[Now: two archives + LPS graphs] --> B[Declared-profile phase study]
     B --> C[Phase 2: classical decoding study]
     C --> D[Phase 2: feasible qLDPC study]
     C --> P[Focused paper if contribution survives review]
@@ -63,7 +64,7 @@ flowchart LR
 | Phase | Deliverable | Status |
 | --- | --- | --- |
 | 0 — constitution | Evidence standards and decision records | Adopted; enforcement gaps remain |
-| 1 — first real result | Scoped π simulator case study | Two archives delivered; additional evidence defects open |
+| 1 — first real result | Scoped π simulator case study | Two archives delivered; post-release evidence defects repaired 2026-09-23; declared-profile phase study next |
 | 2 — second experiment | Classical decoding controls, then feasible qLDPC | Graph construction only |
 | 3 — shared engine | Reuse extracted from two validated experiments | Deferred until repeated needs exist |
 | 4 — backend independence | Controlled portability study; ROCm per ADR 006 | Conditional; no verified port or AMD run |
@@ -366,8 +367,8 @@ Editing a checklist does not establish completion or authorize publication.
 Material sequencing/architecture changes get an ADR. Update gates when evidence
 changes feasibility; avoid speculative dates. P1-R1 through P1-R4 produced
 the v0.3.0 release and historical real-hardware evidence. The next research
-work is **Phase 2**, starting at P2-A, alongside the evidence repairs in the
-current-state section.
+work is **Phase 2**, starting at P2-A, alongside the declared-profile phase
+study named in the current-state section.
 
 ## Anti-roadmap
 

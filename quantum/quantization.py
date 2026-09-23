@@ -219,3 +219,42 @@ def require_outcome(outcome: int, counting_qubits: int) -> int:
     if not 0 <= outcome < size:
         raise ValueError(f"outcome must lie in [0, {size}), got {outcome}")
     return size
+
+
+#: Carried in every report so a reader of the run file knows how to read it.
+REPORT_INTERPRETATION = (
+    "quantization_error is the floor set by the distance from the true "
+    "phase to the 2^m grid; shots do not reduce it. total_variation is a "
+    "diagnostic against sampling_tolerance, not a hypothesis test."
+)
+
+
+def report(counting_qubits: int, outcome: int, counts: dict[str, int], shots: int) -> dict[str, object]:
+    """Every derived QAE diagnostic for one result, from closed-form theory.
+
+    The single implementation shared by the writer and the validator, so an
+    archived ``quantization`` block can be recomputed from the row's own
+    outcome and counts rather than trusted.
+
+    ``landed_on_conjugate`` is true only when the outcome *is* the conjugate
+    peak (and that peak differs from the ideal one). An outcome that is
+    neither peak is a disagreement with theory, reported by
+    ``agrees_with_theory``, not a conjugate landing.
+    """
+    ideal = ideal_outcome(counting_qubits)
+    conjugate = conjugate_outcome(ideal, counting_qubits)
+    plateau_first, plateau_last = plateau_bounds(counting_qubits)
+    return {
+        "ideal_outcome": ideal,
+        "conjugate_outcome": conjugate,
+        "landed_on_conjugate": outcome == conjugate and conjugate != ideal,
+        "agrees_with_theory": agrees_with_theory(outcome, counting_qubits),
+        "ideal_estimate": ideal_estimate(counting_qubits),
+        "quantization_error": quantization_error(counting_qubits),
+        "relative_quantization_error": relative_quantization_error(counting_qubits),
+        "plateau_first_m": plateau_first,
+        "plateau_last_m": plateau_last,
+        "total_variation": total_variation(counts, counting_qubits),
+        "sampling_tolerance": sampling_tolerance(counting_qubits, shots),
+        "interpretation": REPORT_INTERPRETATION,
+    }

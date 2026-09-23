@@ -996,3 +996,55 @@ Checked and left as is: principles, findings-review, measurement-protocol,
 run-file, setup, CONTRIBUTING and benchmarks README (already current after
 Steps 2–3), the ADR index, and the dated historical sections of the roadmap
 and session log.
+
+## 2026-09-23 — Step 4: reviews bind every cited archive; QAE diagnostics recomputed
+
+Two evidence defects from the audit. First, `q1729/findings-review/1` hashed one
+run file, while the approved 2026-09-06 findings also cite
+`2026-08-05-rtx5070-turbo.json`, so altering that archive left the approval
+standing. `analysis/review.py` now writes `q1729/findings-review/2`, with a
+`sources` array of name and normalized SHA-256 per source. `cited_runs` finds
+every adjacent run JSON the draft names; a template that leaves one unbound is
+refused, and `--run` repeats. For the existing schema-1 review,
+`LEGACY_CITED_SOURCES` pins the August archive at
+`ea97c065…396d`. That is its digest at its only commit (`f88a926`,
+2026-08-05), before the review was approved on 2026-09-06, so the pin records
+the approved state and approves nothing new. The owner's approval record is
+untouched and the findings were not revised, so no new human review was
+needed.
+
+Second, the `quantization` block in QAE rows was never validated, and
+`landed_on_conjugate` was `outcome != ideal`, which also called a wrong
+outcome a conjugate landing. `quantum.quantization.report` is now the single
+implementation; the harness delegates to it, and
+`run_file.validate_quantization` recomputes every field for schema 4+:
+integers and booleans exactly, floats to 1e-9, the exact field set, and an
+integer outcome. The corrected rule is `outcome == conjugate != ideal`.
+Before changing anything I recomputed all 15 QAE rows of the 2026-09-06
+schema-4 archive against the new function. They match exactly and agree with
+the corrected rule, so both archives still validate unchanged.
+
+Verification: WSL2 GPU (Python 3.14.7, cudaq 0.16.0.post1) 410 passed,
+1 skipped, 100.00%; Ruff, format and mypy clean; both archives validate;
+`analysis.review --archive benchmarks/runs` passes. Windows 382 passed,
+29 skipped, 1330/1333 (99.77%). New tests copy the real archive and show that
+reformatting either cited archive (still a valid run file) makes the review
+stale. They also show that a new two-source review is refused until both
+sources are bound, and that every tampered quantization field fails. ADR 009
+and ADR 010 have dated amendments, and the diagram label now reads "every
+cited run". Next: Step 5, the declared-profile phase study, which needs the
+owner at the laptop with a declared power profile.
+
+## 2026-09-23 — Post-v0.3.0 history folded into four commits; feature branch removed
+
+At the owner's request, the merged `audit/python314-evidence-docs-20260923`
+branch was deleted locally and on GitHub. It held no commits outside `main`,
+so only `main` remains. The six commits after `v0.3.0` were then folded into
+four, one per change: the Python 3.14 stack and WSL2 runtime (with the audit's
+doc reconciliation), aborted-run archiving under a time budget, the
+diagram/banner/doc-drift pass, and review binding plus QAE recomputation. The
+final tree is byte-identical to the pre-fold head apart from this entry and one
+reworded sentence that quoted a pre-fold hash. `main` was force-pushed with a
+lease on the old head. Tags are unaffected, since all of them precede the
+fold. CI run IDs cited above ran on the pre-fold commits, which PR #7 and
+GitHub's run history still reference.

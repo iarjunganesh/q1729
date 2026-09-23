@@ -19,6 +19,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   process with no archive, and a raising handler hung it when a signal landed
   during JIT compilation (both reproduced on the RTX 5070).
 
+- Findings reviews bind every archive their draft cites (review schema
+  `q1729/findings-review/2`, `--run` repeated per citation); a template that
+  leaves a cited archive unbound is refused. The approved 2026-09-06 review
+  (schema 1) has its second cited archive pinned at its approved hash, so
+  altering either archive now invalidates it. No findings were revised, so no
+  new approval was needed.
+- The validator recomputes every schema-4+ QAE `quantization` block from the
+  row's outcome, counts and shots through the writer's own function,
+  `quantum.quantization.report`.
+
+### Fixed
+
+- `landed_on_conjugate` reported any non-ideal outcome as a conjugate landing;
+  it is now true only for the conjugate peak. The 2026-09-06 archive's 15 QAE
+  rows already agree with the corrected rule and recompute exactly.
+
 ### Changed
 
 - Redrew the architecture diagram from the code and embedded both theme renders
@@ -71,6 +87,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   358 passed, 29 skipped, 1282/1285 (99.77%). On the RTX 5070, a 20 s budget
   archived 24 completed configurations and exited 3; a real SIGINT archived 23
   plus the unfinished configuration's sample. Both archives still validate.
+- After the evidence-binding repairs: WSL2 GPU 410 passed, 1 skipped, 100.00%;
+  Windows 382 passed, 29 skipped, 1330/1333 (99.77%). Reformatting either
+  archive cited by the 2026-09-06 review, still a valid run file, makes the
+  review stale; `analysis.review --archive` passes on the real archive.
 
 ## [0.3.0] — 2026-09-06 — Phase 1 evidence repairs: protected, traceable, protocol-backed
 

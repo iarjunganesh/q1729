@@ -201,6 +201,7 @@ def validate(
             validate_provenance(payload)
         if schema in PROTOCOL_SCHEMAS:
             validate_protocol(payload)
+            validate_quantization(payload)
         if schema == CURRENT_SCHEMA:
             validate_status(payload)
     return payload
@@ -342,6 +343,34 @@ def validate_protocol(payload: dict[str, Any]) -> None:
             number(row.get(key), key)
             require(math.isclose(row[key], expected[key], rel_tol=1e-9, abs_tol=1e-15), f"{key} disagrees with samples")
         require(row["ci95_low_s"] <= row["mean_s"] <= row["ci95_high_s"], "mean must lie inside its own interval")
+
+
+def validate_quantization(payload: dict[str, Any]) -> None:
+    """Recompute every QAE row's derived ``quantization`` block (v4+).
+
+    The block is closed-form theory applied to the row's own outcome, counts
+    and shots, so nothing in it is a free measurement: each field must equal
+    :func:`quantum.quantization.report` on those inputs. Booleans and integers
+    must match exactly, floats to 1e-9 relative. The only schema-4 archive
+    (2026-09-06) passes, including under the corrected conjugate rule.
+    """
+    from quantum import quantization
+
+    for row in payload["runs"]:
+        if row["method"] != "qae-cudaq":
+            continue
+        block = row.get("quantization")
+        require(isinstance(block, dict), "QAE rows require a quantization block")
+        require(type(row.get("outcome")) is int, "QAE outcome must be an integer")
+        expected = quantization.report(row["counting_qubits"], row["outcome"], row["counts"], row["shots"])
+        require(set(block) == set(expected), "quantization fields differ from the derived set")
+        for key, value in expected.items():
+            actual = block[key]
+            if type(value) is float:
+                number(actual, f"quantization.{key}")
+                require(math.isclose(actual, value, rel_tol=1e-9, abs_tol=1e-15), f"quantization.{key} mismatch")
+            else:
+                require(type(actual) is type(value) and actual == value, f"quantization.{key} mismatch")
 
 
 def validate_status(payload: dict[str, Any]) -> None:

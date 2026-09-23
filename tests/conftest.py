@@ -17,6 +17,7 @@ def measured_run():
 def current_run(measured_run):
     """Artificial current-schema fixture, never written into the measured archive."""
     from benchmarks import protocol, run_file
+    from quantum import quantization
 
     p = measured_run
     p["protocol"] = {"declaration": protocol.declaration(), "digest": protocol.digest()}
@@ -64,6 +65,8 @@ def current_run(measured_run):
                 reproducibility_limit="stochastic fixture",
                 counts={format(r["outcome"], f"0{r['counting_qubits']}b"): r["shots"]},
             )
+            # Schema 4+ derives this block from the row's own outcome and counts.
+            r["quantization"] = quantization.report(r["counting_qubits"], r["outcome"], r["counts"], r["shots"])
             outcome = {k: v for k, v in r.items() if k not in ("samples_s", "repeats", "method")}
         r["outcomes"] = [copy.deepcopy(outcome) for _ in range(r["repeats"])]
         # Schema 4 carries the declared uncertainty alongside mean/min/stdev.

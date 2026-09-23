@@ -95,3 +95,23 @@ points at a deleted `ext4.vhdx`. No profiling was performed, so no
 dispatch-bottleneck or arithmetic-bound claim is licensed by this change; the
 `_load_kernel`-per-call observation is a hypothesis until measured. Collecting
 the first phase-attributed run under this protocol is P1-R4.
+
+## 2026-09-23 amendment — derived QAE fields are recomputed, conjugate rule corrected
+
+The `quantization` block in each QAE row was written but never validated, so
+a malformed or hand-edited diagnostic passed. It is now produced by one
+function, `quantum.quantization.report`, shared by the writer and
+`run_file.validate_quantization`. For schema 4 and later, the validator
+recomputes every field from the row's own `counting_qubits`, `outcome`,
+`counts` and `shots`. Integers and booleans must match exactly and floats to
+1e-9 relative, the field set must match, and the outcome must be an integer.
+
+`landed_on_conjugate` was `outcome != ideal`, which also labelled a wrong
+outcome as a conjugate landing. It is now true only when the outcome is the
+conjugate peak and that peak differs from the ideal one; a wrong outcome shows
+up as `agrees_with_theory = false`. All 15 QAE rows of the only schema-4
+archive (2026-09-06) recompute exactly, and all agree with the corrected rule,
+so no archived record changes.
+
+(The Status paragraph above predates the 2026-09-06 runtime restoration;
+`time_phases` has since run on the RTX 5070, see `docs/measurement-protocol.md`.)

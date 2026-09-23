@@ -65,6 +65,17 @@ check) but `run_file.load` refuses them by default; the plotter, narrator and
 findings review therefore cannot present a partial sweep as a result. See
 [ADR 011](adr/011-aborted-runs-and-declared-budget.md).
 
+## Derived QAE diagnostics
+
+From schema 4, each QAE row carries a `quantization` block of closed-form
+theory: ideal and conjugate outcome, whether the result landed on the
+conjugate, agreement with theory, the quantization error floor, plateau bounds,
+total-variation distance from the ideal distribution and its sampling
+tolerance. None of it is a free measurement. The validator recomputes every
+field with `quantum.quantization.report` from the row's own outcome, counts and
+shots and rejects any difference. `landed_on_conjugate` is true only for the
+conjugate peak; any other wrong outcome is `agrees_with_theory = false`.
+
 Optional `--seed N` uses `N + counting_qubits * repeats + repeat_index`, with
 unseeded warmup. Invalid schedules are rejected; seeded tensornet is excluded
 from this currently validated protocol. QAE ties select the lexicographically

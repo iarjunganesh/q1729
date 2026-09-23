@@ -317,31 +317,12 @@ def quantization_report(counting_qubits: int, result: dict[str, Any], shots: int
     information, not a failure to hide.
 
     ``total_variation`` is a diagnostic read against ``sampling_tolerance``,
-    not a pass/fail: finite shots always leave a positive distance.
+    not a pass/fail: finite shots always leave a positive distance. The
+    validator recomputes this block from the row's own outcome and counts.
     """
     from quantum import quantization
 
-    ideal = quantization.ideal_outcome(counting_qubits)
-    outcome = result["outcome"]
-    plateau_first, plateau_last = quantization.plateau_bounds(counting_qubits)
-    return {
-        "ideal_outcome": ideal,
-        "conjugate_outcome": quantization.conjugate_outcome(ideal, counting_qubits),
-        "landed_on_conjugate": outcome != ideal,
-        "agrees_with_theory": quantization.agrees_with_theory(outcome, counting_qubits),
-        "ideal_estimate": quantization.ideal_estimate(counting_qubits),
-        "quantization_error": quantization.quantization_error(counting_qubits),
-        "relative_quantization_error": quantization.relative_quantization_error(counting_qubits),
-        "plateau_first_m": plateau_first,
-        "plateau_last_m": plateau_last,
-        "total_variation": quantization.total_variation(result["counts"], counting_qubits),
-        "sampling_tolerance": quantization.sampling_tolerance(counting_qubits, shots),
-        "interpretation": (
-            "quantization_error is the floor set by the distance from the true "
-            "phase to the 2^m grid; shots do not reduce it. total_variation is a "
-            "diagnostic against sampling_tolerance, not a hypothesis test."
-        ),
-    }
+    return quantization.report(counting_qubits, result["outcome"], result["counts"], shots)
 
 
 def build_run_file(

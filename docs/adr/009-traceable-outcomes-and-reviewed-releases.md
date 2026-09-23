@@ -60,3 +60,21 @@ execution is created by implementing these gates.
 References: [CUDA-Q target/precision/seed API](https://nvidia.github.io/cuda-quantum/latest/api/languages/python_api.html),
 [tensor-network controls](https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/tnsims.html),
 [CuPy device identity](https://docs.cupy.dev/en/stable/reference/generated/cupy.cuda.Device.html).
+
+## 2026-09-23 amendment — a review binds every archive its draft cites
+
+Schema `q1729/findings-review/1` hashed only one run file, but the approved
+2026-09-06 findings compare against the 2026-08-05 archive as well; altering
+that second archive left the approval standing. `analysis/review.py` now
+writes `q1729/findings-review/2`, whose `sources` array holds the name and
+normalized SHA-256 of every source. A template is refused unless every
+adjacent run JSON named in the draft is bound (`--run` repeats per citation).
+Changing any bound source, or citing a new archive, makes the review stale.
+
+Schema 1 stays readable. Its one multi-source case is handled without a new
+approval: `LEGACY_CITED_SOURCES` pins the 2026-08-05 archive's hash as it was
+when the 2026-09-06 review was approved. That file is unchanged since its only
+commit (`f88a926`, 2026-08-05). The pin adds a way to invalidate the
+approval; it approves nothing. Any other schema-1 review whose draft cites an
+unbound archive fails. The findings were not revised, so no new human review
+was required.
