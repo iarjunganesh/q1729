@@ -1,7 +1,7 @@
 # Architecture assets — source of truth
 
-Theme-aware renders of a legacy conceptual pipeline diagram. The current
-`README.md` uses an inline Mermaid diagram instead.
+Theme-aware renders of the repository architecture, embedded in the
+`README.md` "Architecture and direction" section.
 
 ## Files
 
@@ -25,22 +25,28 @@ here, not a second color palette.
 
 ## Diagram design rules
 
-- Keep the flow left-to-right and shallow: series → silicon (local/cloud) →
-  crossover analysis → narrator → findings draft.
-- The `silicon` subgraph is the one CUDA-Q codebase story — `local` and
-  `cloud` are visually nested inside it on purpose, because it's the same
-  `quantum/backend.py` code path on both, not a fork.
+- Keep the flow left-to-right and shallow: inputs (series, known amplitude,
+  protocol) → the `gpu` subgraph (one harness run, both arms) → run JSON →
+  figures / NIM draft → human review record.
+- Draw only what the code does. The series feeds the CUDA kernel, never QAE;
+  QAE encodes the known amplitude π/4. Exact SymPy checks the kernel, not
+  every path. NIM drafts; a human approves.
+- Unbuilt or unmeasured work (the Phase 2 decoder study, H100/multi-GPU) uses
+  the dashed `planned` style and a dotted edge, so it cannot be read as a
+  result.
 - Use `<br/>` for node label wrapping; avoid long unwrapped strings.
 - Keep the six `classDef` colors semantically stable across any future edit:
-  math (Ramanujan series, amber), classical (CUDA kernel, NVIDIA green),
-  quantum (QAE circuit, blue), backend (target selection, purple), ai
-  (narrator, cyan), result (crossover analysis, red). `assets/brand/`'s
+  math (Ramanujan series and graphs, amber), classical (CUDA kernel, NVIDIA
+  green), quantum (QAE circuit, blue), backend (protocol and budget, purple),
+  ai (narrator and review, cyan), result (run archive and figures, red). The
+  seventh, `planned`, is an outline for work that does not exist yet. `assets/brand/`'s
   banner reuses this exact palette so the two read as one system — see
   `assets/brand/README.md`.
 
 ## Regenerate the renders
 
-Requires Node.js 24 LTS (24.21.0 checked 2026-09-23). From this directory, using the free
+Requires Node.js 24 LTS or newer (latest LTS 24.21.0 checked 2026-09-23; rendered
+with Node 26.7.0). From this directory, using the free
 and open-source Mermaid CLI — no paid design or image-generation service:
 
 ```bash
@@ -55,15 +61,14 @@ one.
 
 ## Where this is used
 
-The renders are not embedded in the current README. Keep them as historical
-design assets until the source is corrected or they are intentionally retired.
+`README.md` embeds both renders through a `<picture>` element that switches on
+`prefers-color-scheme`; keep the filenames stable.
 
-## 2026-09-06 audit status
+## History
 
-The existing diagram is a legacy conceptual illustration, not an execution
-trace or evidence of an H100 run. The series does not feed QAE: QAE encodes
-known π/4 independently. NIM prose is unchecked and exact SymPy validates
-the classical partial sums, not every path. README now uses an inline diagram
-with those boundaries. Correct the `.mmd` and regenerate both SVG themes
-together before presenting the legacy graphic as a current pipeline; no
-source/renders were changed during this Markdown-only audit.
+The 2026-09-06 audit found the original diagram overstated the pipeline: it
+fed the series into QAE, showed an H100 path as if built, and had SymPy
+"validate every path". The README used a plain inline diagram meanwhile. On
+2026-09-23 the source was redrawn from the code — schema-5 archive, protocol
+and budget, human review, Phase 2 graphs, planned work dashed — and both
+themes were regenerated with Mermaid CLI 11.17.0.

@@ -43,7 +43,9 @@ timing. Preserve negative results and disagreements; do not rerun until favorabl
 
 ## Controls and metrics
 
-- Require an explicit power/thermal profile and record competing device activity.
+- Require an explicit power/thermal profile and a declared time budget, and
+  record competing device activity. A run that stops early is archived as an
+  aborted record, never discarded or silently re-run (ADR 011).
 - Record actual target/precision, not an assumed cuStateVec label after fallback.
 - Distinguish relative-error digits against `math.pi` from absolute-error digits
   against exact references. Zero floating-point error does not prove exact π.

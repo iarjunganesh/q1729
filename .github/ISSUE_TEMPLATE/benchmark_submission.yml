@@ -6,12 +6,16 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for running q1729 on your own hardware! The run file `hardware` field is
-        designed to be hardware-agnostic, so submissions from any GPU are useful for the
-        consumer-vs-datacenter crossover analysis (see the README roadmap).
+        Thanks for running q1729 on your own hardware! A run file carries its own
+        provenance — `hardware_id`, `environment.gpu`, `execution` (selected device,
+        target and precision), `provenance` (source revision) and the committed
+        `protocol` — so submissions from any GPU can be read on their own terms.
+        A run from different hardware is a separate observation, not a point on one
+        shared crossover axis; comparisons need matched controls.
 
-        Run file schema reference: [`data/sample_run.json`](../../data/sample_run.json)
-        (synthetic, but shows every field this form asks about).
+        Schema and validation rules: [docs/run-file.md](https://github.com/iarjunganesh/q1729/blob/main/docs/run-file.md).
+        Validate before submitting: `python -m benchmarks.run_file <your-run>.json`.
+        `data/sample_run.json` is a synthetic legacy demo, not a template.
 
   - type: input
     id: gpu
@@ -24,15 +28,16 @@ body:
   - type: input
     id: driver-cuda
     attributes:
-      label: Driver version + CUDA version
-      placeholder: e.g. driver 560.xx, CUDA 13.0
+      label: Driver version + CUDA runtime version
+      description: The run file records both under `execution.classical`.
+      placeholder: e.g. driver 616.92, CUDA runtime 13020
     validations:
       required: true
 
   - type: dropdown
     id: backend
     attributes:
-      label: CUDA-Q backend used
+      label: CUDA-Q target actually selected (`execution.quantum.target`)
       options:
         - nvidia
         - nvidia-mgpu
@@ -55,11 +60,22 @@ body:
       required: true
 
   - type: input
-    id: qubit-ceiling
+    id: controls
     attributes:
-      label: Qubit ceiling observed
-      description: The largest qubit count that ran successfully on this hardware
-      placeholder: e.g. 31 qubits
+      label: Declared controls
+      description: Power profile, time budget, shots and repeats exactly as passed to the harness.
+      placeholder: e.g. --power-profile turbo --time-budget-s 3600 --shots 4000 --repeats 5
+    validations:
+      required: true
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Run status (`status.state`)
+      description: Aborted runs are welcome too — they show where a device ran out of budget or failed.
+      options:
+        - complete
+        - aborted
     validations:
       required: true
 
@@ -67,7 +83,7 @@ body:
     id: run-file
     attributes:
       label: Run file (JSON)
-      description: Paste the run file contents, or drag-and-drop it as an attachment
+      description: Paste the run file contents, or drag-and-drop it as an attachment. Review exception text and environment metadata before sharing.
       render: json
     validations:
       required: true
@@ -76,6 +92,6 @@ body:
     id: notes
     attributes:
       label: Anomalies or notes
-      description: Anything unexpected — crashes, VRAM surprises, timing outliers, etc.
+      description: Anything unexpected — crashes, memory limits, timing outliers, thermal state, other load on the machine.
     validations:
       required: false

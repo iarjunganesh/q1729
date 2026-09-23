@@ -26,7 +26,10 @@ Dependency currency follows AGENTS.md; it does not guarantee dependency safety.
 
 Architecture rendering uses Node.js/Mermaid CLI and its browser tooling locally.
 Brand generation uses its Python source. Neither generated SVG should be edited
-manually; these are different toolchains. No new tooling was installed by this audit.
+manually; these are different toolchains.
+
+Aborted run records (schema 5) store the stopping exception's type and message,
+which can include local paths or device details. Review them before sharing.
 
 ## Reporting
 

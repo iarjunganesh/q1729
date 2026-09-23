@@ -953,3 +953,46 @@ writing. Both measured archives validate. `analysis.review --archive` passes,
 and `benchmarks/runs`, `benchmarks/plots` and `data/` are unchanged. Windows:
 358 passed, 29 skipped, 1282/1285 (99.77%). Next: Step 4, binding comparative
 reviews to every cited archive and validating derived QAE fields.
+
+## 2026-09-23 — Architecture diagram, banner and Markdown drift audit
+
+The owner asked for the architecture diagram and every Markdown file to be
+checked for drift. I read all tracked status docs, ADR indexes, the brand
+source and the issue template against the code as it stands after Step 3.
+ADR bodies were left unchanged.
+
+Fixed:
+- **`assets/architecture/pipeline.mmd`:** its README already flagged it as a
+  legacy illustration. It fed the series into QAE, drew H100 as a built path
+  and said SymPy "validates every path". I redrew it from the code: series →
+  CUDA kernel, the known π/4 amplitude → QAE, protocol and budget → one
+  harness run, schema-5 JSON (complete or aborted) → figures and optional NIM
+  draft → human review, plus the Phase 2 graph lane. Planned work (the
+  decoder study, H100/multi-GPU) is dashed. Both themes were regenerated with
+  Mermaid CLI 11.17.0 (latest; Node 26.7.0), previewed as PNG, and embedded in
+  the README through `<picture>`, replacing the plain inline diagram.
+- **Banner (`assets/brand/build_banner.py`):** the headline "How fast can a
+  GPU compute π — classically, and as a quantum computer?" and "Consumer RTX
+  to datacenter H100" contradicted the repo's own framing. The new copy reads
+  "Ramanujan's π series on a CUDA kernel, measured against simulated QAE";
+  the RTX 5070 is measured and H100 planned; NIM drafts and a human reviews.
+  The glance panel now reads series → CUDA + CUDA-Q on one GPU → validated
+  run archive → findings. Both themes were regenerated and previewed.
+- **README:** "schema-4 traceability" corrected to schema 3. Project structure
+  gained `run_file.py`, `archive.py`, `provenance.py`, `analysis/review.py` and
+  `scripts/release_check.py`. The banner alt text was updated.
+- **`.github/ISSUE_TEMPLATE/benchmark_submission.yml`:** it cited a
+  nonexistent `hardware` field and the synthetic schema-1 sample as the schema
+  reference, and promised a consumer-vs-datacenter crossover. It now links
+  `docs/run-file.md`, asks for declared controls and `status.state`, and says
+  cross-device runs are separate observations.
+- **Smaller fixes:** roadmap P1-R1/P1-R2 dated notes gained follow-ups (the
+  runtime was restored that day and re-verified today); the access-plan gate
+  records late-failure preservation as done; research standards require the
+  time budget; AGENTS lists the validator and archive modules; SECURITY notes
+  that aborted records carry exception text.
+
+Checked and left as is: principles, findings-review, measurement-protocol,
+run-file, setup, CONTRIBUTING and benchmarks README (already current after
+Steps 2–3), the ADR index, and the dated historical sections of the roadmap
+and session log.

@@ -122,21 +122,23 @@ def arrow(x0, y, x1, color):
 def pipeline_glance(t: Theme, x, y, w, h) -> str:
     """The four-stage pipeline at a glance, mirroring pipeline.mmd's own
     node colors (math -> classical -> result -> ai) so the banner previews
-    the full diagram rather than inventing a second visual story."""
+    the full diagram rather than inventing a second visual story: the series
+    runs on a CUDA kernel beside simulated QAE, every run lands in a validated
+    archive, and findings are drafted by NIM but approved by a human."""
     S = [rrect(x, y, w, h, 20, fill=t.panel, stroke=t.panel_stroke, sw=1.4, opacity=0.95)]
     S.append(f'<circle cx="{x + 26:.1f}" cy="{y + 34:.1f}" r="4.5" fill="{CLASSICAL}"/>')
     S.append(text(x + 40, y + 39, "PIPELINE AT A GLANCE", size=13, fill=t.ink_soft, weight=700, spacing="0.13em"))
 
     stages = [
         (MATH, "Ramanujan", "1914 series"),
-        (CLASSICAL, "CUDA-Q", "silicon"),
-        (RESULT, "Crossover", "analysis"),
-        (AI, "NIM", "narrator"),
+        (CLASSICAL, "CUDA + CUDA-Q", "one local GPU"),
+        (RESULT, "Run archive", "validated JSON"),
+        (AI, "Findings", "NIM draft · human review"),
     ]
     n = len(stages)
     nw, nh = 148, 68
     gap = (w - 2 * 36 - n * nw) / (n - 1)
-    fy = y + h - nh / 2 - 30
+    fy = y + (h + 50) / 2  # centered in the panel below its 50-unit title band
     cxs = [x + 36 + nw / 2 + i * (nw + gap) for i in range(n)]
     for (fill, title, sub), cx in zip(stages, cxs, strict=True):
         S.append(node(cx, fy, nw, nh, fill, title))
@@ -206,12 +208,13 @@ def build(t: Theme) -> str:
         )
     )
     S.append(rrect(lx + 3, 138, 170, 3, 1.5, fill="url(#rule)"))
-    S.append(text(lx, 186, "How fast can a GPU compute π —", size=30, fill=t.ink, weight=800))
-    S.append(text(lx, 222, "classically, and as a quantum computer?", size=30, fill=t.ink, weight=800))
-    S.append(
-        text(lx + 2, 258, "Consumer RTX to datacenter H100 — with an AI layer", size=15.5, fill=t.ink_soft, weight=500)
-    )
-    S.append(text(lx + 2, 280, "that writes up what the numbers show.", size=15.5, fill=t.ink_soft, weight=500))
+    S.append(text(lx, 186, "Ramanujan's π series on a CUDA kernel,", size=30, fill=t.ink, weight=800))
+    S.append(text(lx, 222, "measured against simulated QAE.", size=30, fill=t.ink, weight=800))
+    for y, line in (
+        (258, "Measured on an RTX 5070 Laptop GPU; H100 is planned."),
+        (280, "NIM drafts the findings — a human reviews them."),
+    ):
+        S.append(text(lx + 2, y, line, size=15.5, fill=t.ink_soft, weight=500))
 
     # the taxicab-number identity that gives the repo its name
     pw, ph, py = 372, 40, 310

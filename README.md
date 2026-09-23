@@ -5,7 +5,7 @@
     <source media="(prefers-color-scheme: dark)" srcset="assets/brand/q1729-banner-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="assets/brand/q1729-banner-light.svg">
     <img width="900" src="assets/brand/q1729-banner-light.svg"
-         alt="q1729 — Ramanujan's mathematics meets the NVIDIA stack. Classical CUDA computation and quantum-circuit simulation on a GPU. Consumer RTX to datacenter H100, with an AI layer that writes up what the numbers show."/>
+         alt="q1729 — Ramanujan's mathematics meets the NVIDIA stack. Ramanujan's π series on a CUDA kernel, measured against simulated QAE on an RTX 5070 Laptop GPU; H100 is planned. NIM drafts the findings and a human reviews them."/>
   </picture>
 </p>
 
@@ -89,22 +89,20 @@ are preserved; the draft's stronger claims are superseded by that review.
 
 ## Architecture and direction
 
-```mermaid
-flowchart LR
-    S[Exact SymPy partial sums] --> C[Classical CUDA validation]
-    A[Known amplitude pi/4] --> Q[CUDA-Q simulation]
-    C --> R[Measured run JSON]
-    Q --> R
-    R --> H[Human-reviewed analysis]
-    R --> N[Optional NIM draft]
-    N --> H
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/architecture/pipeline-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/architecture/pipeline-light.svg">
+    <img width="900" src="assets/architecture/pipeline-light.svg"
+         alt="Architecture: Ramanujan's 1914 series runs on a CUDA C++ kernel, checked against exact SymPy sums; QAE on CUDA-Q estimates the known amplitude pi/4. Under a committed protocol and time budget, both arms on one local GPU write a validated schema-5 run JSON, complete or aborted. Complete runs feed figures and an optional NIM draft, and a human review record approves findings. LPS Ramanujan graphs lead to a planned Phase 2 decoder study; H100 and multi-GPU are planned and unmeasured."/>
+  </picture>
+</p>
 
-The series and QAE arms are distinct computations. NIM receives JSON and
-drafts prose; the current code does not verify its statements. It never
-supplies numerical simulation results. Cloud H100 and multi-GPU execution
-remain unmeasured extensions. The [legacy diagram](assets/architecture/README.md)
-is a conceptual illustration with limitations documented beside its source.
+The series and QAE arms are distinct computations: QAE estimates the known
+amplitude π/4 and is not fed by the series. NIM receives JSON and drafts prose;
+the code does not verify its statements, and it never supplies numerical
+results. Cloud H100 and multi-GPU execution remain unmeasured. The diagram's
+source is [`assets/architecture/pipeline.mmd`](assets/architecture/README.md).
 
 ## Roadmap
 
@@ -140,7 +138,7 @@ No new measured run was collected.
   29 skipped, 99.77% coverage; the CUDA-Q diagnostic needs its real runtime.
   CUDA-Q CPU integration runs in CI; GPU integration requires a GPU.
 - The [research contract](docs/handbook/research-standards.md) is a requirement;
-  semantic validation, archive protection, schema-4 traceability, a committed
+  semantic validation, archive protection, schema-3 traceability, a committed
   measurement protocol and archived aborted runs under a declared time budget
   (schema 5) are implemented. Follow-up evidence defects and runtime
   verification limits are recorded in the [roadmap](docs/roadmap.md#where-the-repo-actually-is-v030).
@@ -157,11 +155,16 @@ No new measured run was collected.
 - `quantum/backend.py` — CUDA-Q target selection (`nvidia-mgpu` → `nvidia` → `tensornet` → `qpp-cpu`) + environment diagnostic
 - `benchmarks/harness.py` — runs both arms under a declared time budget and emits schema-5 run JSON (complete or aborted) with semantic validation and exclusive output creation
 - `benchmarks/protocol.py` — the measurement protocol, committed before data and hashed into every run file
+- `benchmarks/run_file.py` — versioned semantic validation of every run file (schemas 1–5; CI's archive check)
+- `benchmarks/archive.py` — exclusive output creation; evidence is never overwritten
+- `benchmarks/provenance.py` — source hashes, installed distributions and actual execution metadata
 - `quantum/quantization.py` — closed-form QAE reference (error floor, plateau, outcome distribution); CPU-only
 - `benchmarks/environment.py` — captures hardware, versions, and GPU load during a run
-- `benchmarks/plot.py` — theme-aware crossover plots; refuses synthetic input
-- `benchmarks/runs/`, `benchmarks/plots/` — measured run files, narrated writeups, and figures
+- `benchmarks/plot.py` — theme-aware crossover plots; refuses synthetic and aborted input
+- `benchmarks/runs/`, `benchmarks/plots/` — measured run files, findings drafts with their human review records, and figures
 - `analysis/narrator.py` — NIM/Nemotron findings narrator (`make narrate`)
+- `analysis/review.py` — human findings-review records, hash-bound to draft and source; agents never approve
+- `scripts/release_check.py` — release preflight: tag, version, notes and `main` ancestry
 - `data/sample_run.json` — synthetic sample run file demonstrating the schema; never a measurement
 - `main.py` — status check; runs on any host, with or without cudaq / cupy / a NIM key
 - `tests/` — `unit/` (any host) + `integration/` (real CUDA kernel, real CUDA-Q simulation, live NIM; each skips where unavailable)

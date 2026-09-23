@@ -5,34 +5,39 @@ graph LR
     classDef backend fill:#6933FF,stroke:#4B21C2,color:#fff
     classDef ai fill:#0EA5E9,stroke:#0369A1,color:#fff
     classDef result fill:#DC2626,stroke:#991B1B,color:#fff
+    classDef planned fill:transparent,stroke:#94A3B8,stroke-dasharray:5 4,color:#94A3B8
 
-    R["📜 Ramanujan 1914<br/>1/π series, ~8 digits/term"]:::math
-    T["🧮 classical/ramanujan_series.py<br/>exact SymPy — ground truth"]:::math
+    R["📜 Ramanujan 1914<br/>1/π series"]:::math
+    T["🧮 exact SymPy sums<br/>classical/ramanujan_series.py"]:::math
+    A["🎯 known amplitude π/4<br/>not derived from the series"]:::quantum
+    P["📐 committed protocol<br/>+ declared time budget"]:::backend
 
-    subgraph silicon["one CUDA-Q codebase — quantum/backend.py picks the target"]
+    subgraph gpu["one local GPU, one run — benchmarks/harness.py"]
         direction TB
-        subgraph local["🖥️ local: RTX 5070 8GB"]
-            K["⚡ CUDA kernel<br/>one term per thread"]:::classical
-            Q1["⚛️ QAE circuit<br/>nvidia · tensornet"]:::quantum
-        end
-        subgraph cloud["☁️ cloud: H100 80GB"]
-            Q2["⚛️ same QAE circuit<br/>nvidia · nvidia-mgpu"]:::quantum
-        end
+        K["⚡ CUDA C++ kernel<br/>NVRTC · host fsum"]:::classical
+        Q["⚛️ QAE circuit · CUDA-Q<br/>target from quantum/backend.py"]:::quantum
     end
 
-    X["📊 analysis/<br/>crossover: time, VRAM,<br/>qubits vs digits,<br/>consumer vs datacenter"]:::result
-    N["🤖 NIM · Nemotron<br/>findings narrator<br/>(numbers in, prose out)"]:::ai
-    D["📝 findings draft"]:::ai
+    J["🗄️ run JSON · schema 5<br/>validated · never overwritten<br/>complete or aborted"]:::result
+    F["📊 figures<br/>complete runs only"]:::result
+    N["🤖 NIM · Nemotron<br/>optional prose draft"]:::ai
+    H["👤 human review record<br/>hash-bound to draft + run"]:::ai
+
+    G["🕸️ LPS Ramanujan graphs<br/>classical/ramanujan_graph.py"]:::math
+    D["classical code + decoder study<br/>Phase 2 · planned"]:::planned
+    C["H100 / multi-GPU<br/>planned · gated, unmeasured"]:::planned
 
     R --> K
-    R --> Q1
-    R --> Q2
-    K --> X
-    Q1 --> X
-    Q2 --> X
-    T -.->|validates every path| X
-    X --> N --> D
+    A --> Q
+    T -.->|1e-15 integration check| K
+    P --> gpu
+    K --> J
+    Q --> J
+    J --> F
+    J --> N
+    N --> H
+    F --> H
+    G -.-> D
+    gpu -.-> C
 
-    style silicon fill:transparent,stroke:#76B900,stroke-width:2px,stroke-dasharray:6 3
-    style local fill:transparent,stroke:#94A3B8,stroke-width:1px
-    style cloud fill:transparent,stroke:#94A3B8,stroke-width:1px
+    style gpu fill:transparent,stroke:#76B900,stroke-width:2px,stroke-dasharray:6 3

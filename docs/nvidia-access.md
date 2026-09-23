@@ -38,8 +38,9 @@ or the first local GPU decoding controls.
 Use these gates before any rental:
 
 1. Keep the local GPU runtime passing real CUDA and CUDA-Q tests with the
-   intended dependency set (done 2026-09-23); archive a declared-profile phase
-   study and repair late-failure preservation before an expensive run.
+   intended dependency set (done 2026-09-23); late-failure preservation and a
+   declared time budget exist (ADR 011). Archive a declared-profile phase study
+   before an expensive run.
 2. Write one falsifiable H100 question and controls. Examples: a circuit size
    that exceeds the local GPU's measured safe memory ceiling, or a matched
    decoder workload whose local profile identifies device compute or memory

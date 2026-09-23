@@ -433,6 +433,8 @@ nit:
 - `quantum/qae.py` — canonical Quantum Amplitude Estimation circuit.
 - `quantum/backend.py` — CUDA-Q target selection + environment diagnostic.
 - `benchmarks/provenance.py` — source hashes, installed distributions and actual execution metadata.
+- `benchmarks/run_file.py` — versioned semantic validation (schemas 1–5), CI's archive check.
+- `benchmarks/archive.py` — exclusive output creation; evidence is never overwritten.
 - `analysis/review.py` — human review sidecars; agents never approve on behalf of a reviewer.
 - `scripts/release_check.py` — release tag/version/notes/ancestry preflight.
 - `analysis/narrator.py` — NIM/Nemotron findings narrator (`make narrate`).
@@ -440,7 +442,8 @@ nit:
   `runs/` + `plots/` archive.
 - `data/sample_run.json` — synthetic demo data only, never a real measurement.
 - `assets/architecture/` — Mermaid source + generated light/dark diagram
-  SVGs. Edit the `.mmd`, never the SVG; regenerate both themes together.
+  SVGs, embedded in the README. Edit the `.mmd`, never the SVG; regenerate
+  both themes together. Draw only what the code does; unbuilt work is dashed.
 - `assets/brand/` — banner source of truth. Edit `build_banner.py`, never the
   SVG; regenerate both themes together.
 - CI quality gate: `.github/workflows/ci.yml`; releases: tag `v*.*.*` →

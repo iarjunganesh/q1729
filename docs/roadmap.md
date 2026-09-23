@@ -103,7 +103,9 @@ archives; valid old data stays readable under its legacy schema.
 outputs pass boundary tests; new validator/archive modules have 100% statement
 coverage. Schema and legacy behavior are in [run-file.md](run-file.md) and ADR 008.
 Fresh Linux/CI full-gate verification remains unavailable; WSL2 cannot attach
-its disk. Do not treat local completion as release readiness.
+its disk. Do not treat local completion as release readiness. *(Follow-up: the
+runtime was rebuilt later on 2026-09-06 — see P1-R3 — and the GPU suite was
+re-verified on 2026-09-23.)*
 
 ### P1-R2 — Make each claim traceable
 
@@ -125,6 +127,7 @@ new/changed modules have 100% statement coverage. Overall Windows coverage is
 99.73% because the real CUDA-Q backend diagnostic is unavailable. No real GPU
 run or seeded reproduction was performed. See [ADR 009](adr/009-traceable-outcomes-and-reviewed-releases.md)
 and [findings review](findings-review.md). Runtime verification stays open.
+*(Follow-up: closed by the P1-R3 runtime restoration below.)*
 
 ### P1-R3 — Define and verify the measurement
 

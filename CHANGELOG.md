@@ -21,6 +21,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Redrew the architecture diagram from the code and embedded both theme renders
+  in the README. The old one fed the series into QAE, showed an H100 path as
+  built and had SymPy "validate every path". The banner no longer asks how
+  fast a GPU computes π "as a quantum computer" or implies a measured H100
+  axis. The benchmark submission template now cites the real schema and
+  fields, asks for declared controls and run status, and drops the
+  consumer-vs-datacenter crossover promise. README project structure lists
+  the validator, archive, provenance, review and release modules; SECURITY
+  notes that aborted records carry exception text.
 - Measurement protocol version 2: the stopping and exclusion rules describe
   the enforced budget and abort record. Protocol 1 and 2 runs must not be
   pooled. Schemas 1–4 are read-only; both measured archives are unchanged.
