@@ -70,6 +70,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   RTX archives exist, the CUDA kernel is hand-written C++, and follow-up
   evidence defects remain. Clarified the limits of protocol digests and the
   historical phase diagnostic. Added explicit H100 rental gates.
+- `AGENTS.md` defines a gitignored `HANDOFF.md` checkpoint that Claude Code
+  and Codex keep current while working, so either can resume the other's task
+  after a usage limit. It also records the owner's git rules (commit directly
+  to a linear `main`; fold fixups into the unpushed commit they fix), which
+  previously lived only in one tool's private memory.
 - Removed three duplicate or obsolete guides and cleared ignored audit scratch
   files. Historical run files, figures, ADRs and session entries remain intact.
 

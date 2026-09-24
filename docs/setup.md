@@ -26,11 +26,15 @@ Use a separate Linux environment; never replace the Windows `.venv` in a shared
 checkout. From WSL2 with the checkout at `/mnt/c/ws/research/q1729`:
 
 **Name the distro.** This machine's repository distro is registered as
-`Ubuntu` (Ubuntu 26.04 "resolute"). The default distro is a stale
-`Ubuntu-22.04` registration whose `ext4.vhdx` no longer exists, left behind
-when WSL2 was rebuilt on 2026-09-06. A bare `wsl` or `wsl -e` therefore fails
-with `HCS/ERROR_PATH_NOT_FOUND` even though the real distro is healthy. Enter
-it with `wsl -d Ubuntu`.
+`Ubuntu` (Ubuntu 26.04 "resolute"). Until 2026-09-23 the default was a stale
+`Ubuntu-22.04` registration whose `ext4.vhdx` no longer existed (left behind
+when WSL2 was rebuilt on 2026-09-06), so a bare `wsl -e` failed with
+`HCS/ERROR_PATH_NOT_FOUND`. The owner had it unregistered on 2026-09-23, which
+left `podman-machine-default` as the default, and on 2026-09-24 ran
+`wsl --set-default Ubuntu`; `wsl -l -v` then marked `Ubuntu` as the default
+alongside `podman-machine-default`, `NVIDIA-Workbench` and `docker-desktop`.
+Still enter it with `wsl -d Ubuntu`: those tools register their own distros and
+an installer can move the default.
 
 The venv at `~/q1729-cudaq` was rebuilt on 2026-09-23 with uv-managed Python
 3.14.7:
@@ -46,8 +50,10 @@ uv pip install --python ~/q1729-cudaq/bin/python -r requirements.txt -r requirem
 ~/q1729-cudaq/bin/python -m pytest tests --cov --cov-report=term-missing --cov-fail-under=100
 ```
 
-The previous Python 3.13.15 venv is parked at `~/q1729-cudaq-py313-old` as a
-rollback; delete it once the 3.14 environment has carried a measured run.
+The previous Python 3.13.15 venv (`~/q1729-cudaq-py313-old`) and its
+uv-managed interpreter were deleted at the owner's request on 2026-09-24, so
+there is no rollback environment. `uv python list --only-installed` then showed
+only uv's CPython 3.14.7 and the distro's own `/usr/bin/python3.14` (3.14.4).
 
 `uv venv` does not seed pip, so install through `uv pip --python <venv python>`
 rather than `python -m pip`.
@@ -89,8 +95,8 @@ The repository's target order is `nvidia-mgpu` → `nvidia` → `tensornet` →
 multi-GPU success remains unverified. `nvidia-smi`'s CUDA field describes driver
 compatibility, not the installed toolkit/runtime version.
 
-Do not reinstall, unregister or delete a distribution as a documentation step;
-removing the stale `Ubuntu-22.04` registration is the owner's call.
+Do not reinstall, unregister or delete a distribution, or change the default
+distro, as a documentation step; those are the owner's calls.
 
 ## Benchmark
 

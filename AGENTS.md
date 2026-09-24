@@ -98,15 +98,16 @@ defaults to a run-specific directory. JSON/SVG writes reject existing paths.
   all degrade gracefully. No-key suite: **382 passed, 29 skipped** on 2026-09-23; live NIM is a separate optional check.
 - **WSL2 Ubuntu 26.04 "resolute"**, registered as the distro **`Ubuntu`**
   (venv at `~/q1729-cudaq` on uv-managed **Python 3.14.7**): everything CUDA-Q
-  and everything CUDA. **Always name the distro** — the machine's default
-  distro is a stale `Ubuntu-22.04` registration whose `ext4.vhdx` no longer
-  exists, so a bare `wsl -e` fails with `HCS/ERROR_PATH_NOT_FOUND`. Run tests with
+  and everything CUDA. `Ubuntu` has been the default distro since 2026-09-24
+  (the stale `Ubuntu-22.04` default was unregistered on 2026-09-23), but
+  **still name the distro** — Podman, Docker Desktop and NVIDIA Workbench also
+  register distros and an installer can move the default. Run tests with
   `wsl -d Ubuntu -e bash -c "cd /mnt/c/ws/research/q1729 && ~/q1729-cudaq/bin/python -m pytest tests -q -p no:cacheprovider"`.
   Last verified 2026-09-23: **410 passed, 1 skipped, 100.00% coverage**; cudaq
   0.16.0.post1 selects the `nvidia` target; CuPy 14.2.0 binds PCI
   `0000:01:00.0`; CUDA runtime 13020, driver 13040, NVIDIA driver 616.92. The
-  previous Python 3.13.15 venv is parked at `~/q1729-cudaq-py313-old` as a
-  rollback until the owner removes it. Use `uv pip install --python
+  Python 3.13.15 rollback venv and its uv interpreter were deleted at the
+  owner's request on 2026-09-24; there is no rollback environment. Use `uv pip install --python
   ~/q1729-cudaq/bin/python ...`; `uv venv` seeds no pip.
 - CI (ubuntu, Python 3.14) installs cudaq and runs the CUDA-Q integration
   suite on the `qpp-cpu` target — real simulator, no GPU. The CUDA-kernel
@@ -126,6 +127,8 @@ carry them forward from memory.
 
 Before making any claim about the repo's current state or writing any code:
 
+- If `HANDOFF.md` exists at the repo root, read it first — another agent may
+  have been cut off mid-task (see the next section).
 - Read `git status` / recent `git log`, `docs/roadmap.md`'s **"Where the repo
   actually is"** section, `docs/sessions.md`'s most recent entry, and
   `CHANGELOG.md`'s top entry.
@@ -134,6 +137,51 @@ Before making any claim about the repo's current state or writing any code:
   you haven't actually run code on this session — WSL2/cudaq, a live NIM call,
   a rented H100 — either run it or say explicitly that it's unverified. Don't
   restate an old "verified on `<date>`" claim as if you just checked it.
+
+## Cross-agent handoff (`HANDOFF.md`)
+
+The owner alternates between Claude Code and Codex in this same checkout,
+switching when one hits its usage limit. A limit ends a session mid-turn with
+no chance to write a summary, so the handoff has to be kept current *while*
+working, not written at the end. `HANDOFF.md` at the repo root is that
+checkpoint. It is gitignored: it is in-flight state, not history —
+`docs/sessions.md` is the committed log.
+
+**Reading it (session start).** Compare its `HEAD` line with `git log -1` and
+its file list with `git status`. The tree wins over the note: if they
+disagree, say so and work from the tree. Then continue from **Next**; the
+owner should only have to say "continue". Replace the `Updated` line with
+your own before changing anything, so only one agent works the tree at a time.
+
+**Writing it.** Overwrite, never append — it describes the current state, not
+a log. Keep it under about 60 lines. Update it:
+
+- after each completed sub-task or verification run;
+- before any command expected to take more than a few minutes (benchmarks,
+  full GPU suite) — record the exact command and its output path;
+- whenever the owner makes a decision or answers a question in chat — a
+  decision that exists only in one tool's chat or private memory is invisible
+  to the other tool;
+- before a commit, and after it (the pushed/unpushed state matters).
+
+When the task finishes and is committed, move anything durable into the
+repo (a `docs/sessions.md` entry, an ADR, this file) and cut `HANDOFF.md` back
+to **Next**. Never put secrets, API keys or measured numbers that exist
+nowhere else in it — a run's numbers live only in its run file.
+
+Use these headings:
+
+```markdown
+# Handoff
+Updated: <YYYY-MM-DD HH:MM> by <Claude Code|Codex> · HEAD <short sha> · <pushed|N unpushed>
+## Task — the owner's request, close to verbatim, and which plan step it is
+## Owner decisions — made in chat, not yet recorded in the repo
+## Done and verified — each with the command that verified it
+## In progress — uncommitted files and why; any command still running
+## Next — numbered, in order
+## Open questions for the owner
+## Gotchas — what failed and the fix, so the next agent doesn't repeat it
+```
 
 ## Tech stack currency (check often, act without hesitation)
 
@@ -387,9 +435,15 @@ nit:
    history to conceal what was actually done) and `CHANGELOG.md`.
 5. Re-read `docs/roadmap.md`'s honest-baseline section one more time before
    committing — it's the easiest thing in the repo to forget.
+6. Update `HANDOFF.md` (see Cross-agent handoff above).
 
 ## Git history
 
+- **Commit directly to `main`; keep its history linear.** No feature
+  branches or pull requests, no merge commits (owner decision, 2026-09-23).
+- **Fold fixups into the commit they fix while it is unpushed** (`git commit
+  --amend` for the latest commit) instead of adding "fix" commits. Rewriting pushed history needs the owner's
+  explicit approval and a `--force-with-lease` push.
 - Write a commit subject that names the substantive change; never a bare
   `release: vX.Y.Z` with no content description, and never a version number
   as the whole subject — versions live in tags and `CHANGELOG.md`.
@@ -414,6 +468,8 @@ nit:
   never a duplicate of what's here.
 - `AGENTS.md` (this file) — canonical instructions and the discipline for
   keeping everything below honest over time.
+- `HANDOFF.md` — gitignored, local only: the in-flight checkpoint shared by
+  Claude Code and Codex (see Cross-agent handoff).
 - `docs/roadmap.md` — single source of truth for sequencing; see Session
   start above.
 - `docs/handbook/` — Phase 0 constitution: `principles.md` and

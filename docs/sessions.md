@@ -1048,3 +1048,48 @@ reworded sentence that quoted a pre-fold hash. `main` was force-pushed with a
 lease on the old head. Tags are unaffected, since all of them precede the
 fold. CI run IDs cited above ran on the pre-fold commits, which PR #7 and
 GitHub's run history still reference.
+
+## 2026-09-24 — Cross-agent handoff checkpoint; stale WSL environments removed; `Ubuntu` made the default distro
+
+The owner works in this checkout with both Claude Code and Codex and switches
+when one reaches its five-hour usage limit. Context was being carried across by
+copy-paste. A limit ends a session mid-turn, so an end-of-session summary is
+never written. `AGENTS.md` (which Codex reads directly and Claude Code imports
+through `CLAUDE.md`) now has a "Cross-agent handoff" section. It defines a
+gitignored `HANDOFF.md` at the repo root that the working agent overwrites at
+each checkpoint: after each sub-task, before long commands, when the owner
+decides something, and around commits. The incoming agent reads it first,
+checks it against `git log -1`/`git status` (the tree wins), and continues
+from its **Next** list. It is gitignored because it is in-flight state;
+`docs/sessions.md` stays the committed log.
+
+Two owner rules that existed only in Claude Code's private memory, and so were
+invisible to Codex, moved into `AGENTS.md`'s Git history section: commit
+directly to a linear `main`, and fold fixups into the unpushed commit they fix.
+
+The same edit fixed drift found at session start. `AGENTS.md` and
+`docs/setup.md` still said the default WSL distro was the stale `Ubuntu-22.04`
+registration, which was unregistered on 2026-09-23; `wsl -l -v` on 2026-09-24
+shows `podman-machine-default` as the default, with `Ubuntu`, `NVIDIA-Workbench`
+and `docker-desktop` registered. Commands still name `-d Ubuntu`.
+
+Verification: documentation and `.gitignore` only; no code, tests or run files
+changed. `git check-ignore HANDOFF.md` confirms the checkpoint is ignored, and
+a grep finds no other current-state `Ubuntu-22.04` claim outside dated history.
+
+Later the same day, at the owner's request, the stale WSL2 environments were
+deleted from the `Ubuntu` distro: the Python 3.13.15 rollback venv
+`~/q1729-cudaq-py313-old` (2.7 GB), the uv-managed CPython 3.13.15 it used
+(`uv python uninstall 3.13`; nothing else referenced it), and `~/q1729-scratch`
+(284 KB of throwaway outputs from the 2026-09-23 budget and interrupt checks;
+none were archived evidence). Afterwards the home directory held only
+`q1729-cudaq`, and `uv python list --only-installed` showed uv's CPython 3.14.7
+and the distro's `/usr/bin/python3.14` (3.14.4). The remaining venv still
+imports cudaq 0.16.0 and CuPy 14.2.0 on Python 3.14.7 and sees one GPU.
+`AGENTS.md` and `docs/setup.md` no longer describe a rollback environment.
+
+The owner then asked for `wsl --set-default Ubuntu`. `wsl -l -v` afterwards
+marked `Ubuntu` as the default, and a bare `wsl -e` opened Ubuntu 26.04 with
+`q1729-cudaq` in its home directory. The docs still tell agents to name the
+distro, because Podman, Docker Desktop and NVIDIA Workbench register their own
+and an installer can move the default.

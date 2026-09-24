@@ -18,6 +18,9 @@ coverage.xml
 # Local scratch
 .tmp/
 
+# Cross-agent handoff checkpoint (AGENTS.md); in-flight state, not history
+HANDOFF.md
+
 # OS
 .DS_Store
 
